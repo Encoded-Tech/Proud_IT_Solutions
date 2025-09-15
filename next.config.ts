@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
         port: "",
       },
+      {
+        protocol: "https",
+        hostname: "lacosmeticsnepal.s3.ap-south-1.amazonaws.com",
+        port: "",
+      },
     ],
   },
 };
