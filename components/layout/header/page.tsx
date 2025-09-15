@@ -3,34 +3,41 @@ import React from "react";
 import Image from "next/image";
 import BottomCategory from "./bottom-category";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import Sidebar from "./sidebar";
 
 const Header = () => {
-  const [openSidebar, setOpenSidebar] = React.useState(false);
   return (
     <div className="bg-white relative">
-      <nav className="max-w-7xl mx-auto py-4 flex justify-between items-center">
+      <nav className="max-w-7xl mx-auto py-4 flex justify-between  items-center">
         <div className="flex items-center gap-2">
-          <span
-            onClick={() => setOpenSidebar(!openSidebar)}
-            className="bg-primary  ease-in-out duration-300 hover:scale-110 hover:bg-primary/90  text-white p-3 rounded-full cursor-pointer"
-          >
-            <Icon icon="pajamas:hamburger" width="20" height="20" />
-          </span>
           <Image
             src="/logo/mainlogo.png"
             alt="logo"
             width={1000}
             height={1000}
-            className="object-contain w-40"
+            className="object-contain w-20"
           />
         </div>
         <div>
-          <input
-            className="border border-zinc-400 rounded-full p-3 text-sm w-[450px] focus:border-blue-500 outline-none"
-            type="text"
-            placeholder="Search for Products"
-          />
+          <form className="flex relative md:p-1  border border-zinc-200 bg-white  rounded-full  text-base md:text-sm lg:w-[700px] w-full  focus:border-blue-500 outline-none z-[5]">
+            <input
+              className="flex-1 pl-4 outline-none"
+              type="text"
+              placeholder="Search"
+              required
+            />
+
+            <button
+              type="submit"
+              className=" p-2 text-white rounded-full bg-primary cursor-pointer"
+            >
+              <Icon
+                icon="ri:search-line"
+                width="24"
+                height="24"
+                className="hover:scale-125 ease-in-out duration-300"
+              />
+            </button>
+          </form>
         </div>
 
         <div className="flex items-center gap-8">
@@ -50,21 +57,6 @@ const Header = () => {
           ))}
         </div>
       </nav>
-
-      <div
-        className={`${
-          openSidebar ? "translate-x-0" : "-translate-x-full"
-        } ease-in-out duration-500 h-screen w-80  fixed top-0 bg-white z-[4] p-4 left-0  `}
-      >
-        <Sidebar />
-      </div>
-
-      {openSidebar && (
-        <div
-          onClick={() => setOpenSidebar(false)}
-          className="fixed inset-0 z-[2] bg-black/50 bg-clip-padding backdrop-filter backdrop-blur-sm bg-opacity-40 h-full w-full"
-        />
-      )}
 
       <div className="sticky h-fit top-20">
         <BottomCategory />
