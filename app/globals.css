@@ -12,3 +12,20 @@ body {
   font-family: "Jost", sans-serif;
 
 }
+
+.navbarhover {
+  @apply relative w-fit block;
+
+  &::after {
+    @apply block z-[1] absolute h-[2px] bg-white w-full;
+    content: "";
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.2s ease-in-out;
+  }
+
+  &:hover::after,
+  &.active::after {
+    transform: scaleX(1);
+  }
+}
