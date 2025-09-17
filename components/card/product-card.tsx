@@ -32,7 +32,7 @@ const ProductCard = ({ products }: { products: productType }) => {
               width={1000}
               height={500}
               priority
-              className="h-[16em]  hover:scale-110 hover:brightness-75 ease-in-out duration-300"
+              className="h-[15em] object-cover hover:scale-110 hover:brightness-75 ease-in-out duration-300"
             />
           </figure>
 
@@ -45,8 +45,10 @@ const ProductCard = ({ products }: { products: productType }) => {
           </div>
         </Link>
 
-        <div className="flex  justify-between items-center">
-          <h2 className="font-medium text-lg text-lighttext line-clamp-1">{name}</h2>
+        <div className="flex  flex-col justify-between ">
+          <h2 className="font-medium text-base text-lighttext line-clamp-1">
+            {name}
+          </h2>
 
           <div className="flex items-center">
             {[...Array(Math.floor(avgRating))].map((_, i) => (
@@ -70,7 +72,7 @@ const ProductCard = ({ products }: { products: productType }) => {
             {availableStock < 1 ? (
               <p className="text-red-500 font-semibold ">Out of Stock !</p>
             ) : (
-              <h2 className="font-medium text-primarymain md:text-lg text-sm">
+              <h2 className="font-medium text-primary md:text-lg text-sm">
                 Rs. {price}
               </h2>
             )}
@@ -85,7 +87,7 @@ const ProductCard = ({ products }: { products: productType }) => {
               </p>
             ) : (
               <div className="flex items-center gap-2">
-                <p className="text-primarymain font-medium md:text-lg text-sm">
+                <p className="text-primary font-medium md:text-lg text-sm">
                   Rs. {offeredPrice}
                 </p>
                 <del className="text-lighttext font-medium text-sm">
@@ -97,7 +99,7 @@ const ProductCard = ({ products }: { products: productType }) => {
         )}
       </div>
 
-      <button className="mt-4 border border-lighttext rounded-full  inset-shdaow-xs px-6 py-2  hover:bg-primary/90 hover:text-white hover:border-none cursor-pointer ease-in-out duration-100  w-full flex items-center gap-2 justify-center">
+      <button className="mt-4 border border-lighttext rounded-md  inset-shdaow-xs px-6 py-2  hover:bg-primary/90 hover:text-white hover:border-none cursor-pointer ease-in-out duration-100  w-full flex items-center gap-2 justify-center">
         <Icon icon="mynaui:cart-solid" width="24" height="24" />
         Add to Cart
       </button>

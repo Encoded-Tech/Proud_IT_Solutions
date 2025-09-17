@@ -7,7 +7,16 @@ type titleprops = {
 };
 
 const PageHeader = ({ title, className }: titleprops) => {
-  return <h2 className={cn(className, "font-medium text-lighttext text-4xl text-start border-b pb-2 w-fit")}>{title}</h2>;
+  return (
+    <h2
+      className={cn(
+        className,
+        "font-semibold  text-2xl text-start border-b pb-2 w-fit"
+      )}
+    >
+      {title}
+    </h2>
+  );
 };
 
 export default PageHeader;

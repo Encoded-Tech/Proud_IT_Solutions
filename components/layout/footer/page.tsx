@@ -23,23 +23,22 @@ export default function Footer() {
               </figure>
             </div>
             <p className=" mb-6 max-w-sm">
-              Your premier destination for fashion-forward clothing and
-              accessories. Quality meets style in every piece we curate.
+              Your premier destination for accessories.
             </p>
 
             {/* Contact Info */}
             <div className="space-y-3">
               <div className="flex items-center">
                 <Phone className="w-4 h-4 mr-3 " />
-                <span className="text-sm">1-800-STYLE-HUB</span>
+                <span className="text-sm">+977-9898989898</span>
               </div>
               <div className="flex items-center">
                 <Mail className="w-4 h-4 mr-3 " />
-                <span className="text-sm">hello@stylehub.com</span>
+                <span className="text-sm">proudnepal@gmail.com</span>
               </div>
               <div className="flex items-center">
                 <MapPin className="w-4 h-4 mr-3 " />
-                <span className="text-sm">123 Fashion Ave, NY 10001</span>
+                <span className="text-sm">Kathmandu , Nepal</span>
               </div>
             </div>
 
@@ -75,31 +74,31 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="#"
+                  href="/shop"
                   className="text-sm hover:text-primary transition-colors"
                 >
-                  New Arrivals
+                  Headsets
                 </Link>
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/shop"
                   className="text-sm hover:text-primary transition-colors"
                 >
-                  Women
+                  Keyboards
                 </Link>
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/shop"
                   className="text-sm hover:text-primary transition-colors"
                 >
-                  Men
+                  Mouse
                 </Link>
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/shop"
                   className="text-sm hover:text-primary transition-colors"
                 >
                   Accessories
@@ -114,7 +113,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="#"
+                  href="/contact"
                   className="text-sm hover:text-primary transition-colors"
                 >
                   Contact Us
@@ -147,23 +146,16 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="#"
+                  href="/about"
                   className="text-sm hover:text-primary transition-colors"
                 >
                   About Us
                 </Link>
               </li>
+
               <li>
                 <Link
-                  href="#"
-                  className="text-sm hover:text-primary transition-colors"
-                >
-                  Careers
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
+                  href="/blogs"
                   className="text-sm hover:text-primary transition-colors"
                 >
                   Blogs

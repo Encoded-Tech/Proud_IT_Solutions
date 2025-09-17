@@ -3,19 +3,22 @@ import React from "react";
 import Image from "next/image";
 import BottomCategory from "./bottom-category";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import Link from "next/link";
 
 const Header = () => {
   return (
     <div className="bg-white relative">
       <nav className="max-w-7xl mx-auto py-4 flex justify-between  items-center">
         <div className="flex items-center gap-2">
-          <Image
-            src="/logo/mainlogo.png"
-            alt="logo"
-            width={1000}
-            height={1000}
-            className="object-contain w-20"
-          />
+          <Link href="/">
+            <Image
+              src="/logo/mainlogo.png"
+              alt="logo"
+              width={1000}
+              height={1000}
+              className="object-contain w-20"
+            />
+          </Link>
         </div>
         <div>
           <form className="flex relative md:p-1  border border-zinc-200 bg-white  rounded-full  text-base md:text-sm lg:w-[700px] w-full  focus:border-blue-500 outline-none z-[5]">

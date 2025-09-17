@@ -7,7 +7,7 @@ const Article = () => {
   return (
     <div>
       {" "}
-      <PageHeader title="Blogs" />
+      <PageHeader title="Recent Blogs" />
       <div className="grid grid-cols-4 gap-6 my-10">
         {mockblogs.map((item, index) => (
           <div key={index}>
