@@ -37,4 +37,16 @@ export const mockblogs: blogType[] = [
     image:
       "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },
+  {
+    id: 1,
+    title: "The Rise of AI in Everyday Life",
+    slug: "rise-of-ai-everyday-life",
+    author: "Jane Doe",
+    date: "2025-06-01",
+    tags: ["AI", "Machine Learning", "Technology Trends"],
+    summary:
+      "Artificial Intelligence is no longer just a buzzword. Here's how it's changing our daily routines.",
+    image:
+      "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+  },
 ];
