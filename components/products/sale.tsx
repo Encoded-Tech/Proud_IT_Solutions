@@ -88,9 +88,9 @@ const Sale = () => {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-4 gap-x-4 my-10">
+        <div className="grid lg:grid-cols-4 md:grid-cols-3 grid-cols-2 gap-4 my-10">
           {ProductMock.map((item, index) => (
-            <div key={index} className="px-2">
+            <div key={index}>
               <ProductCard products={item} />
             </div>
           ))}

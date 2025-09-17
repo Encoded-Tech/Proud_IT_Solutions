@@ -5,8 +5,8 @@ import React from "react";
 
 const ShopGrid = () => {
   return (
-    <main className="grid grid-cols-7 gap-x-6">
-      <section className="col-span-2 p-4 bg-zinc-50 rounded-md shadow-sm space-y-8">
+    <main className="grid md:grid-cols-7 gap-x-6">
+      <section className="md:block hidden col-span-2 p-4 bg-zinc-50 rounded-md shadow-sm space-y-8">
         <div className="flex justify-between pb-4 border-b">
           <h2 className="font-medium text-xl">Filter</h2>
           <Icon icon="mi:filter" width="24" height="24" />{" "}
@@ -119,9 +119,9 @@ const ShopGrid = () => {
         </div>
       </section>
       <section className="col-span-5">
-        <div className=" grid grid-cols-3 gap-4 ">
+        <div className=" grid lg:grid-cols-3 grid-cols-2 gap-4 ">
           {ProductMock.map((item, index) => (
-            <div key={index} className="px-2">
+            <div key={index}>
               <ProductCard products={item} />
             </div>
           ))}

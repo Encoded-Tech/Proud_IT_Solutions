@@ -65,8 +65,8 @@ const HotDeals = () => {
   };
 
   return (
-    <main className="grid grid-cols-3 items-center gap-x-8">
-      <video loop autoPlay muted className="w-full h-full object-fill">
+    <main className="grid grid-cols-3 items-center md:gap-x-8 gap-x-2">
+      <video loop autoPlay muted className="w-full lg:h-full h-1/2 object-fill">
         <source
           src="https://cdn.pixabay.com/video/2018/11/14/19321-300877558_large.mp4"
           type="video/mp4"

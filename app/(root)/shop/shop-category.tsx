@@ -57,7 +57,7 @@ const ShopCategories = () => {
   };
 
   return (
-    <div className="relative  p-6 rounded-md bg-primary/20">
+    <div className="relative  md:p-6 p-4 rounded-md bg-primary/20">
       {categorydata.length > 5 ? (
         <section>
           <Slider {...settings} ref={sliderRef} className="my-10">
@@ -71,13 +71,13 @@ const ShopCategories = () => {
                       width={1000}
                       height={500}
                       priority
-                      className="h-46  hover:scale-110 ease-in-out duration-300"
+                      className="lg:h-46  hover:scale-110 ease-in-out duration-300"
                     />
                   </figure>
 
                   <div className="flex flex-col justify-center items-center my-2">
-                    <h2 className="font-medium text-lg">{item.title}</h2>
-                    <p className="text-zinc-500 font-medium">
+                    <h2 className="font-medium text-md">{item.title}</h2>
+                    <p className="text-zinc-500 font-medium text-sm">
                       {item.num} Products
                     </p>
                   </div>
@@ -98,13 +98,13 @@ const ShopCategories = () => {
                     width={1000}
                     height={500}
                     priority
-                    className="h-46  hover:scale-110 ease-in-out duration-300"
+                    className="lg:h-46  hover:scale-110 ease-in-out duration-300"
                   />
                 </figure>
 
                 <div className="flex flex-col justify-center items-center my-2">
-                  <h2 className="font-medium text-lg">{item.title}</h2>
-                  <p className="text-zinc-500 font-medium">
+                  <h2 className="font-medium text-md">{item.title}</h2>
+                  <p className="text-zinc-500 font-medium text-sm">
                     {item.num} Products
                   </p>
                 </div>

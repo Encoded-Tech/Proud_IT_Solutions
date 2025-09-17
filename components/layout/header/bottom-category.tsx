@@ -8,9 +8,9 @@ import { usePathname } from "next/navigation";
 const BottomCategory = () => {
   const pathname = usePathname();
   return (
-    <div className="bg-primary p-4 text-white">
+    <div className="lg:bg-primary bg-blue-100 lg:p-4 p-2 text-white">
       <div className="max-w-7xl mx-auto flex justify-between items-center gap-6">
-        <div className="flex  items-center font-medium gap-10">
+        <div className="lg:flex hidden  items-center font-medium gap-10">
           {navitems.map((item, index) => (
             <nav key={index}>
               <Link
@@ -25,7 +25,7 @@ const BottomCategory = () => {
           ))}
         </div>
 
-        <div className="flex gap-4 items-center">
+        <div className="lg:flex hidden gap-4 items-center">
           <Link href="/login" className="bg-white p-2 rounded-full text-black ">
             <Icon icon="et:profile-male" width="22" height="22" />{" "}
           </Link>
@@ -53,6 +53,27 @@ const BottomCategory = () => {
             <h2 className="font-medium">Rs 0.00</h2>
           </div>
         </div>
+
+        <form className="lg:hidden flex relative p-1  border border-zinc-200 bg-white  rounded-full  text-base lg:text-sm lg:w-[700px] w-full  focus:border-blue-500 outline-none z-[5]">
+          <input
+            className="flex-1 pl-4 outline-none"
+            type="text"
+            placeholder="Search"
+            required
+          />
+
+          <button
+            type="submit"
+            className=" p-1 text-white rounded-full bg-primary cursor-pointer"
+          >
+            <Icon
+              icon="ri:search-line"
+              width="20"
+              height="20"
+              className="hover:scale-125 ease-in-out duration-300"
+            />
+          </button>
+        </form>
       </div>
     </div>
   );

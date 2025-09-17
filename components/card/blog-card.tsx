@@ -14,14 +14,14 @@ const BlogCard = ({ blogs }: { blogs: blogType }) => {
             alt="blog"
             width={1000}
             height={1000}
-            className="h-[15em] object-cover group-hover:scale-110 ease-in-out duration-300"
+            className="lg:h-[15em] md:h-[13em] h-[10em] object-cover group-hover:scale-110 ease-in-out duration-300"
           />
         </figure>
 
-        <div className="space-y-2 my-4 p-2">
+        <div className="space-y-2 my-4 md:p-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-zinc-500">{author}</span>
-            <span className="text-sm text-zinc-500">{date}</span>
+            <span className="md:text-sm text-xs text-zinc-500">{author}</span>
+            <span className="md:text-sm text-xs text-zinc-500">{date}</span>
           </div>
           <h2 className="font-medium text-lg line-clamp-1">{title}</h2>
           <p className="text-zinc-500  text-md line-clamp-2">{summary}</p>

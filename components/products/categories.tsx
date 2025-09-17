@@ -81,13 +81,13 @@ const Categories = () => {
                       width={1000}
                       height={500}
                       priority
-                      className="h-46  hover:scale-110 ease-in-out duration-300"
+                      className="lg:h-46   hover:scale-110 ease-in-out duration-300"
                     />
                   </figure>
 
                   <div className="flex flex-col justify-center items-center my-2">
-                    <h2 className="font-medium text-lg">{item.title}</h2>
-                    <p className="text-zinc-500 font-medium">
+                    <h2 className="font-medium text-md">{item.title}</h2>
+                    <p className="text-zinc-500 font-medium text-sm">
                       {item.num} Products
                     </p>
                   </div>
@@ -153,17 +153,17 @@ const categorydata = [
     img: "/category/ct1.jpg",
   },
   {
-    title: "Keyboards",
+    title: "Headsets",
     num: 23,
     img: "/category/ct2.jpg",
   },
   {
-    title: "Keyboards",
+    title: "Mouse",
     num: 23,
     img: "/category/ct3.jpg",
   },
   {
-    title: "Keyboards",
+    title: "Gamepads",
     num: 23,
     img: "/category/ct4.jpg",
   },
@@ -173,12 +173,12 @@ const categorydata = [
     img: "/category/ct5.jpg",
   },
   {
-    title: "Keyboards",
+    title: "Mat",
     num: 23,
     img: "/category/ct1.jpg",
   },
   {
-    title: "Keyboards",
+    title: "HeadSets",
     num: 23,
     img: "/category/ct2.jpg",
   },

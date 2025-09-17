@@ -47,7 +47,7 @@ export default function Footer() {
               <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
                 {/* Social Media */}
                 <div>
-                  <div className="flex justify-center lg:justify-start space-x-4">
+                  <div className="flex  justify-start space-x-4">
                     <Link href="#">
                       <Icon icon="logos:facebook" width="30" height="30" />{" "}
                     </Link>
@@ -173,22 +173,6 @@ export default function Footer() {
             {/* Copyright */}
             <div className="text-sm  text-center lg:text-left">
               © {new Date().getFullYear()} Proud Nepal. All rights reserved.
-            </div>
-
-            {/* Legal Links */}
-            <div className="flex flex-wrap justify-center lg:justify-end gap-6 text-sm">
-              <Link href="#" className=" hover:text-primary transition-colors">
-                Privacy Policy
-              </Link>
-              <Link href="#" className=" hover:text-primary transition-colors">
-                Terms of Service
-              </Link>
-              <Link href="#" className=" hover:text-primary transition-colors">
-                Cookie Policy
-              </Link>
-              <Link href="#" className=" hover:text-primary transition-colors">
-                Accessibility
-              </Link>
             </div>
 
             <div className="flex items-center gap-2">

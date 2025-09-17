@@ -69,7 +69,7 @@ const Review = () => {
   };
 
   return (
-    <section className="grid grid-cols-2  gap-6  min-h-[50vh]">
+    <section className="grid md:grid-cols-2  gap-6  min-h-[50vh]">
       {/* Review Form */}
       <div className=" bg-zinc-100/50 md:p-6 p-4 rounded-md border border-zinc-200 md:order-1 order-2">
         <h2 className="text-xl font-bold text-gray-800 mb-6 text-center">

@@ -3,18 +3,18 @@ import React from "react";
 
 const Hero = () => {
   return (
-    <main className="max-w-7xl xl:mx-auto mx-4 grid grid-cols-2 items-center gap-6 my-8 ">
-      <div className="col-span-1">
+    <main className="max-w-7xl xl:mx-auto mx-4 grid sm:grid-cols-2 items-center gap-6 my-8 ">
+      <div>
         <Image
           src={heroimg[0].img}
           alt="hero"
           width={1000}
           height={500}
           priority
-          className="h-[50vh] w-full object-cover "
+          className="lg:h-[50vh] md:h-[40vh] h-[25vh] w-full object-cover "
         />
       </div>
-      <div className="col-span-1">
+      <div>
         {" "}
         <Image
           src={heroimg[1].img}
@@ -22,7 +22,7 @@ const Hero = () => {
           width={1000}
           height={500}
           priority
-          className="h-[40vh] w-full object-cover "
+          className="lg:h-[40vh] md:h-[30vh] h-[25vh] w-full object-cover "
         />
       </div>
     </main>

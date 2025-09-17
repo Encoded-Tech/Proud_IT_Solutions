@@ -82,8 +82,8 @@ const ProductPage = ({ params }: PageProps) => {
   };
 
   return (
-    <main className="max-w-6xl xl:mx-auto mx-4 my-14 space-y-14">
-      <div className="flex items-center gap-2">
+    <main className="max-w-6xl xl:mx-auto mx-4 md:my-14 my-8 md:space-y-14 space-y-8">
+      <div className="flex flex-wrap items-center gap-2">
         <Link href="/" className="text-lighttext">
           Home
         </Link>{" "}
