@@ -28,7 +28,7 @@ export default async function BlogDetailPage({ params }: BlogPageProps) {
         <Icon icon="weui:back-filled" width="12" height="24" />
         <span className="font-medium text-base"> Back</span>
       </Link>
-      <h1 className="text-center text-4xl font-semibold">{blogItem?.title}</h1>
+      <h1 className="text-center lg:text-4xl md:text-3xl text-2xl font-semibold">{blogItem?.title}</h1>
 
       <div className="flex justify-between items-center text-sm text-lighttext mt-6">
         <p>By : {blogItem?.author}</p>

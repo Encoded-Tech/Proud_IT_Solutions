@@ -8,7 +8,7 @@ export default function Footer() {
     <footer className="border-t border-zinc-200 shadow-sm">
       {/* Main Footer Content */}
       <div className="max-w-7xl xl:mx-auto mx-4  py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2">
             <div className="flex items-center mb-4">
@@ -18,7 +18,7 @@ export default function Footer() {
                   alt="logo"
                   width={1000}
                   height={1000}
-                  className="object-contain w-40"
+                  className="object-contain md:w-40 w-20"
                 />
               </figure>
             </div>
@@ -44,27 +44,19 @@ export default function Footer() {
 
             {/* Social Media & App Downloads */}
             <div className="mt-12 ">
-              <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
                 {/* Social Media */}
-                <div>
-                  <div className="flex  justify-start space-x-4">
-                    <Link href="#">
-                      <Icon icon="logos:facebook" width="30" height="30" />{" "}
-                    </Link>
+                <div className="flex  justify-start space-x-4">
+                  <Link href="#">
+                    <Icon icon="logos:facebook" width="30" height="30" />{" "}
+                  </Link>
 
-                    <Link href="#">
-                      <Icon
-                        icon="skill-icons:instagram"
-                        width="30"
-                        height="30"
-                      />{" "}
-                    </Link>
-                    <Link href="#">
-                      <Icon icon="logos:whatsapp-icon" width="30" height="30" />
-                    </Link>
-                  </div>
+                  <Link href="#">
+                    <Icon icon="skill-icons:instagram" width="30" height="30" />{" "}
+                  </Link>
+                  <Link href="#">
+                    <Icon icon="logos:whatsapp-icon" width="30" height="30" />
+                  </Link>
                 </div>
-              </div>
             </div>
           </div>
 

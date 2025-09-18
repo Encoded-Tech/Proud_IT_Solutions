@@ -3,7 +3,7 @@ import React from "react";
 
 const ContactDetails = () => {
   return (
-    <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-8 md:my-20 my-10">
+    <div className="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 md:gap-8 gap-4 md:my-20 my-10">
       {contactdata.map((item, index) => (
         <div
           key={index}
@@ -13,7 +13,7 @@ const ContactDetails = () => {
             {item.icon}
           </span>
           <div className="text-center mt-4">
-            <h1 className="font-semibold lg:text-2xl text-xl   mb-2 text-primary">
+            <h1 className="font-semibold lg:text-xl text-lg   mb-2 text-primary">
               {item.title}
             </h1>
             <p className="font-medium text-sm">{item.desc}</p>
@@ -30,7 +30,7 @@ export default ContactDetails;
 const contactdata = [
   {
     title: "Address Line",
-    desc: "Tarkeshwor - 02 Shantidham Marga Kathmandu Nepal",
+    desc: "Kathmandu , Nepal",
     icon: <Icon icon="mdi:address-marker-outline" />,
   },
   {
@@ -41,8 +41,8 @@ const contactdata = [
   },
   {
     title: "Mailing Address",
-    desc: "info@mysticnepaladventure.com",
-    desc2: " mnatours@hotmail.com",
+    desc: "info@proudnepal.com",
+    desc2: " proudnepal@hotmail.com",
     icon: <Icon icon="famicons:mail-outline" />,
   },
 ];

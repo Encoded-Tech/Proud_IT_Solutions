@@ -54,7 +54,7 @@ const BottomCategory = () => {
           </div>
         </div>
 
-        <form className="lg:hidden flex relative p-1  border border-zinc-200 bg-white  rounded-full  text-base lg:text-sm lg:w-[700px] w-full  focus:border-blue-500 outline-none z-[5]">
+        <form className="lg:hidden flex relative p-1  border border-zinc-200 bg-white text-black  rounded-full  text-base lg:text-sm lg:w-[700px] w-full  focus:border-blue-500 outline-none z-[5]">
           <input
             className="flex-1 pl-4 outline-none"
             type="text"

@@ -8,7 +8,7 @@ const Blogs = () => {
     <div className="max-w-7xl xl:mx-auto mx-4 my-10">
       <PageHeader title="Popular Blogs" />
 
-      <div className="grid grid-cols-3 gap-6 my-8">
+      <div className="grid md:grid-cols-3 sm:grid-cols-2 lg:gap-6 gap-4 my-8">
         {mockblogs.map((item, index) => (
           <div key={index}>
             <BlogCard blogs={item} />
