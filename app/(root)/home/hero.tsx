@@ -29,9 +29,9 @@ const Hero = () => {
                 src={item.img}
                 alt="hero"
                 width={1000}
-                height={500}
+                height={1000}
                 priority
-                className="h-screen w-full object-cover "
+                className="w-screen h-full object-cover "
               />
             </figure>
           </div>

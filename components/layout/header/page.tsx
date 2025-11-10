@@ -9,29 +9,29 @@ const Header = () => {
   const [openSidebar, setOpenSidebar] = React.useState(false);
   return (
     <div className="bg-white relative">
-      <nav className="max-w-7xl mx-auto py-4 flex justify-between items-center">
+      <nav className="max-w-7xl mx-auto flex justify-between items-center">
         <div className="flex items-center gap-2">
           <span
             onClick={() => setOpenSidebar(!openSidebar)}
-            className="bg-primary  ease-in-out duration-300 hover:scale-110 hover:bg-primary/90  text-white p-3 rounded-full cursor-pointer"
+            className="bg-primary md:hidden ease-in-out duration-300 hover:scale-110 hover:bg-primary/90  text-white p-3 rounded-full cursor-pointer"
           >
             <Icon icon="pajamas:hamburger" width="20" height="20" />
           </span>
-          <Image
-            src="/logo/mainlogo.png"
-            alt="logo"
-            width={1000}
-            height={1000}
-            className="object-contain w-40"
-          />
+          <Image src="/logo/logomain.png" alt="logo" width={1000} height={1000} className="object-fit w-25" />
         </div>
-        <div>
-          <input
-            className="border border-zinc-400 rounded-full p-3 text-sm w-[450px] focus:border-blue-500 outline-none"
-            type="text"
-            placeholder="Search for Products"
-          />
-        </div>
+        <div className="relative w-[650px]">
+        <input
+          className="border border-zinc-400 rounded-full p-3 pr-12 text-sm w-full focus:border-blue-500 outline-none"
+          type="text"
+          placeholder="Search for products..."
+        />
+        <span
+          className="bg-red-600 absolute right-2 top-1/2 -translate-y-1/2 ease-in-out duration-300 hover:scale-110 hover:bg-red-700 text-white p-2 rounded-full cursor-pointer"
+        >
+          <Icon icon="mdi:magnify" width="20" height="20" />
+        </span>
+      </div>
+
 
         <div className="flex items-center gap-8">
           {info.map((item, index) => (

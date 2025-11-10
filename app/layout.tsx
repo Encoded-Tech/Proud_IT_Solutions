@@ -12,7 +12,7 @@ const jost = Jost({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Himalayan Garment",
+    template: "%s |   Proud IT Solutions",
     default: APP_NAME,
   },
   description: APP_DESCRIPTION,
