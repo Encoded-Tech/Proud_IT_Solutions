@@ -21,7 +21,7 @@ const LoginPage = async () => {
 
             <div className="text-center">
               <h1 className="text-3xl font-bold tracking-tight ">
-                Welcome back
+                Welcome back to Proud Nepal
               </h1>
               <p className="mt-2 text-sm text-gray-900">
                 Please sign in to your account
