@@ -1,0 +1,8 @@
+export const MONGODB_URI = process.env.NEXT_PUBLIC_MONGODB_URI as string;
+export const APP_NAME = process.env.APP_NAME as string;
+export const APP_DESCRIPTION = process.env.APP_DESCRIPTION as string;
+export const SERVER_URL = process.env.SERVER_URL as string;
+export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME as string;
+export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY as string;
+export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET as string;
+export const CLOUDINARY_FOLDER = process.env.CLOUDINARY_FOLDER as string;
