@@ -10,8 +10,8 @@ export const ProductMock: productType[] = [
     featureImage:
       "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     price: 3000,
-    stock: 4,
-    offeredPrice: 2500,
+    stock: 2, 
+    offeredPrice: 2000,
     isOfferedPriceActive: true,
     offerStartDate: null,
     offerEndDate: null,

@@ -13,7 +13,7 @@ export interface productType {
   isActive: boolean;
   userId: string;
   categoryId: string;
-  createdAt: string; // if you want ISO string -> use string instead
+  createdAt: string; 
   updatedAt: string;
   isFeatured: boolean;
   seoMetaId: string;
@@ -31,7 +31,7 @@ export interface productType {
 export interface MediaType {
   id: string;
   productId: string;
-  mediaType: "IMAGE" | "VIDEO"; // extend if needed
+  mediaType: "IMAGE" | "VIDEO"; 
   mediaUrl: string;
 }
 
@@ -73,7 +73,7 @@ export interface StockAndPriceType {
   id: string;
   productAttributeValueId: string;
   stock: number;
-  price: string; // since in JSON it was a string
+  price: string;
   offeredPrice: number | null;
   isOfferedPriceActive: boolean;
   offerStartDate: Date | null;

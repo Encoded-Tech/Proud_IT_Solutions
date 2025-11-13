@@ -10,6 +10,7 @@ export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const  categoryName  = formData.get("categoryName") as string;
   const  categoryImage  = formData.get("categoryImage") as File;
+  const parentId = formData.get("parentId") as string | null;
 
   if (!categoryName) {
     return NextResponse.json({ error: "category name is required" }, { status: 400 });
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "category image is required" }, { status: 400 });
   }
   const imageUrl = await uploadToCloudinary(categoryImage);
-  const createCategory = await Category.create({ categoryName, categoryImage: imageUrl });
+  const createCategory = await Category.create({ categoryName, categoryImage: imageUrl, parentId: parentId || null  });
   return NextResponse.json({
     success: true,
     message: "category created successfully",
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   await connectDB();
-  const categories = await Category.find();
+  const categories = await Category.find().populate("parentId", "categoryName");
   if(!categories) {
     return NextResponse.json({ success: false, message: "categories not found" }, { status: 404 });
   }
