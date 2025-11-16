@@ -1,7 +1,7 @@
 
 import { uploadToCloudinary } from "@/config/cloudinary";
-import connectDB from "@/db/connection";
-import { Category } from "@/models/categoryModel";
+import { connectDB } from "@/db";
+import { Category } from "@/models";
 import { NextRequest, NextResponse } from "next/server";
 
 
