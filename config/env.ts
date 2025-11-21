@@ -6,3 +6,6 @@ export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME as string
 export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY as string;
 export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET as string;
 export const CLOUDINARY_FOLDER = process.env.CLOUDINARY_FOLDER as string;
+export const Google_Client_ID =  process.env.Google_Client_ID as string;
+export const Google_Client_Secret =  process.env.Google_Client_Secret as string;
+export const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET as string;

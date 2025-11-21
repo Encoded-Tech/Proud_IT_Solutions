@@ -10,4 +10,5 @@ export type WithDBOptions = {
   maxRetries?: number;
   retryDelay?: number;
   includeDebugInfo?: boolean;
+  resourceName?: string;
 };

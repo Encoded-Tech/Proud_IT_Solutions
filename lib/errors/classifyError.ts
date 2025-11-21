@@ -4,7 +4,7 @@ import { handleMongoError, handleMongooseError, handleEmailError } from "../erro
 import { ERROR_DICTIONARY } from "../constants";
 import { MongoErrorType, NodemailerErrorType } from "../types";
 
-export function classifyError(error: unknown) {
+export function classifyError(error: unknown, resourceName?: string) {
   const safeError = error instanceof Error ? error : new Error(String(error));
 
   let statusCode = 500;
@@ -24,7 +24,7 @@ export function classifyError(error: unknown) {
     }
   }
 
-  const mongoHandled = handleMongoError(safeError as MongoErrorType);
+  const mongoHandled = handleMongoError(safeError as MongoErrorType, resourceName);
   if (mongoHandled) {
     statusCode = mongoHandled.statusCode;
     friendlyMessage = mongoHandled.message;

@@ -3,12 +3,9 @@ import { v4 as uuidv4 } from "uuid";
 import {  httpHeaders } from "../http"; 
 import { isTransientError, classifyError } from "../errors";
 import { log } from "../logger";
+import { WithDBOptions } from "../types";
 
-type ErrorHandlerOptions = {
-  maxRetries?: number;
-  retryDelay?: number;
-  includeDebugInfo?: boolean;
-};
+
 
 /**
  * Error handler for Next.js API routes
@@ -29,7 +26,7 @@ const errorHandler = <
 
 >(
   fn: (...args: Args) => Promise<Result>,
-  options: ErrorHandlerOptions = {}
+  options: WithDBOptions = {}
 ): ((...args: Args) => Promise<Result | NextResponse | Response>) => {
   
   const {
@@ -94,7 +91,7 @@ const errorHandler = <
             stack: error.stack
           }
         });
-        const { statusCode, friendlyMessage, errorCode } = classifyError(error);
+        const { statusCode, friendlyMessage, errorCode } = classifyError(error, options.resourceName);
         
         if (statusCode === 429) {
           responseHeaders.set("X-Retry-Attempt", retries.toString());
