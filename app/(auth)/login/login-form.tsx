@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Icon } from "@iconify/react";
 import { toast } from "react-hot-toast";
+import { signIn } from "next-auth/react";
 
 export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
@@ -197,6 +198,7 @@ export default function LoginForm() {
             <button
               className="w-full h-11 transition-all duration-200 flex justify-center items-center shadow-sm rounded-md border border-zinc-200"
               disabled={isLoading}
+              onClick={()=> signIn("google")}
             >
               <Icon icon="flat-color-icons:google" width="24" height="24" />
               <span className="sr-only">Google</span>
