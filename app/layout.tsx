@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Jost } from "next/font/google";
 import { APP_DESCRIPTION, APP_NAME, SERVER_URL } from "@/constants";
+import { Toaster } from "react-hot-toast";
+import { SessionWrapper } from "@/components/session/SessionWrapper";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -12,7 +14,11 @@ const jost = Jost({
 
 export const metadata: Metadata = {
   title: {
+<<<<<<< HEAD
     template: "%s |   Proud IT Solutions",
+=======
+    template: "%s | Proud IT Solution",
+>>>>>>> feature-merged
     default: APP_NAME,
   },
   description: APP_DESCRIPTION,
@@ -26,7 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={jost.variable}>
-      <body className={jost.variable}>{children}</body>
+      <body className={jost.variable}>
+       <SessionWrapper> {children}</SessionWrapper>
+        </body>
+      <Toaster position="top-right" reverseOrder={false} />
     </html>
   );
 }

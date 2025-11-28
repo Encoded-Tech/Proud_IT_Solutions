@@ -1,11 +1,10 @@
 import Footer from "@/components/layout/footer/page";
 import Header from "@/components/layout/header/page";
+import { RootLayoutProps } from "@/types/layout";
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: RootLayoutProps) {
   return (
     <main className="flex flex-col h-screen">
       <Header />

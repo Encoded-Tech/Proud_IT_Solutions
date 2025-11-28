@@ -1,25 +1,9 @@
-"use client";
-import React from "react";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-import Slider from "react-slick";
 import Image from "next/image";
+import React from "react";
 
 const Hero = () => {
-  const settings = {
-    dots: false,
-    fade: false,
-    infinite: true,
-    speed: 500,
-    slidesToShow: 1,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 3500,
-    waitForAnimate: false,
-    pauseOnHover: false,
-    arrows: false,
-  };
   return (
+<<<<<<< HEAD
     <>
       <Slider {...settings}>
         {slideimages.map((item, index) => (
@@ -38,14 +22,41 @@ const Hero = () => {
         ))}
       </Slider>
     </>
+=======
+    <main className="max-w-7xl xl:mx-auto mx-4 grid sm:grid-cols-2 items-center gap-6 my-8 ">
+      <div>
+        <Image
+          src={heroimg[0].img}
+          alt="hero"
+          width={1000}
+          height={500}
+          priority
+          className="lg:h-[50vh] md:h-[40vh] h-[25vh] w-full object-cover "
+        />
+      </div>
+      <div>
+        {" "}
+        <Image
+          src={heroimg[1].img}
+          alt="hero"
+          width={1000}
+          height={500}
+          priority
+          className="lg:h-[40vh] md:h-[30vh] h-[25vh] w-full object-cover "
+        />
+      </div>
+    </main>
+>>>>>>> feature-merged
   );
 };
-const slideimages = [
+
+export default Hero;
+
+const heroimg = [
   {
-    img: "/banner/banner.png",
+    img: "/banner/hero1.png",
   },
   {
-    img: "/banner/banner.png",
+    img: "/banner/hero2.png",
   },
 ];
-export default Hero;

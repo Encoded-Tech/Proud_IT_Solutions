@@ -1,16 +1,25 @@
 import mongoose from "mongoose";
 import { MONGODB_URI } from "@/config/env";
+import { seedAdmin } from "@/adminSeeder";
 
-const connectDB = async () => {
-    // let's check mongodb connected  cha ki nai
-    if(mongoose.connection.readyState >=1) return;
-    try {
-        console.log("Mongo URI:", MONGODB_URI);
+let isConnected = false;
 
-        await mongoose.connect(MONGODB_URI);
-        console.log("Proud Nepal Database Connected");
-    } catch (error) {
-        console.error("Error Occured While Connecting to the Database", error);
-    }
+if (!MONGODB_URI) {
+  throw new Error("MONGODB_URI is not defined in .env");
 }
-export default connectDB;
+
+export const connectDB = async () => {
+  if (isConnected || mongoose.connection.readyState >= 1) return;
+
+  try {
+    await mongoose.connect(MONGODB_URI);
+
+    isConnected = true;
+    console.log("Proud Nepal Database Connected");
+    await seedAdmin();
+
+  } catch (error) {
+    console.error("❌ Database Connection Failed:", error);
+    throw error;
+  }
+};

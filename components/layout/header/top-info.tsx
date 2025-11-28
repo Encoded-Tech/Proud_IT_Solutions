@@ -8,7 +8,7 @@ const TopInfo = () => {
         <div className="flex items-center gap-1">
           <Icon icon="ion:mail" width="16" height="16" />
 
-          <h2>himalayangmt@gmail.com</h2>
+          <h2>proudNepal@gmail.com</h2>
         </div>
 
         <div className="flex items-center gap-1">

@@ -16,11 +16,6 @@ import {
     folder: string = CLOUDINARY_FOLDER
   ): Promise<string> => {
     try {
-      console.info("Starting upload to Cloudinary:", {
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-      })
   
       const arrayBuffer = await file.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
