@@ -14,6 +14,8 @@ const MobileSlider = ({
 
   useEffect(() => {
     setIsOpen(false);
+    
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentRoute]);
 
   return (

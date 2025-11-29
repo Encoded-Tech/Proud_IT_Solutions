@@ -11,31 +11,6 @@ const Header = () => {
 
   return (
     <div className="bg-white relative">
-<<<<<<< HEAD
-      <nav className="max-w-7xl mx-auto flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span
-            onClick={() => setOpenSidebar(!openSidebar)}
-            className="bg-primary md:hidden ease-in-out duration-300 hover:scale-110 hover:bg-primary/90  text-white p-3 rounded-full cursor-pointer"
-          >
-            <Icon icon="pajamas:hamburger" width="20" height="20" />
-          </span>
-          <Image src="/logo/logomain.png" alt="logo" width={1000} height={1000} className="object-fit w-25" />
-        </div>
-        <div className="relative w-[650px]">
-        <input
-          className="border border-zinc-400 rounded-full p-3 pr-12 text-sm w-full focus:border-blue-500 outline-none"
-          type="text"
-          placeholder="Search for products..."
-        />
-        <span
-          className="bg-red-600 absolute right-2 top-1/2 -translate-y-1/2 ease-in-out duration-300 hover:scale-110 hover:bg-red-700 text-white p-2 rounded-full cursor-pointer"
-        >
-          <Icon icon="mdi:magnify" width="20" height="20" />
-        </span>
-      </div>
-
-=======
       <nav className="max-w-7xl xl:mx-auto mx-4 py-2 flex justify-between  items-center">
         {/* hamburger icon */}
         <div onClick={() => setIsOpen(true)} className="lg:hidden block">
@@ -57,7 +32,6 @@ const Header = () => {
             className="object-contain lg:w-20 w-14"
           />
         </Link>
->>>>>>> feature-merged
 
         {/* search input field */}
         <form className="lg:flex hidden relative lg:p-1  border border-zinc-200 bg-white  rounded-full  text-base lg:text-sm lg:w-[700px] w-full  focus:border-blue-500 outline-none z-[5]">

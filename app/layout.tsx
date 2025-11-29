@@ -14,11 +14,7 @@ const jost = Jost({
 
 export const metadata: Metadata = {
   title: {
-<<<<<<< HEAD
-    template: "%s |   Proud IT Solutions",
-=======
     template: "%s | Proud IT Solution",
->>>>>>> feature-merged
     default: APP_NAME,
   },
   description: APP_DESCRIPTION,

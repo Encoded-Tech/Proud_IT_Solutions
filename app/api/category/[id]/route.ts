@@ -1,77 +1,3 @@
-<<<<<<< HEAD
-import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
-import connectDB from "@/db/connection";
-import { Category } from "@/models/categoryModel";
-import { NextRequest, NextResponse } from "next/server";
-
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await connectDB();
-    const id = (await params).id;
-    const singleCategory = await Category.findById(id);
-    if (!singleCategory) {
-      return NextResponse.json({ error: "category not found" }, { status: 404 });
-    }
-    return NextResponse.json({
-      success: true,
-      message: "single category fetched successfully",
-      data: singleCategory,
-    });
-  }
-
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await connectDB();
-  const { id} = (await params);
-  const categoryToDelete = await Category.findById(id);
-  if (!categoryToDelete) {
-    return NextResponse.json({ error: "category not found" }, { status: 404 });
-  }
-  if (categoryToDelete.categoryImage) {
-    await deleteFromCloudinary(categoryToDelete.categoryImage);
-  }
-  await categoryToDelete.deleteOne();
-  return NextResponse.json({
-    success: true,
-    message: "category deleted successfully",
-    data: categoryToDelete,
-  });
-}
-
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await connectDB();
-  const { id} = (await params);
-  const categoryToUpdate = await Category.findById(id);
-  if (!categoryToUpdate) {
-    return NextResponse.json({ error: "category not found" }, { status: 404 });
-  }
-  const formData = await req.formData();
-  const  categoryName  = formData.get("categoryName") as string;
-  const  categoryImage  = formData.get("categoryImage") as File;
-
-  if (!categoryName) {
-    return NextResponse.json({ error: "category name is required" }, { status: 400 });
-  }else {
-    categoryToUpdate.categoryName = categoryName;
-    
-  }
-if (categoryImage) {
-  if(categoryToUpdate.categoryImage) {
-    await deleteFromCloudinary(categoryToUpdate.categoryImage);
-    const imageUrl = await uploadToCloudinary(categoryImage);
-    categoryToUpdate.categoryImage = imageUrl;
-  }
-  }
-  await categoryToUpdate.save();
-  return NextResponse.json({
-    success: true,
-    message: "category updated successfully",
-    data: categoryToUpdate,
-  });
-  
-  
-}
-
-  
-=======
 
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { withDB } from "@/lib/HOF";
@@ -81,8 +7,8 @@ import { ICategory } from "@/models/categoryModel";
 import { ApiResponse } from "@/types/api";
 import { NextResponse } from "next/server";
 
-export const GET = withDB(async (req, context) => {
-  const params = await context?.params;
+export const GET = withDB(async (req, _context?) => {
+  const params = await _context?.params;
   const id = params?.id;
   if (!id) {
     return NextResponse.json({
@@ -103,8 +29,8 @@ export const GET = withDB(async (req, context) => {
 }, { resourceName: "category" });
 
 export const DELETE = withAuth(
-  withDB(async (req, context) => {
-    const params = await context?.params;
+  withDB(async (req, _context?) => {
+    const params = await _context?.params;
     const id = params?.id;
     const categoryToDelete = await Category.findById(id);
     if (!categoryToDelete) {
@@ -123,8 +49,8 @@ export const DELETE = withAuth(
 );
 
 export const PUT = withAuth(
-  withDB(async (req, context) => {
-    const params = await context?.params;
+  withDB(async (req, _context?) => {
+    const params = await _context?.params;
     const id = params?.id;
 
     const categoryToUpdate = await Category.findById(id);
@@ -165,4 +91,3 @@ export const PUT = withAuth(
   { roles: ["admin"] }
 );
 
->>>>>>> feature-merged

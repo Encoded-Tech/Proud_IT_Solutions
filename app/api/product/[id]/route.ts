@@ -7,8 +7,8 @@ import { IProduct } from "@/models/productModel";
 import { ApiResponse } from "@/types/api";
 import { NextResponse } from "next/server";
 
-export const GET = withDB(async (req, context) => {
-    const params = await context?.params;
+export const GET = withDB(async (req, _context?) => {
+    const params = await _context?.params;
     const id = params?.id;
 
     if (!id) {
@@ -31,9 +31,9 @@ export const GET = withDB(async (req, context) => {
 }, { resourceName: "product" });
 
 export const DELETE = withAuth(
-    withDB(async (req, context) => {
+    withDB(async (req, _context?) => {
 
-        const params = await context?.params;
+        const params = await _context?.params;
         const id = params?.id;
 
         if (!id) {
@@ -72,9 +72,9 @@ export const DELETE = withAuth(
 );
 
 export const PUT = withAuth(
-    withDB(async (req, context) => {
+    withDB(async (req, _context?) => {
 
-        const params = await context?.params;
+        const params = await _context?.params;
         const id = params?.id;
 
         const productToUpdate = await Product.findById(id);

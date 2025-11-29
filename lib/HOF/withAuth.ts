@@ -1,7 +1,7 @@
 
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
-import { RouteHandler, ContextWithParams } from "../types";
+import { RouteHandler } from "../types";
 import { JWT } from "next-auth/jwt";
 
 export type UserRole = "admin" | "user";
@@ -23,7 +23,10 @@ export function withAuth(
   handler: RouteHandler<AuthenticatedRequest>,
   options: AuthOptions = {}
 ): RouteHandler {
-  return async (req: NextRequest, context?: ContextWithParams) => {
+  return async (...args) => {
+    const req = args[0] as AuthenticatedRequest;
+    const context = args[1];
+
     const token = await getToken({ req });
 
     if (!token) {
@@ -39,18 +42,20 @@ export function withAuth(
         { status: 403 }
       );
     }
-    
+
     if (options.roles && !options.roles.includes(token.role)) {
       return NextResponse.json(
         { success: false, message: "Forbidden: Access denied" },
         { status: 403 }
       );
     }
-   
 
-    (req as AuthenticatedRequest).user = token as AuthenticatedRequest["user"];
+    req.user = token as AuthenticatedRequest["user"];
 
-    return handler(req as AuthenticatedRequest, context);
+    
+    return handler(
+      ...(context ? [req, context] : [req])
+    );
   };
 }
 

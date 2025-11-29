@@ -22,8 +22,10 @@ const exclusions = {
     role: 0,
   };
 
+
 export const GET = withAuth(
-  withDB(async (req: NextRequest) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  withDB(async (req: NextRequest, context?) => {
    const id = getAuthUserId(req);
     const dbUser = await UserModel.findById(id)
     .select(exclusions);
@@ -40,7 +42,8 @@ export const GET = withAuth(
 );
 
 export const PUT = withAuth(
-  withDB(async (req: NextRequest) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  withDB(async (req: NextRequest, context?) => {
     const id = getAuthUserId(req);
 
     const formData = await req.formData();

@@ -8,7 +8,8 @@ import mongoose, { FilterQuery } from "mongoose";
 import { IProductVariant } from "@/models/productVariantsModel";
 
 export const POST = withAuth(
-  withDB(async (req: NextRequest) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  withDB(async (req: NextRequest, context?) => {
     const formData = await req.formData();
     const rawProductId = formData.get("productId");
 
@@ -88,8 +89,8 @@ export const POST = withAuth(
   }, { resourceName: "product-variant" }),
   { roles: ["admin"] }
 );
-
-export const GET = withDB(async (req: NextRequest) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const GET = withDB(async (req: NextRequest, context?) => {
     const { searchParams } = new URL(req.url);
   
     const productId = searchParams.get("productId");

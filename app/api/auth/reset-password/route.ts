@@ -8,7 +8,8 @@ import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
 
 import { sendEmail } from "@/lib/helpers/sendEmail";
 
-export const POST = withDB(async (req: NextRequest) => {
+ // eslint-disable-next-line @typescript-eslint/no-unused-vars
+ export const POST = withDB(async (req: NextRequest, context?) => {
   const body = await req.json().catch(() => ({}));
   const token = (body.token || "").toString();
   const email = (body.email || "").toString().trim().toLowerCase();

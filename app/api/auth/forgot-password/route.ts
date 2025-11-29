@@ -6,9 +6,11 @@ import { generateResetToken, hashToken } from "@/lib/helpers/genHashToken";
 import { sendEmail } from "@/lib/helpers/sendEmail";
 import { RESET_TOKEN_EXPIRES_MIN } from "@/config/env";
 
-const TOKEN_EXPIRE_MIN = Number(RESET_TOKEN_EXPIRES_MIN);
 
-export const POST = withDB(async (req: NextRequest) => {
+const TOKEN_EXPIRE_MIN = Number(RESET_TOKEN_EXPIRES_MIN);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const POST = withDB(async (req: NextRequest, context?) => {
+  
   const body = await req.json().catch(() => ({}));
   const email = (body.email || "").toString().trim().toLowerCase();
 

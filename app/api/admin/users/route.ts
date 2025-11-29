@@ -2,7 +2,7 @@ import { withDB } from "@/lib/HOF";
 import { withAuth } from "@/lib/HOF/withAuth";
 import UserModel from "@/models/userModel";
 import { ApiResponse } from "@/types/api";
-import { NextResponse } from "next/server";
+import {  NextResponse } from "next/server";
 
 export interface AdminUser {
   _id: string;

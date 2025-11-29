@@ -3,7 +3,8 @@ import User from "@/models/userModel";
 import { withDB } from "@/lib/HOF";
 import { hashToken } from "@/lib/helpers/genHashToken";
 
-export const GET = withDB(async (req: NextRequest) => {
+ // eslint-disable-next-line @typescript-eslint/no-unused-vars
+ export const POST = withDB(async (req: NextRequest, context?) => {
   const { searchParams } = new URL(req.url);
 
   const token = searchParams.get("token")?.trim();

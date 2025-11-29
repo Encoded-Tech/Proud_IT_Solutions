@@ -7,8 +7,8 @@ import { ApiResponse } from "@/types/api";
 import mongoose from "mongoose";
 import { NextResponse } from "next/server";
 
-export const GET = withDB(async (req, context)=>{
-    const params = await context?.params;
+export const GET = withDB(async (req, _context?)=>{
+    const params = await _context?.params;
     const id = params?.id;
     if (!id) {
         return NextResponse.json({
@@ -29,8 +29,8 @@ export const GET = withDB(async (req, context)=>{
 }, {resourceName: "product-variant"});
 
 export const PUT = withAuth(
-    withDB(async (req, context) => {
-        const params = await context?.params;
+    withDB(async (req, _context?) => {
+        const params = await _context?.params;
         const id = params?.id;
 
         if (!id) {
@@ -143,8 +143,8 @@ export const PUT = withAuth(
     );
 
     export const DELETE = withAuth(
-        withDB(async (req, context) => {
-            const params = await context?.params;
+        withDB(async (req, _context?) => {
+            const params = await _context?.params;
             const id = params?.id;
 
             if (!id) {

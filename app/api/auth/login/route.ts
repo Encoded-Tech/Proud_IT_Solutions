@@ -9,7 +9,9 @@ import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
 import { SecurityLogData } from "@/types/api";
 import { HARDLOCK_THRESHOLD, HARDLOCK_WINDOW, MAX_ATTEMPTS, TEMP_LOCK_TIME} from "@/config/env";
 
-export const POST = withDB(async (req: NextRequest) => {
+
+ // eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const POST = withDB(async (req: NextRequest, context?) => {
   const form = await req.formData();
   const email = form.get("email") as string;
   const rawPassword = form.get("password") as string;

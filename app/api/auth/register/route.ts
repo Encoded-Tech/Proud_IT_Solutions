@@ -9,7 +9,8 @@ import { sendEmail } from "@/lib/helpers/sendEmail";
 import { FRONTEND_URL } from "@/config/env";
 import { generateResetToken, hashToken } from "@/lib/helpers/genHashToken";
 
-export const POST = withDB(async (req: NextRequest) => {
+ // eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const POST = withDB(async (req: NextRequest, context?) => {
   const form = await req.formData();
 
   const name = form.get("name") as string;

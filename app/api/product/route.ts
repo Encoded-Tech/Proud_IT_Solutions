@@ -8,7 +8,8 @@ import { ApiResponse } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
 
 export const POST = withAuth(
-  withDB(async (req: NextRequest) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  withDB(async (req: NextRequest, context?) => {
 
     const formData = await req.formData();
     const name = formData.get("name") as string;
