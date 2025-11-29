@@ -5,6 +5,7 @@ export interface IProduct extends Document {
     slug: string;
     description?: string;
     price: number;
+    stock: number;
     category: Types.ObjectId; // link to category
     images: string[];
     variants?: Types.ObjectId[]; // link to variants if any
@@ -19,6 +20,7 @@ export interface IProduct extends Document {
       slug: { type: String, lowercase: true, trim: true, unique: true },
       description: { type: String },
       price: { type: Number, required: true },
+      stock: { type: Number, required: true, default: 0 },
       category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
       images: [{ type: String }],
       variants: [{ type: Schema.Types.ObjectId, ref: "ProductVariant" }],

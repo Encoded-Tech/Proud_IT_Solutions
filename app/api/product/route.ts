@@ -14,15 +14,16 @@ export const POST = withAuth(
     const formData = await req.formData();
     const name = formData.get("name") as string;
     const price = formData.get("price") as string;
+    const stock = parseInt(formData.get("stock") as string, 10) || 0;
     const description = formData.get("description") as string;
     const category = formData.get("category") as string;
-    const images = formData.getAll("images") as File[];
-    const variants = formData.get("variants") as string | null;
+    const images = formData.getAll("images") as File[]; 
+     const variants = formData.get("variants") as string | null;
     const isActiveRaw = formData.get("isActive");
     const isActive =
       isActiveRaw === null ? undefined : isActiveRaw === "true";
 
-    const requiredFields = { name, price, category };
+    const requiredFields = { name, price, category, stock };
     const missingFields = checkRequiredFields(requiredFields);
     if (missingFields) return missingFields;
 
@@ -31,6 +32,7 @@ export const POST = withAuth(
       { success: false, message: "price must be a number" },
       { status: 400 }
     );
+    
 
     const slug = name.toLowerCase().replace(/\s+/g, "-");
     const existingProduct = await Product.findOne({ $or: [{ name }, { slug }] });
@@ -48,10 +50,12 @@ export const POST = withAuth(
         imageUrl.push(url);
       }
     }
+   
     const createProduct = await Product.create({
       name,
       description,
       price: priceNumber,
+      stock ,
       category,
       images: imageUrl,
       variants: variants ? JSON.parse(variants) : [],

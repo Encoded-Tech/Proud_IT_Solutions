@@ -1,7 +1,65 @@
-import { Schema, model, models } from "mongoose";
+import { Schema, Types, model, models } from "mongoose";
 import uniqueValidator from "mongoose-unique-validator";
 
-const userSchema = new Schema(
+export interface ICartItem extends Document{
+  product: Types.ObjectId; 
+  variant?: Types.ObjectId; 
+  quantity: number;
+  selectedOptions?: Record<string, string>;
+  addedAt: Date;
+  updatedAt: Date;
+}
+
+export interface IWishlistItem extends Document {
+  product: Types.ObjectId; 
+  variant?: Types.ObjectId; 
+  addedAt: Date;
+}
+export interface IUser extends Document {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  image?: string | null;
+  hashedPassword?: string | null;
+  provider: "credentials" | "google" | null;
+  providerId?: string | null;
+  emailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpiry?: Date;
+  resetPasswordToken?: string;
+  resetPasswordExpiry?: Date;
+
+  // Security & Locking
+  failedLoginAttempts: number;
+  lockUntil?: Date | null;
+  hardLock: boolean;
+  lockCount: number;
+  lastLockTime?: Date | null;
+  isLocked: boolean;
+
+  role: "user" | "admin";
+  lastLogin?: Date | null;
+  signupIP?: string | null;
+
+  // Login History
+  loginHistory: {
+    ip: string;
+    userAgent: string;
+    at: Date;
+  }[];
+
+  // Cart & Wishlist
+  cart: ICartItem[];
+  wishlist: IWishlistItem[];
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+
+const userSchema = new Schema<IUser>(
   {
     name: {
       type: String,
@@ -109,6 +167,25 @@ const userSchema = new Schema(
         at: { type: Date, default: Date.now },
       },
     ],
+    cart: [
+      {
+        product: { type: Schema.Types.ObjectId, ref: "Product" },
+        variant: { type: Schema.Types.ObjectId, ref: "ProductVariant", default: null },
+        quantity: { type: Number, default: 1 },
+        selectedOptions: { type: Map, of: String },
+        addedAt: { type: Date, default: Date.now },
+        updatedAt: { type: Date, default: Date.now },
+      },
+    ],
+
+    wishlist: [
+      {
+        product: { type: Schema.Types.ObjectId, ref: "Product" },
+        variant: { type: Schema.Types.ObjectId, ref: "ProductVariant", default: null },
+        addedAt: { type: Date, default: Date.now },
+      }
+    ]
+    
   },
   { timestamps: true }
 );
@@ -119,6 +196,7 @@ userSchema.virtual("isLocked").get(function () {
   return this.lockUntil.getTime() > Date.now();
 });
 
+
 // include virtuals in response JSON
 userSchema.set("toJSON", { virtuals: true });
 userSchema.set("toObject", { virtuals: true });
@@ -127,5 +205,5 @@ userSchema.set("toObject", { virtuals: true });
 userSchema.plugin(uniqueValidator);
 
 
-export default models.User || model("User", userSchema);
+export default models.User || model<IUser>("User", userSchema);
 

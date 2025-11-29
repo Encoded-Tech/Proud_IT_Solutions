@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export function checkRequiredFields(
-  fields: Record<string, string | null | undefined | File>
+  fields: Record<string, string | null | undefined | File | File[] | number> 
 ): NextResponse | null {
   const missingFields = Object.entries(fields)
     .filter(([, value]) => !value) 
