@@ -58,6 +58,25 @@ export interface IUser extends Document {
   updatedAt: Date;
 }
 
+const cartSchema = new Schema<ICartItem>(
+  {
+    product: { type: Schema.Types.ObjectId, ref: "Product" },
+    variant: { type: Schema.Types.ObjectId, ref: "ProductVariant", default: null },
+    quantity: { type: Number, default: 1 },
+    selectedOptions: { type: Map, of: String },
+    addedAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+  },
+)
+
+const wishlistSchema = new Schema<IWishlistItem>(
+  {
+    product: { type: Schema.Types.ObjectId, ref: "Product" },
+    variant: { type: Schema.Types.ObjectId, ref: "ProductVariant", default: null },
+    addedAt: { type: Date, default: Date.now },
+  }
+)
+
 
 const userSchema = new Schema<IUser>(
   {
@@ -167,24 +186,9 @@ const userSchema = new Schema<IUser>(
         at: { type: Date, default: Date.now },
       },
     ],
-    cart: [
-      {
-        product: { type: Schema.Types.ObjectId, ref: "Product" },
-        variant: { type: Schema.Types.ObjectId, ref: "ProductVariant", default: null },
-        quantity: { type: Number, default: 1 },
-        selectedOptions: { type: Map, of: String },
-        addedAt: { type: Date, default: Date.now },
-        updatedAt: { type: Date, default: Date.now },
-      },
-    ],
+    cart: [cartSchema],
 
-    wishlist: [
-      {
-        product: { type: Schema.Types.ObjectId, ref: "Product" },
-        variant: { type: Schema.Types.ObjectId, ref: "ProductVariant", default: null },
-        addedAt: { type: Date, default: Date.now },
-      }
-    ]
+    wishlist: [wishlistSchema]
     
   },
   { timestamps: true }
