@@ -6,6 +6,7 @@ export interface IProduct extends Document {
     description?: string;
     price: number;
     stock: number;
+    reservedStock:  number;
     category: Types.ObjectId; 
     images: string[];
     variants?: Types.ObjectId[]; 
@@ -41,6 +42,7 @@ export interface IProduct extends Document {
       description: { type: String },
       price: { type: Number, required: true },
       stock: { type: Number, required: true, default: 0 },
+      reservedStock: { type: Number, default: 0 },
       category: { type: Schema.Types.ObjectId, ref: "Category", required: true },
       images: [{ type: String }],
       variants: [{ type: Schema.Types.ObjectId, ref: "ProductVariant" }],

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 export function checkRequiredFields(
-  fields: Record<string, string | null | undefined | File | File[] | number> 
+  fields: Record<string, string | null | undefined | File | File[] | number> ,
+  customMessage?: string
 ): NextResponse | null {
   const missingFields = Object.entries(fields)
     .filter(([, value]) => !value) 
@@ -10,7 +11,7 @@ export function checkRequiredFields(
   if (missingFields.length > 0) {
     return NextResponse.json({
       success: false,
-      message: `You missed these fields: ${missingFields.join(", ")}`,
+      message: customMessage || `You missed these fields: ${missingFields.join(", ")}`,
     }, { status: 400 });
   }
 
