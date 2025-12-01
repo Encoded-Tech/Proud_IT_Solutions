@@ -5,11 +5,65 @@ import { withDB } from "@/lib/HOF";
 import { Product, ProductVariant } from "@/models";
 import { getAuthUserId } from "@/lib/auth/getAuthUser";
 import userModel, { ICartItem } from "@/models/userModel";
-import {IProduct} from "@/models/productModel";
-import {IProductVariant} from "@/models/productVariantsModel";
+import { IProduct } from "@/models/productModel";
+import { IProductVariant } from "@/models/productVariantsModel";
 
+
+//total apis
+// user-get-cart api/users/cart
+//user-add-to-cart api/users/cart
+//user-update-cart-item api/users/cart/
+//user-remove-from-cart api/users/cart
+
+
+// user-get-cart api/users/cart
+export const GET = withAuth(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  withDB(async (req: NextRequest, context?) => {
+    const userId = getAuthUserId(req);
+
+    const user = await userModel
+      .findById(userId)
+      .populate<{ cart: ICartItem[] }>({
+        path: "cart.product",
+        select: "name slug images price stock",
+      })
+      .populate<{ cart: ICartItem[] }>({
+        path: "cart.variant",
+        select: "specs price stock images sku",
+      }).sort({ createdAt: -1 });
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    const cartWithRemaining = user.cart.map((item: ICartItem) => {
+      // Cast to populated types
+      const product = item.product as unknown as IProduct;
+      const variant = item.variant as unknown as IProductVariant | undefined;
+
+      const productStock = variant ? variant.stock : product.stock;
+
+      return {
+        ...item,
+        remainingStock: Math.max(productStock - item.quantity, 0),
+      };
+
+    });
+    return NextResponse.json({
+      success: true,
+      message: "Cart fetched successfully",
+      data: cartWithRemaining,
+    });
+  }, { resourceName: "cart" })
+)
+
+// user-add-to-cart api/users/cart
 export const POST = withAuth(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
     const body = await req.json();
     let { productId } = body;
@@ -132,83 +186,10 @@ export const POST = withAuth(
   }, { resourceName: "cart" })
 );
 
-
-
-
-export const DELETE = withAuth(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  withDB(async (req: NextRequest, context?) => {
-    const userId = getAuthUserId(req);
-
-    const user = await userModel.findById(userId);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: "User not found" },
-        { status: 404 }
-      );
-    }
-
-    // Clear cart
-    user.cart = [];
-    await user.save();
-
-    return NextResponse.json({
-      success: true,
-      message: "Cart cleared successfully",
-      data: user.cart, // will be empty
-    });
-  }, { resourceName: "cart" })
-);
-
-
-
-export const GET = withAuth(
-     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-     withDB(async (req: NextRequest, context?) => {
-      const userId = getAuthUserId(req);
-
-      const user = await userModel
-        .findById(userId)
-        .populate<{ cart: ICartItem[] }>({
-          path: "cart.product",
-          select: "name slug images price stock",
-        })
-        .populate<{ cart: ICartItem[] }>({
-          path: "cart.variant",
-          select: "specs price stock images sku",
-        }).sort({ createdAt: -1 });
-  
-      if (!user) {
-        return NextResponse.json(
-          { success: false, message: "User not found" },
-          { status: 404 }
-        );
-      }
-
-      const cartWithRemaining = user.cart.map((item: ICartItem) => {
-        // Cast to populated types
-        const product = item.product as unknown as IProduct;
-        const variant = item.variant as unknown as IProductVariant | undefined;
-      
-        const productStock = variant ? variant.stock : product.stock;
-      
-        return {
-          ...item,
-          remainingStock: Math.max(productStock - item.quantity, 0),
-        };
-    
-      });
-      return NextResponse.json({
-        success: true,
-        message: "Cart fetched successfully",
-        data: cartWithRemaining,
-      });
-     }, {resourceName: "cart"})
-)
-
+// user-update-cart-item-quantity api/users/cart/
 export const PUT = withAuth(
-   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-   withDB(async (req: NextRequest, context?) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  withDB(async (req: NextRequest, context?) => {
     const { productId, variantId, quantity } = await req.json();
 
     if (!productId && !variantId) {
@@ -285,3 +266,33 @@ export const PUT = withAuth(
     });
   }, { resourceName: "cart" })
 );
+
+// user-remove-from-cart api/users/cart
+export const DELETE = withAuth(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  withDB(async (req: NextRequest, context?) => {
+    const userId = getAuthUserId(req);
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Clear cart
+    user.cart = [];
+    await user.save();
+
+    return NextResponse.json({
+      success: true,
+      message: "Cart cleared successfully",
+      data: user.cart, // will be empty
+    });
+  }, { resourceName: "cart" })
+);
+
+
+
+

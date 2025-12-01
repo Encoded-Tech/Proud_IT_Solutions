@@ -5,6 +5,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { IOrderResponse } from "../../users/orders/route";
 import { ApiResponse } from "@/types/api";
 
+//total apis
+// admin-get-all-orders  api/admin/orders
+
 export const GET = withAuth(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     withDB(async (req: NextRequest, context?) => {

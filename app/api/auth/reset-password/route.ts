@@ -5,11 +5,15 @@ import bcrypt from "bcryptjs";
 import { hashToken } from "@/lib/helpers/genHashToken";
 import { isStrongPassword } from "@/lib/helpers/isStrongPw";
 import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
-
 import { sendEmail } from "@/lib/helpers/sendEmail";
 
- // eslint-disable-next-line @typescript-eslint/no-unused-vars
- export const POST = withDB(async (req: NextRequest, context?) => {
+
+//total apis
+//reset-password-post api/auth/reset-password
+
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const POST = withDB(async (req: NextRequest, context?) => {
   const body = await req.json().catch(() => ({}));
   const token = (body.token || "").toString();
   const email = (body.email || "").toString().trim().toLowerCase();
@@ -36,9 +40,9 @@ import { sendEmail } from "@/lib/helpers/sendEmail";
   }).select("+hashedPassword +resetPasswordToken +resetPasswordExpiry");
 
   if (!user) {
-    return NextResponse.json({ 
-      success: false, 
-      message: "Invalid or expired token" 
+    return NextResponse.json({
+      success: false,
+      message: "Invalid or expired token"
     }, { status: 400 });
   }
 
@@ -58,16 +62,16 @@ import { sendEmail } from "@/lib/helpers/sendEmail";
 
   try {
     await sendEmail({
-        to: user.email,
-        subject: "Password changed",
-        html
-      })  
+      to: user.email,
+      subject: "Password changed",
+      html
+    })
   } catch (err) {
     console.error("Failed sending password changed email email", err);
-  }  
+  }
 
   return NextResponse.json({
     success: true,
-    message: "Password updated. You can now log in." 
+    message: "Password updated. You can now log in."
   }, { status: 200 });
 }, { resourceName: "user" });

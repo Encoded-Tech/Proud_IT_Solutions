@@ -7,6 +7,51 @@ import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
 import mongoose, { FilterQuery } from "mongoose";
 import { IProductVariant } from "@/models/productVariantsModel";
 
+//total apis
+//product-variant-get-all-variants api/product-variant
+//product-variant-create api/product-variant
+
+
+// product-variant-get-all-variants api/product-variant
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const GET = withDB(async (req: NextRequest, context?) => {
+  const { searchParams } = new URL(req.url);
+
+  const productId = searchParams.get("productId");
+  const cpu = searchParams.get("cpu");
+  const ram = searchParams.get("ram");
+  const storage = searchParams.get("storage");
+  const color = searchParams.get("color");
+  const isActive = searchParams.get("isActive");
+
+  if (!productId) {
+    return NextResponse.json(
+      { success: false, message: "productId is required" },
+      { status: 400 }
+    );
+  }
+
+  const filter: FilterQuery<IProductVariant> = { product: productId };
+
+  if (cpu) filter["specs.cpu"] = cpu;
+  if (ram) filter["specs.ram"] = ram;
+  if (storage) filter["specs.storage"] = storage;
+  if (color) filter["specs.color"] = color;
+  if (isActive !== null) filter.isActive = isActive === "true";
+
+  const variants = await ProductVariant.find(filter)
+    .populate("product", "name slug")
+    .sort({ price: 1 });
+
+  return NextResponse.json({
+    success: true,
+    message: "Product variants fetched successfully",
+    data: variants,
+  }, { status: 200 });
+}, { resourceName: "product-variant" });
+
+
+// product-variant-create api/product-variant
 export const POST = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
@@ -19,9 +64,9 @@ export const POST = withAuth(
         { status: 400 }
       );
     }
-    
+
     const productId = rawProductId.trim();
-    
+
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return NextResponse.json(
         { success: false, message: "Invalid product ID format" },
@@ -32,12 +77,12 @@ export const POST = withAuth(
     const ram = formData.get("ram") as string;
     const storage = formData.get("storage") as string;
     const color = formData.get("color") as string | null;
-    const price =formData.get("price") as string;
+    const price = formData.get("price") as string;
     const stock = parseInt(formData.get("stock") as string, 10) || 0;
     const isActiveRaw = formData.get("isActive");
     const isActive =
       isActiveRaw === null ? undefined : isActiveRaw === "true";
-  
+
 
     const imagesFiles = formData.getAll("images") as File[];
     const images: string[] = [];
@@ -52,7 +97,7 @@ export const POST = withAuth(
     const misssingFields = checkRequiredFields(requiredFields);
     if (misssingFields) return misssingFields;
 
-    
+
     const priceNumber = parseFloat(price);
     if (isNaN(priceNumber)) {
       return NextResponse.json({
@@ -60,12 +105,13 @@ export const POST = withAuth(
         message: "Price must be a valid number",
       }, { status: 400 });
     }
-  
+
     const product = await Product.findById(productId);
     if (!product) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "Product not found" }, 
+      return NextResponse.json({
+        success: false,
+        message: "Product not found"
+      },
         { status: 404 });
     }
     const variant = await ProductVariant.create({
@@ -78,8 +124,8 @@ export const POST = withAuth(
     });
 
     await Product.findByIdAndUpdate(productId, {
-        $push: { variants: variant._id },
-      });
+      $push: { variants: variant._id },
+    });
 
     return NextResponse.json({
       success: true,
@@ -89,40 +135,4 @@ export const POST = withAuth(
   }, { resourceName: "product-variant" }),
   { roles: ["admin"] }
 );
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const GET = withDB(async (req: NextRequest, context?) => {
-    const { searchParams } = new URL(req.url);
-  
-    const productId = searchParams.get("productId");
-    const cpu = searchParams.get("cpu");
-    const ram = searchParams.get("ram");
-    const storage = searchParams.get("storage");
-    const color = searchParams.get("color");
-    const isActive = searchParams.get("isActive");
-  
-    if (!productId) {
-      return NextResponse.json(
-        { success: false, message: "productId is required" },
-        { status: 400 }
-      );
-    }
-  
-    const filter: FilterQuery<IProductVariant> = { product: productId };
-  
-    if (cpu) filter["specs.cpu"] = cpu;
-    if (ram) filter["specs.ram"] = ram;
-    if (storage) filter["specs.storage"] = storage;
-    if (color) filter["specs.color"] = color;
-    if (isActive !== null) filter.isActive = isActive === "true";
-  
-    const variants = await ProductVariant.find(filter)
-      .populate("product", "name slug")
-      .sort({ price: 1 });
-  
-    return NextResponse.json({
-      success: true,
-      message: "Product variants fetched successfully",
-      data: variants,
-    }, { status: 200 });
-  }, { resourceName: "product-variant" });
-  
+

@@ -7,6 +7,13 @@ import { ICategory } from "@/models/categoryModel";
 import { ApiResponse } from "@/types/api";
 import { NextResponse } from "next/server";
 
+
+//total apis
+//category-get-by-id api/category/[id]
+//category-update-by-id api/category/[id]
+//category-delete-by-id api/category/[id]
+
+// category-get-by-id api/category/[id]
 export const GET = withDB(async (req, _context?) => {
   const params = await _context?.params;
   const id = params?.id;
@@ -28,26 +35,8 @@ export const GET = withDB(async (req, _context?) => {
   return NextResponse.json(response, { status: response.status })
 }, { resourceName: "category" });
 
-export const DELETE = withAuth(
-  withDB(async (req, _context?) => {
-    const params = await _context?.params;
-    const id = params?.id;
-    const categoryToDelete = await Category.findById(id);
-    if (!categoryToDelete) {
-      return NextResponse.json({ error: "category not found" }, { status: 404 });
-    }
-    if (categoryToDelete.categoryImage) {
-      await deleteFromCloudinary(categoryToDelete.categoryImage);
-    }
-    await categoryToDelete.deleteOne();
-    return NextResponse.json({
-      success: true,
-      message: "category deleted successfully",
-      data: categoryToDelete,
-    });
-  }, { resourceName: "category" }), { roles: ["admin"] }
-);
 
+// category-update-by-id api/category/[id]
 export const PUT = withAuth(
   withDB(async (req, _context?) => {
     const params = await _context?.params;
@@ -57,7 +46,7 @@ export const PUT = withAuth(
     if (!categoryToUpdate) {
       return NextResponse.json({
         success: false,
-        message:   "category not found"
+        message: "category not found"
       }, { status: 404 });
     }
     const formData = await req.formData();
@@ -90,4 +79,26 @@ export const PUT = withAuth(
   }, { resourceName: "category" }),
   { roles: ["admin"] }
 );
+
+// category-delete-by-id api/category/[id]
+export const DELETE = withAuth(
+  withDB(async (req, _context?) => {
+    const params = await _context?.params;
+    const id = params?.id;
+    const categoryToDelete = await Category.findById(id);
+    if (!categoryToDelete) {
+      return NextResponse.json({ error: "category not found" }, { status: 404 });
+    }
+    if (categoryToDelete.categoryImage) {
+      await deleteFromCloudinary(categoryToDelete.categoryImage);
+    }
+    await categoryToDelete.deleteOne();
+    return NextResponse.json({
+      success: true,
+      message: "category deleted successfully",
+      data: categoryToDelete,
+    });
+  }, { resourceName: "category" }), { roles: ["admin"] }
+);
+
 

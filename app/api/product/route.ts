@@ -7,6 +7,33 @@ import { IProduct } from "@/models/productModel";
 import { ApiResponse } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
 
+//total apis
+//product-get-all api/product 
+//product-create api/product
+
+// product-get-all api/product
+export const GET = withDB(async () => {
+  const products = await Product.find()
+    .populate("category", "categoryName")
+    .populate({
+      path: "variants",
+      match: { isActive: true },
+      select: "price stock specs images isActive"
+    })
+    .sort({ createdAt: -1 });
+
+  const hasProducts = products.length > 0;
+  const response: ApiResponse<IProduct[]> = {
+    success: hasProducts,
+    message: hasProducts ? "Products Fetched Successfully" : "products not found",
+    data: products,
+    status: hasProducts ? 200 : 400
+  }
+  return NextResponse.json(response, { status: response.status })
+}, { resourceName: "product" }
+)
+
+// product-create api/product
 export const POST = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
@@ -17,8 +44,8 @@ export const POST = withAuth(
     const stock = parseInt(formData.get("stock") as string, 10) || 0;
     const description = formData.get("description") as string;
     const category = formData.get("category") as string;
-    const images = formData.getAll("images") as File[]; 
-     const variants = formData.get("variants") as string | null;
+    const images = formData.getAll("images") as File[];
+    const variants = formData.get("variants") as string | null;
     const isActiveRaw = formData.get("isActive");
     const isActive =
       isActiveRaw === null ? undefined : isActiveRaw === "true";
@@ -32,7 +59,6 @@ export const POST = withAuth(
       { success: false, message: "price must be a number" },
       { status: 400 }
     );
-    
 
     const slug = name.toLowerCase().replace(/\s+/g, "-");
     const existingProduct = await Product.findOne({ $or: [{ name }, { slug }] });
@@ -50,12 +76,12 @@ export const POST = withAuth(
         imageUrl.push(url);
       }
     }
-   
+
     const createProduct = await Product.create({
       name,
       description,
       price: priceNumber,
-      stock ,
+      stock,
       category,
       images: imageUrl,
       variants: variants ? JSON.parse(variants) : [],
@@ -71,26 +97,6 @@ export const POST = withAuth(
 )
 
 
-export const GET = withDB(async () => {
-  const products = await Product.find()
-  .populate("category", "categoryName")
-  .populate({
-    path: "variants",
-    match: { isActive: true }, 
-    select: "price stock specs images isActive"
-  })
-  .sort({ createdAt: -1 });
-
-  const hasProducts = products.length > 0;
-  const response: ApiResponse<IProduct[]> = {
-    success: hasProducts,
-    message: hasProducts ? "Products Fetched Successfully" : "products not found",
-    data: products,
-    status: hasProducts ? 200 : 400
-  }
-  return NextResponse.json(response, { status: response.status })
-}, { resourceName: "product" }
-)
 
 
 

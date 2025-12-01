@@ -3,18 +3,21 @@ import User from "@/models/userModel";
 import { withDB } from "@/lib/HOF";
 import { hashToken } from "@/lib/helpers/genHashToken";
 
- // eslint-disable-next-line @typescript-eslint/no-unused-vars
- export const POST = withDB(async (req: NextRequest, context?) => {
+//total apis
+//verify-email-post api/auth/verify-email
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const POST = withDB(async (req: NextRequest, context?) => {
   const { searchParams } = new URL(req.url);
 
   const token = searchParams.get("token")?.trim();
   const email = searchParams.get("email")?.trim();
 
   if (!token || !email) {
-    return NextResponse.json({ 
-      success:false,
+    return NextResponse.json({
+      success: false,
       message: "Missing token or email"
-    },{ status: 400 });
+    }, { status: 400 });
   }
 
   const hashedToken = hashToken(token);
@@ -23,14 +26,14 @@ import { hashToken } from "@/lib/helpers/genHashToken";
   const user = await User.findOne({
     email,
     emailVerificationToken: hashedToken,
-    emailVerificationExpiry:{ $gt: Date.now() },
+    emailVerificationExpiry: { $gt: Date.now() },
   });
 
   if (!user) {
-    return NextResponse.json({ 
-      success:false,
-      message: "Invalid or expired verification token" 
-    },{ status: 400 });
+    return NextResponse.json({
+      success: false,
+      message: "Invalid or expired verification token"
+    }, { status: 400 });
   }
 
   // Mark email as verified
@@ -41,7 +44,7 @@ import { hashToken } from "@/lib/helpers/genHashToken";
   await user.save();
 
   return NextResponse.json({
-      success: true,
-      message: "Email successfully verified. You can now log in.",
-    },{ status: 200 });
+    success: true,
+    message: "Email successfully verified. You can now log in.",
+  }, { status: 200 });
 }, { resourceName: "user" });

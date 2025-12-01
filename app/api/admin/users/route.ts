@@ -2,7 +2,7 @@ import { withDB } from "@/lib/HOF";
 import { withAuth } from "@/lib/HOF/withAuth";
 import UserModel from "@/models/userModel";
 import { ApiResponse } from "@/types/api";
-import {  NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
 export interface AdminUser {
   _id: string;
@@ -25,14 +25,17 @@ export interface AdminUser {
   provider: string;
 }
 
+//total apis
+//admin-get-all-users api/admin/users
+
 export const GET = withAuth(
   withDB(async () => {
     const users = await UserModel.find()
       .select("+lockUntil +loginHistory +hardLock +lockCount +lastLockTime +provider")
       .sort({ createdAt: -1 });
-  
+
     const hasUsers = users.length > 0;
-  
+
     // Format to admin-safe user objects
     const formatted: AdminUser[] = users.map((u) => ({
       _id: u._id.toString(),
@@ -44,23 +47,23 @@ export const GET = withAuth(
       provider: u.provider,
       failedLoginAttempts: u.failedLoginAttempts,
       lockUntil: u.lockUntil,
-      isLocked: u.isLocked,       
-      hardLock: u.hardLock,             
-      lockCount: u.lockCount,            
-      lastLockTime: u.lastLockTime,     
-      loginHistory: u.loginHistory,      
+      isLocked: u.isLocked,
+      hardLock: u.hardLock,
+      lockCount: u.lockCount,
+      lastLockTime: u.lastLockTime,
+      loginHistory: u.loginHistory,
       lastLogin: u.lastLogin,
       signupIP: u.signupIP,
       createdAt: u.createdAt,
     }));
-  
+
     const response: ApiResponse<AdminUser[]> = {
       success: hasUsers,
       message: hasUsers ? "Users fetched successfully" : "No users found",
       data: formatted,
       status: hasUsers ? 200 : 404,
     };
-  
+
     return NextResponse.json(response, { status: response.status });
   }, { resourceName: "admin" }),
   { roles: ["admin"] }

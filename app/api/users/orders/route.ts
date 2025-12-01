@@ -12,6 +12,7 @@ import { ApiResponse } from "@/types/api";
 
 
 import { Types } from "mongoose";
+import { ORDER_EXPIRY_HOURS } from "@/config/env";
 
 export interface IProductInfo {
   _id: Types.ObjectId | string;
@@ -60,45 +61,111 @@ export interface IOrderResponse {
   deliveryInfo: IDeliveryInfo;
 }
 
-export const POST = withAuth(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//total apis
+//user-get-all-orders api/users/orders
+//user create-order api/users/orders
+
+
+// user-get-all-orders api/users/orders
+export const GET = withAuth(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
     const userId = getAuthUserId(req);
-    const { orderItems, deliveryInfo } = await req.json();
+
+    const orders = await Order.find({ user: userId })
+      .populate({
+        path: "orderItems.product",
+        select: "name price stock images slug reservedStock",
+      })
+      .populate({
+        path: "orderItems.variant",
+        select: "sku price",
+      })
+      .populate({
+        path: "user",
+        select: "name email",
+      })
+      .sort({ createdAt: -1 });
+
+    if (!orders) {
+      return NextResponse.json({ success: false, message: "Order not found" }, { status: 404 });
+    }
+
+    const response: ApiResponse<IOrderResponse[]> = {
+      success: orders.length > 0,
+      message: orders.length > 0 ? "Orders fetched successfully" : "No orders found",
+      data: orders,
+      // data: orders.map(order => ({
+      //     _id: order._id,
+      //   orderItems: order.orderItems as IOrderItemResponse[],
+      //   totalPrice: order.totalPrice,
+      //   paymentStatus: order.paymentStatus,
+      //   orderStatus: order.orderStatus,
+      //   deliveryInfo: order.deliveryInfo as IDeliveryInfo,
+      //   createdAt: order.createdAt,
+      //   updatedAt: order.updatedAt,
+      // })),
+
+      status: orders.length > 0 ? 200 : 404,
+    };
+
+    return NextResponse.json(response, { status: response.status });
+  }, { resourceName: "order" })
+)
+
+// user create-order api/users/orders  
+export const POST = withAuth(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  withDB(async (req: NextRequest, context?) => {
+    const userId = getAuthUserId(req);
+    const { orderItems, deliveryInfo, paymentMethod } = await req.json();
 
     // Validate orderItems
     if (!orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
-      return NextResponse.json({ success: false, message: "No items to order" }, { status: 400 });
+      return NextResponse.json({
+        success: false,
+        message: "No items to order"
+      }, { status: 400 });
     }
 
+    if (!["COD", "OnlineUpload"].includes(paymentMethod)) {
+      return NextResponse.json({
+        success: false,
+        message: "Invalid payment method",
+      }, { status: 400 });
+    }
     // Validate deliveryInfo
-    const missingDeliveryFields = checkRequiredFields({
+    const missingFields = checkRequiredFields({
       name: deliveryInfo?.name,
       phone: deliveryInfo?.phone,
       address: deliveryInfo?.address,
       city: deliveryInfo?.city,
       postalCode: deliveryInfo?.postalCode,
       country: deliveryInfo?.country,
-    }, "Incomplete delivery information"); 
+      paymentMethod: paymentMethod,
+    }, "Incomplete delivery information",
 
-    if (missingDeliveryFields) return missingDeliveryFields;
+    );
+    if (missingFields) return missingFields;
 
     const existingOrder = await Order.findOne({
-        user: userId,
-        "orderItems.product": { $all: orderItems.map(i => i.product) },
-        paymentStatus: "pending",
-      });
-      if (existingOrder) {
-        return NextResponse.json({
-          success: false,
-          message: "You already have a pending order with these items",
-        }, { status: 400 });
-      }
-      
+      user: userId,
+      "orderItems.product": { $all: orderItems.map(i => i.product) },
+      paymentStatus: "pending",
+    });
+    if (existingOrder) {
+      return NextResponse.json({
+        success: false,
+        message: "You already have a pending order with these items",
+      }, { status: 400 });
+    }
 
     // Get user email
     const user = await userModel.findById(userId).select("email name");
-    if (!user) return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
+    if (!user) return NextResponse.json({
+      success: false,
+      message: "User not found"
+    }, { status: 404 });
 
     // Validate products & calculate totalPrice
     let totalPrice = 0;
@@ -110,12 +177,18 @@ export const POST = withAuth(
       });
 
       if (!product || !product.isActive) {
-        return NextResponse.json({ success: false, message: `Product ${item.product} unavailable` }, { status: 400 });
+        return NextResponse.json({
+          success: false,
+          message: `Product ${item.product} unavailable`
+        }, { status: 400 });
       }
 
-      const availableStock = product.stock;
+      const availableStock = product.stock - (product.reservedStock || 0);
       if (availableStock < item.quantity) {
-        return NextResponse.json({ success: false, message: `Not enough stock for product ${item.product}` }, { status: 400 });
+        return NextResponse.json({
+          success: false,
+          message: `Not enough stock for product ${item.product}`
+        }, { status: 400 });
       }
 
       const price = item.variant
@@ -123,47 +196,54 @@ export const POST = withAuth(
         : product.price;
 
       if (!price) {
-        return NextResponse.json({ success: false, message: `Invalid variant for product ${item.product}` }, { status: 400 });
+        return NextResponse.json({
+          success: false,
+          message: `Invalid variant for product ${item.product}`
+        }, { status: 400 });
       }
 
       totalPrice += price * item.quantity;
-
-      // Reserve stock
-  
+      product.reservedStock = (product.reservedStock || 0) + item.quantity;
       await product.save();
     }
+
+    const expiresAt = new Date(Date.now() + ORDER_EXPIRY_HOURS * 60 * 60 * 1000);
 
     // Create order with pending payment
     const order = await Order.create({
       user: userId,
       orderItems,
       totalPrice,
+      paymentMethod,
       paymentStatus: "pending",
       orderStatus: "pending",
       deliveryInfo,
+      expiresAt
     });
 
     const populatedOrder = await Order.findById(order._id)
-  .populate({
-    path: "orderItems.product",
-    select: "name price stock images slug reservedStock",
-  })
-  .populate({
-    path: "orderItems.variant",
-    select: "sku price",
-  })
-  .populate({
-    path: "user",
-    select: "name email",
-  });
+      .populate({
+        path: "orderItems.product",
+        select: "name price stock images slug reservedStock",
+      })
+      .populate({
+        path: "orderItems.variant",
+        select: "sku price",
+      })
+      .populate({
+        path: "user",
+        select: "name email",
+      });
     // Send order confirmation email
     await sendEmail({
       to: user.email,
       subject: "Order Placed Successfully",
       html: `<h1>Hi ${user.name},</h1>
-             <p>Your order has been placed successfully.</p>
-             <p>Order ID: ${order._id}</p>
-             <p>Total Price: $${order.totalPrice}</p>`,
+         <p>Your order has been placed successfully.</p>
+         <p>Order ID: ${order._id}</p>
+         <p>Total Price: $${order.totalPrice}</p>
+         <p><strong>Note:</strong> Your reserved stock will expire in 24 hours. Please complete the payment before this time to avoid cancellation.</p>
+         <p>Time remaining: <span id="countdown">24:00:00</span></p>`,
     });
 
     return NextResponse.json({
@@ -171,52 +251,8 @@ export const POST = withAuth(
       message: "Order placed successfully",
       data: populatedOrder,
     });
-  }, { resourceName: "order" })
+  }, { resourceName: "order" }),
+  { roles: ["user"] }
 );
 
 
-export const GET = withAuth(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    withDB(async (req: NextRequest, context?) => {
-        const userId = getAuthUserId(req);
-       
-        const orders = await Order.find({ user: userId })
-        .populate({
-          path: "orderItems.product",
-          select: "name price stock images slug reservedStock",
-        })
-        .populate({
-          path: "orderItems.variant",
-          select: "sku price",
-        })
-        .populate({
-          path: "user",
-          select: "name email",
-        })
-        .sort({ createdAt: -1 }); 
-
-         if (!orders) {
-           return NextResponse.json({ success: false, message: "Order not found" }, { status: 404 });
-         }
-       
-         const response: ApiResponse<IOrderResponse[]> = {
-            success: orders.length > 0,
-            message: orders.length > 0 ? "Orders fetched successfully" : "No orders found",
-            data: orders,
-            // data: orders.map(order => ({
-            //     _id: order._id,
-            //   orderItems: order.orderItems as IOrderItemResponse[],
-            //   totalPrice: order.totalPrice,
-            //   paymentStatus: order.paymentStatus,
-            //   orderStatus: order.orderStatus,
-            //   deliveryInfo: order.deliveryInfo as IDeliveryInfo,
-            //   createdAt: order.createdAt,
-            //   updatedAt: order.updatedAt,
-            // })),
-
-            status: orders.length > 0 ? 200 : 404,
-          };
-         
-         return NextResponse.json(response, { status: response.status });
-       },  { resourceName: "order" })
-)

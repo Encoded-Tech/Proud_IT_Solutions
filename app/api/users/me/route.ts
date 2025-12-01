@@ -7,28 +7,32 @@ import { getAuthUserId } from "@/lib/auth/getAuthUser";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 
 const exclusions = {
-    password: 0,
-    provider: 0,
-    providerId: 0,
-    emailVerified: 0,
-    failedLoginAttempts: 0,
-    hardLock: 0,
-    lockCount: 0,
-    lastLockTime: 0,
-    lastLogin: 0,
-    signupIP: 0,
-    loginHistory: 0,
-    isLocked: 0,
-    role: 0,
-  };
+  password: 0,
+  provider: 0,
+  providerId: 0,
+  emailVerified: 0,
+  failedLoginAttempts: 0,
+  hardLock: 0,
+  lockCount: 0,
+  lastLockTime: 0,
+  lastLogin: 0,
+  signupIP: 0,
+  loginHistory: 0,
+  isLocked: 0,
+  role: 0,
+};
 
+//total apis
+//user-get-me api/users/me  
+//user-update-me api/users/me
 
+// user-get-me api/users/me
 export const GET = withAuth(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
-   const id = getAuthUserId(req);
+    const id = getAuthUserId(req);
     const dbUser = await UserModel.findById(id)
-    .select(exclusions);
+      .select(exclusions);
 
     if (!dbUser) {
       return NextResponse.json(
@@ -41,6 +45,7 @@ export const GET = withAuth(
   }, { resourceName: "user" })
 );
 
+// user-update-me api/users/me
 export const PUT = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
@@ -53,7 +58,7 @@ export const PUT = withAuth(
     const imageFile = formData.get("image") as File | null;
 
     const user = await UserModel.findById(id)
-    .select(exclusions);
+      .select(exclusions);
     if (!user) {
       return NextResponse.json(
         { success: false, message: "User not found" },

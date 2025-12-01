@@ -7,10 +7,13 @@ import User from "@/models/userModel";
 import { withDB } from "@/lib/HOF";
 import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
 import { SecurityLogData } from "@/types/api";
-import { HARDLOCK_THRESHOLD, HARDLOCK_WINDOW, MAX_ATTEMPTS, TEMP_LOCK_TIME} from "@/config/env";
+import { HARDLOCK_THRESHOLD, HARDLOCK_WINDOW, MAX_ATTEMPTS, TEMP_LOCK_TIME } from "@/config/env";
 
 
- // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//total apis
+//user-login api/auth/login
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const POST = withDB(async (req: NextRequest, context?) => {
   const form = await req.formData();
   const email = form.get("email") as string;
@@ -217,7 +220,7 @@ export const POST = withDB(async (req: NextRequest, context?) => {
     secret: process.env.NEXTAUTH_SECRET!,
     maxAge: 60 * 60 * 24 * 30, // 30 days
   });
-  
+
   // Set the session cookie
   const cookieStore = await cookies();
   cookieStore.set("next-auth.session-token", nextAuthToken, {

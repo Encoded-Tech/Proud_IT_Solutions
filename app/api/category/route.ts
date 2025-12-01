@@ -8,57 +8,64 @@ import { ICategory } from "@/models/categoryModel";
 import { ApiResponse } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
 
+//total apis
+//category-get-all api/category
+//category-create api/category
 
+// category-get-all api/category
+export const GET = withDB(async () => {
+  const categories = await Category.find()
+    .populate("parentId", "categoryName")
+    .sort({ createdAt: -1 });
+
+  const hasCategory = categories.length > 0
+  const response: ApiResponse<ICategory[]> = {
+    success: hasCategory,
+    message: hasCategory ? "categories fetched successfully" : "no categories found",
+    data: categories,
+    status: hasCategory ? 200 : 404
+  }
+  return NextResponse.json(response, { status: response.status })
+}, { resourceName: "category" }
+)
+
+// category-create api/category
 export const POST = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
 
-  const formData = await req.formData();
-  const categoryName = formData.get("categoryName") as string;
-  const categoryImage = formData.get("categoryImage") as File;
-  const parentId = formData.get("parentId") as string | null;
+    const formData = await req.formData();
+    const categoryName = formData.get("categoryName") as string;
+    const categoryImage = formData.get("categoryImage") as File;
+    const parentId = formData.get("parentId") as string | null;
 
-  const requiredFields = { categoryName, categoryImage }
-  const missingFields = checkRequiredFields(requiredFields);
-  if (missingFields) return missingFields;
+    const requiredFields = { categoryName, categoryImage }
+    const missingFields = checkRequiredFields(requiredFields);
+    if (missingFields) return missingFields;
 
-  const normalizedParentId =
-    parentId && parentId !== "null" && parentId !== "" ? parentId : null;
-  const existingCategory = await Category.findOne({ categoryName });
-  if (existingCategory) {
-    return NextResponse.json(
-      { success: false, message: `Category with name '${categoryName}' already exists` },
-      { status: 409 }
-    );
-  }
-  
-  let imageUrl: string | null = null;
-if (categoryImage && categoryImage.size > 0) {
-   imageUrl = await uploadToCloudinary(categoryImage);
-}
-  const createCategory = await Category.create({ categoryName, categoryImage: imageUrl, parentId: normalizedParentId });
-  return NextResponse.json({
-    success: true,
-    message: "Category created successfully",
-    data: createCategory,
-  });
-},  { resourceName: "category" }),
-{roles: ["admin"]}
-)
-
-
-export const GET = withDB(async () => {
-    const categories = await Category.find()
-      .populate("parentId", "categoryName")
-      .sort({ createdAt: -1 });
-  
-    const hasCategory = categories.length > 0
-    const response: ApiResponse<ICategory[]> = {
-      success: hasCategory,
-      message: hasCategory ? "categories fetched successfully" : "no categories found",
-      data: categories,
-      status: hasCategory ? 200 : 404
+    const normalizedParentId =
+      parentId && parentId !== "null" && parentId !== "" ? parentId : null;
+    const existingCategory = await Category.findOne({ categoryName });
+    if (existingCategory) {
+      return NextResponse.json(
+        { success: false, message: `Category with name '${categoryName}' already exists` },
+        { status: 409 }
+      );
     }
-    return NextResponse.json(response, { status: response.status })
-  }, { resourceName: "category" }
+
+    let imageUrl: string | null = null;
+    if (categoryImage && categoryImage.size > 0) {
+      imageUrl = await uploadToCloudinary(categoryImage);
+    }
+    const createCategory = await Category.create({ categoryName, categoryImage: imageUrl, parentId: normalizedParentId });
+    return NextResponse.json({
+      success: true,
+      message: "Category created successfully",
+      data: createCategory,
+    });
+  }, { resourceName: "category" }),
+  { roles: ["admin"] }
 )
+
+
+

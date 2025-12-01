@@ -48,7 +48,4 @@ export async function GET(req: NextRequest) {
   });
 }
 
-// -----------------------------
-// POST simply calls GET
-// -----------------------------
 export const POST = GET;

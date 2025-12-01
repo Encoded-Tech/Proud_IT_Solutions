@@ -12,6 +12,13 @@ interface IReviewResponse {
   avgRating: number;
 }
 
+//total apis
+//get-all-reviews api/product/[id]/reviews
+//review-create api/product/[id]/reviews
+//review-update- api/product/[id]/reviews
+//review-delete- api/product/[id]/reviews
+
+// get-all-reviews api/product/[id]/reviews
 export const GET = withDB(async (req: NextRequest, _context?) => {
   const params = await _context?.params;
   const id = params?.id;
@@ -37,18 +44,27 @@ export const GET = withDB(async (req: NextRequest, _context?) => {
 }, { resourceName: "review" });
 
 
-
+// review-create api/product/[id]/reviews
 export const POST = withAuth(withDB(async (req: NextRequest, _context?) => {
   const params = await _context?.params;
   const id = params?.id;
   const userId = getAuthUserId(req);
   const { rating, comment } = await req.json();
 
-  if (!rating || rating < 1 || rating > 5) return NextResponse.json({ success: false, message: "Rating must be between 1-5" }, { status: 400 });
-  if (!comment || comment.trim().length === 0) return NextResponse.json({ success: false, message: "Comment is required" }, { status: 400 });
+  if (!rating || rating < 1 || rating > 5) return NextResponse.json({
+    success: false,
+    message: "Rating must be between 1-5"
+  }, { status: 400 });
+  if (!comment || comment.trim().length === 0) return NextResponse.json({
+    success: false,
+    message: "Comment is required"
+  }, { status: 400 });
 
   const product = await Product.findById(id);
-  if (!product) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
+  if (!product) return NextResponse.json({
+    success: false,
+    message: "Product not found"
+  }, { status: 404 });
 
   const existingReview = product.reviews.find((r: IReview) => r.user.toString() === userId);
   if (existingReview) return NextResponse.json({
@@ -59,34 +75,14 @@ export const POST = withAuth(withDB(async (req: NextRequest, _context?) => {
   recalculateRating(product);
   await product.save();
 
-  return NextResponse.json({ success: true, message: "Review added successfully", data: product.reviews });
-}, { resourceName: "review" }));
-
-export const DELETE = withAuth(withDB(async (req: NextRequest, _context?) => {
-  const params = await _context?.params;
-  const id = params?.id;
-  const userId = getAuthUserId(req);
-
-  const product = await Product.findById(id);
-  if (!product) return NextResponse.json({
-    success: false,
-    message: "Product not found"
-  }, { status: 404 });
-
-  const existingReview = product.reviews.find((r: IReview) => r.user.toString() === userId);
-  if (!existingReview) return NextResponse.json({ success: false, message: "You have not reviewed this product" }, { status: 400 });
-
-  product.reviews = product.reviews.filter((r: IReview) => r.user.toString() !== userId);
-  recalculateRating(product);
-  await product.save();
-
   return NextResponse.json({
     success: true,
-    message: "Review deleted successfully",
+    message: "Review added successfully",
     data: product.reviews
-  }, { status: 200 });
+  });
 }, { resourceName: "review" }));
 
+// review-update- api/product/[id]/reviews/[id]
 export const PUT = withAuth(
   withDB(async (req: NextRequest, _context?) => {
     const params = await _context?.params;
@@ -142,4 +138,35 @@ export const PUT = withAuth(
     });
   }, { resourceName: "review" })
 );
+
+// review-delete- api/product/[id]/reviews/[id]
+export const DELETE = withAuth(withDB(async (req: NextRequest, _context?) => {
+  const params = await _context?.params;
+  const id = params?.id;
+  const userId = getAuthUserId(req);
+
+  const product = await Product.findById(id);
+  if (!product) return NextResponse.json({
+    success: false,
+    message: "Product not found"
+  }, { status: 404 });
+
+  const existingReview = product.reviews.find((r: IReview) => r.user.toString() === userId);
+  if (!existingReview) return NextResponse.json({
+    success: false,
+    message: "You have not reviewed this product"
+  }, { status: 400 });
+
+  product.reviews = product.reviews.filter((r: IReview) => r.user.toString() !== userId);
+  recalculateRating(product);
+  await product.save();
+
+  return NextResponse.json({
+    success: true,
+    message: "Review deleted successfully",
+    data: product.reviews
+  }, { status: 200 });
+}, { resourceName: "review" }));
+
+
 

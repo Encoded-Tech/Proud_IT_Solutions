@@ -5,8 +5,9 @@ import { withDB } from "@/lib/HOF";
 import userModel, { ICartItem } from "@/models/userModel";
 import { getAuthUserId } from "@/lib/auth/getAuthUser";
 
+// user-remove-item-from-cart api/users/cart/item
 export const DELETE = withAuth(
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
     const body = await req.json();
     const { productId, variantId } = body;
@@ -63,7 +64,7 @@ export const DELETE = withAuth(
     }
     await user.save();
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       message: "Item removed from cart",
       data: user.cart,

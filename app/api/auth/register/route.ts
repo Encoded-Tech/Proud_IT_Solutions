@@ -9,7 +9,10 @@ import { sendEmail } from "@/lib/helpers/sendEmail";
 import { FRONTEND_URL } from "@/config/env";
 import { generateResetToken, hashToken } from "@/lib/helpers/genHashToken";
 
- // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//total apis
+//user-create api/auth/register
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const POST = withDB(async (req: NextRequest, context?) => {
   const form = await req.formData();
 
@@ -56,9 +59,6 @@ export const POST = withDB(async (req: NextRequest, context?) => {
   // Token expires in 1 hour
   const verifyTokenExpiry = Date.now() + 1000 * 60 * 60;
 
-  // -----------------------------------------
-  // ⭐ Create New User (UNVERIFIED initially)
-  // -----------------------------------------
   const newUser = await User.create({
     name,
     email,
@@ -74,9 +74,6 @@ export const POST = withDB(async (req: NextRequest, context?) => {
     emailVerificationExpiry: verifyTokenExpiry,
   });
 
-  // ------------------------------
-  // ⭐ SEND VERIFICATION EMAIL NOW
-  // ------------------------------
   const verifyUrl = `${FRONTEND_URL}/auth/verify-email?token=${rawVerifyToken}&email=${encodeURIComponent(
     email
   )}`;
@@ -112,7 +109,6 @@ export const POST = withDB(async (req: NextRequest, context?) => {
   } catch (err) {
     console.error("❌ Failed sending verification email:", err);
   }
-
 
   return NextResponse.json({
     success: true,

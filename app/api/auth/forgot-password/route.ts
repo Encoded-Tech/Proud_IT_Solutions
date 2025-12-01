@@ -7,6 +7,9 @@ import { sendEmail } from "@/lib/helpers/sendEmail";
 import { RESET_TOKEN_EXPIRES_MIN } from "@/config/env";
 
 
+//total apis
+//forgot-password-post api/auth/forgot-password
+
 const TOKEN_EXPIRE_MIN = Number(RESET_TOKEN_EXPIRES_MIN);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const POST = withDB(async (req: NextRequest, context?) => {

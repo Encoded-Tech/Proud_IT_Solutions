@@ -28,3 +28,4 @@ export const RESEND_EMAIL_PASS = process.env.RESEND_EMAIL_PASS as string;
 export const EMAIL_FROM = process.env.EMAIL_FROM as string;
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL as string;
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD as string;
+export const ORDER_EXPIRY_HOURS = parseInt(process.env.ORDER_EXPIRY_HOURS as string);
