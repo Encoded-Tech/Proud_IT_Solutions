@@ -168,7 +168,7 @@ export const DELETE = withAuth(
         { success: false, message: "Invalid productId" },
         { status: 400 }
       );
-    }
+    }     
     const userId = getAuthUserId(req);
     const user = await User.findById(userId);
 

@@ -30,7 +30,7 @@ export interface AdminUser {
 
 export const GET = withAuth(
   withDB(async () => {
-    const users = await UserModel.find()
+    const users = await UserModel.find( { role: "user" })
       .select("+lockUntil +loginHistory +hardLock +lockCount +lastLockTime +provider")
       .sort({ createdAt: -1 });
 

@@ -16,6 +16,36 @@ import { IProductVariant } from "@/models/productVariantsModel";
 //user-remove-from-cart api/users/cart
 
 
+export interface CartProduct {
+  _id: string;
+  name: string;
+  price: number;
+  stock: number;
+  images: string[];
+  slug: string;
+}
+
+export interface CartVariant {
+  _id: string;
+  name?: string;
+  price?: number;
+  stock?: number;
+}
+
+export interface CartItem {
+  _id: string;
+  product: CartProduct;
+  variant: CartVariant | null;
+  quantity: number;
+  addedAt: string;
+  updatedAt: string;
+  remainingStock: number;
+  selectedOptions?: Record<string, string>;
+}
+
+
+
+
 // user-get-cart api/users/cart
 export const GET = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -24,14 +54,16 @@ export const GET = withAuth(
 
     const user = await userModel
       .findById(userId)
-      .populate<{ cart: ICartItem[] }>({
+      .populate({
         path: "cart.product",
         select: "name slug images price stock",
       })
-      .populate<{ cart: ICartItem[] }>({
+      .populate({
         path: "cart.variant",
         select: "specs price stock images sku",
-      }).sort({ createdAt: -1 });
+      })
+      .lean<{ cart: CartItem[] }>()
+      .sort({ createdAt: -1 });
 
     if (!user) {
       return NextResponse.json(
@@ -40,7 +72,7 @@ export const GET = withAuth(
       );
     }
 
-    const cartWithRemaining = user.cart.map((item: ICartItem) => {
+    const cartWithRemaining = user.cart.map((item: CartItem) => {
       // Cast to populated types
       const product = item.product as unknown as IProduct;
       const variant = item.variant as unknown as IProductVariant | undefined;
@@ -131,13 +163,14 @@ export const POST = withAuth(
 
     // Check for existing cart item
     const existingIndex = user.cart.findIndex((item: ICartItem) => {
-      const itemProductId = typeof item.product === "string" ? item.product : item.product._id?.toString();
-      const itemVariantId = item.variant?.toString() || null;
+  const itemProductId = item.product.toString();
+  const itemVariantId = item.variant?.toString() || null;
 
-      if (itemProductId !== productId) return false;
-      if (variantId) return itemVariantId === variantId;
-      return !itemVariantId;
-    });
+  if (itemProductId !== productId) return false;
+  if (variantId) return itemVariantId === variantId;
+  return !itemVariantId;
+});
+
 
     // Determine current quantity if item exists
     const currentQty = existingIndex !== -1 ? user.cart[existingIndex].quantity : 0;

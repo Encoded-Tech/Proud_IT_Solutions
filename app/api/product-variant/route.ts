@@ -41,7 +41,7 @@ export const GET = withDB(async (req: NextRequest, context?) => {
 
   const variants = await ProductVariant.find(filter)
     .populate("product", "name slug")
-    .sort({ price: 1 });
+    .sort({ createdAt: -1 });
 
   return NextResponse.json({
     success: true,
@@ -77,7 +77,7 @@ export const POST = withAuth(
     const ram = formData.get("ram") as string;
     const storage = formData.get("storage") as string;
     const color = formData.get("color") as string | null;
-    const price = formData.get("price") as string;
+    const price = formData.get("price") as string;  
     const stock = parseInt(formData.get("stock") as string, 10) || 0;
     const isActiveRaw = formData.get("isActive");
     const isActive =

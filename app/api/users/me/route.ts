@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import UserModel from "@/models/userModel";
+import UserModel, { IUser } from "@/models/userModel";
 import { withAuth } from "@/lib/HOF/withAuth";
 import { withDB } from "@/lib/HOF";
 
 import { getAuthUserId } from "@/lib/auth/getAuthUser";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
+import { ApiResponse } from "@/types/api";
 
 const exclusions = {
   password: 0,
@@ -34,14 +35,17 @@ export const GET = withAuth(
     const dbUser = await UserModel.findById(id)
       .select(exclusions);
 
-    if (!dbUser) {
-      return NextResponse.json(
-        { success: false, message: "User not found" },
-        { status: 404 }
-      );
-    }
+      const isUser = !!dbUser;
 
-    return NextResponse.json({ success: true, message: `User ${dbUser.name} fetched successfully`, data: dbUser });
+      const response: ApiResponse<IUser> = {
+        success: isUser,
+        message: isUser ? `User  ${dbUser.name} fetched successfully` : "User not found",
+        data: dbUser,
+        status: isUser ? 200 : 404
+      }
+      return NextResponse.json(response, { status: response.status })
+
+    
   }, { resourceName: "user" })
 );
 

@@ -33,12 +33,23 @@ export const POST = withDB(async (req: NextRequest, context?) => {
     }, { status: 400 });
   }
 
+
+
   const existingUser = await User.findOne({ email });
   if (existingUser) {
+    // Case 1: User exists but NOT verified
+  if (!existingUser.emailVerified) {
     return NextResponse.json({
       success: false,
-      message: "Email already registered"
-    }, { status: 409 });
+      message: "Email is already registered but not verified. Please verify your email to continue."
+    }, { status: 403 });   
+  }
+
+  // Case 2: User exists AND verified
+  return NextResponse.json({
+    success: false,
+    message: "Email already registered"
+  }, { status: 409 });
   }
 
   const hashedPassword = await bcrypt.hash(rawPassword, 12);

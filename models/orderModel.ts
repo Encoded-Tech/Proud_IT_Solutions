@@ -2,9 +2,9 @@ import { Schema, Document, model, models, Types } from "mongoose";
 
 export interface IOrderItem {
   product: Types.ObjectId;
-  variant?: Types.ObjectId; 
+  variant?: Types.ObjectId;
   quantity: number;
-  price: number; 
+  price: number;
 }
 
 export interface IDeliveryInfo {
@@ -25,6 +25,7 @@ export interface IOrder extends Document {
   orderStatus: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
   paymentMethod: "COD" | "OnlineUpload";
   paymentProof: string;
+  paymentSubmittedAt: Date;
   deliveryInfo: IDeliveryInfo;
   expiresAt?: Date;
   stockProcessed: boolean;
@@ -60,28 +61,29 @@ const orderSchema = new Schema<IOrder>(
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     orderItems: [orderItemSchema],
     totalPrice: { type: Number, required: true },
+
     paymentStatus: {
       type: String,
-      enum: ["pending", "paid", "failed"],
+      enum: ["pending", "submitted", "paid", "failed"],
       default: "pending",
     },
-    paymentMethod: {
-  type: String,
-  enum: ["COD", "OnlineUpload"],
-  default: "COD",
-  
-},
-expiresAt: {
-    type: Date,
-  },
-paymentProof: {
-  type: String, // store uploaded screenshot filename or URL
-},
-stockProcessed: {
-  type: Boolean,
-  default: false,
-},
 
+    paymentProof: {
+      type: String,
+    },
+
+    paymentSubmittedAt: {
+      type: Date,
+    },
+
+    expiresAt: {
+      type: Date,
+    },
+
+    stockProcessed: {
+      type: Boolean,
+      default: false,
+    },
 
     orderStatus: {
       type: String,
