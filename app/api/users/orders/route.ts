@@ -9,10 +9,9 @@ import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
 import userModel from "@/models/userModel";
 import { sendEmail } from "@/lib/helpers/sendEmail";
 import { ApiResponse } from "@/types/api";
-
-
 import { Types } from "mongoose";
-import { ORDER_EXPIRY_HOURS } from "@/config/env";
+import { MIN_QTY_PER_ITEM, ORDER_EXPIRY_HOURS } from "@/config/env";
+
 
 export interface IProductInfo {
   _id: Types.ObjectId | string;
@@ -110,31 +109,35 @@ export const GET = withAuth(
     };
 
     return NextResponse.json(response, { status: response.status });
-  }, { resourceName: "order" })
+  }, { resourceName: "order" }),
+  { roles: ["user"] }
 )
 
 // user create-order api/users/orders  
 export const POST = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
+
     const userId = getAuthUserId(req);
     const { orderItems, deliveryInfo, paymentMethod } = await req.json();
 
-    // Validate orderItems
+    // Validate order items
     if (!orderItems || !Array.isArray(orderItems) || orderItems.length === 0) {
       return NextResponse.json({
         success: false,
-        message: "No items to order"
+        message: "No items to order",
       }, { status: 400 });
     }
 
+    // Validate payment
     if (!["COD", "OnlineUpload"].includes(paymentMethod)) {
       return NextResponse.json({
         success: false,
         message: "Invalid payment method",
       }, { status: 400 });
     }
-    // Validate deliveryInfo
+
+    // Validate delivery info
     const missingFields = checkRequiredFields({
       name: deliveryInfo?.name,
       phone: deliveryInfo?.phone,
@@ -142,17 +145,17 @@ export const POST = withAuth(
       city: deliveryInfo?.city,
       postalCode: deliveryInfo?.postalCode,
       country: deliveryInfo?.country,
-      paymentMethod: paymentMethod,
-    }, "Incomplete delivery information",
+    }, "Incomplete delivery information");
 
-    );
     if (missingFields) return missingFields;
 
+    // Prevent duplicate pending orders
     const existingOrder = await Order.findOne({
       user: userId,
       "orderItems.product": { $all: orderItems.map(i => i.product) },
       paymentStatus: "pending",
     });
+
     if (existingOrder) {
       return NextResponse.json({
         success: false,
@@ -162,24 +165,37 @@ export const POST = withAuth(
 
     // Get user email
     const user = await userModel.findById(userId).select("email name");
-    if (!user) return NextResponse.json({
-      success: false,
-      message: "User not found"
-    }, { status: 404 });
+    if (!user)
+      return NextResponse.json({
+        success: false,
+        message: "User not found"
+      }, { status: 404 });
 
-    // Validate products & calculate totalPrice
+
+      
+
+    //  Backend-secure price calculation
     let totalPrice = 0;
+
     for (const item of orderItems) {
-      const product = await Product.findById(item.product).populate({
+      const { quantity, price, product : productId } = item;
+      const product = await Product.findById(productId).populate({
         path: "variants",
         match: { isActive: true },
         select: "sku price",
       });
 
+      if (!Number.isInteger(quantity) || quantity < MIN_QTY_PER_ITEM) {
+            return NextResponse.json({
+              success: false,
+              message: `Invalid quantity ${quantity} for product ${product.name}`,
+            }, { status: 400 });
+          }
+    
       if (!product || !product.isActive) {
         return NextResponse.json({
           success: false,
-          message: `Product ${item.product} unavailable`
+          message: `Product ${item.product} unavailable`,
         }, { status: 400 });
       }
 
@@ -187,29 +203,41 @@ export const POST = withAuth(
       if (availableStock < item.quantity) {
         return NextResponse.json({
           success: false,
-          message: `Not enough stock for product ${item.product}`
+          message: `Not enough stock for product ${product.name}`,
         }, { status: 400 });
       }
 
-      const price = item.variant
+      const correctPrice = item.variant
         ? product.variants.find((v: IProductVariant) => v.sku === item.variant)?.price
         : product.price;
 
-      if (!price) {
+      if (!correctPrice) {
         return NextResponse.json({
           success: false,
-          message: `Invalid variant for product ${item.product}`
+          message: `Invalid variant for product ${product.name}`,
         }, { status: 400 });
       }
 
-      totalPrice += price * item.quantity;
+      //detect pricee tempering
+
+      if (price && price !== correctPrice) {
+        console.warn(`Price tampering detected for product ${product.name}`);
+      }
+
+      // Always overwrite user-provided price (SECURE)
+      item.price = correctPrice;
+
+      // Calculate total price
+      totalPrice += item.price * item.quantity;
+
+      // Reserve stock
       product.reservedStock = (product.reservedStock || 0) + item.quantity;
       await product.save();
     }
 
     const expiresAt = new Date(Date.now() + ORDER_EXPIRY_HOURS * 60 * 60 * 1000);
 
-    // Create order with pending payment
+    // Create order
     const order = await Order.create({
       user: userId,
       orderItems,
@@ -218,9 +246,10 @@ export const POST = withAuth(
       paymentStatus: "pending",
       orderStatus: "pending",
       deliveryInfo,
-      expiresAt
+      expiresAt,
     });
 
+    // Populate for frontend UI
     const populatedOrder = await Order.findById(order._id)
       .populate({
         path: "orderItems.product",
@@ -234,16 +263,18 @@ export const POST = withAuth(
         path: "user",
         select: "name email",
       });
-    // Send order confirmation email
+
+    // Send email
     await sendEmail({
       to: user.email,
       subject: "Order Placed Successfully",
-      html: `<h1>Hi ${user.name},</h1>
-         <p>Your order has been placed successfully.</p>
-         <p>Order ID: ${order._id}</p>
-         <p>Total Price: $${order.totalPrice}</p>
-         <p><strong>Note:</strong> Your reserved stock will expire in 24 hours. Please complete the payment before this time to avoid cancellation.</p>
-         <p>Time remaining: <span id="countdown">24:00:00</span></p>`,
+      html: `
+        <h1>Hi ${user.name},</h1>
+        <p>Your order has been placed successfully.</p>
+        <p>Order ID: ${order._id}</p>
+        <p>Total Price: Rs. ${order.totalPrice}</p>
+        <p><strong>Note:</strong> Your reserved stock will expire in 24 hours.</p>
+      `,
     });
 
     return NextResponse.json({
@@ -251,8 +282,10 @@ export const POST = withAuth(
       message: "Order placed successfully",
       data: populatedOrder,
     });
+
   }, { resourceName: "order" }),
   { roles: ["user"] }
 );
+
 
 

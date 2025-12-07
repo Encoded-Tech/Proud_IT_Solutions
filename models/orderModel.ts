@@ -21,8 +21,8 @@ export interface IOrder extends Document {
   user: Types.ObjectId;
   orderItems: IOrderItem[];
   totalPrice: number;
-  paymentStatus: "pending" | "paid" | "failed";
-  orderStatus: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  paymentStatus: "pending" | "submitted" | "paid" | "failed";
+  orderStatus: "pending" | "processing" | "delivered" | "cancelled" | "failed";
   paymentMethod: "COD" | "OnlineUpload";
   paymentProof: string;
   paymentSubmittedAt: Date;
@@ -31,6 +31,8 @@ export interface IOrder extends Document {
   stockProcessed: boolean;
   createdAt: Date;
   updatedAt: Date;
+  deliveredAt?: Date;
+  cancelledAt?: Date;
 }
 
 const orderItemSchema = new Schema<IOrderItem>(
@@ -68,6 +70,12 @@ const orderSchema = new Schema<IOrder>(
       default: "pending",
     },
 
+    paymentMethod: {
+      type: String,
+      enum: ["COD", "OnlineUpload"],
+      default: "COD",
+    },
+
     paymentProof: {
       type: String,
     },
@@ -87,7 +95,7 @@ const orderSchema = new Schema<IOrder>(
 
     orderStatus: {
       type: String,
-      enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
+      enum: ["pending", "processing", "delivered", "cancelled", "failed"],
       default: "pending",
     },
     deliveryInfo: deliveryInfoSchema,

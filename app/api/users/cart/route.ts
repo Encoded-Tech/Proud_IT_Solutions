@@ -90,7 +90,8 @@ export const GET = withAuth(
       message: "Cart fetched successfully",
       data: cartWithRemaining,
     });
-  }, { resourceName: "cart" })
+  }, { resourceName: "cart" }),
+  { roles: ["user"] }
 )
 
 // user-add-to-cart api/users/cart
@@ -162,14 +163,15 @@ export const POST = withAuth(
     const qty = quantity && quantity > 0 ? quantity : 1;
 
     // Check for existing cart item
-    const existingIndex = user.cart.findIndex((item: ICartItem) => {
-  const itemProductId = item.product.toString();
+ const existingIndex = user.cart.findIndex((item: CartItem) => {
+  const itemProductId = typeof item.product === "string" ? item.product : item.product._id?.toString();
   const itemVariantId = item.variant?.toString() || null;
 
   if (itemProductId !== productId) return false;
   if (variantId) return itemVariantId === variantId;
   return !itemVariantId;
 });
+
 
 
     // Determine current quantity if item exists
@@ -216,7 +218,8 @@ export const POST = withAuth(
       message: "Product added to cart successfully",
       data: user.cart,
     });
-  }, { resourceName: "cart" })
+  }, { resourceName: "cart" }),
+  { roles: ["user"] }
 );
 
 // user-update-cart-item-quantity api/users/cart/
@@ -297,7 +300,8 @@ export const PUT = withAuth(
       message: "Cart quantity updated successfully",
       data: user.cart,
     });
-  }, { resourceName: "cart" })
+  }, { resourceName: "cart" }),
+  { roles: ["user"] }
 );
 
 // user-remove-from-cart api/users/cart
@@ -323,7 +327,8 @@ export const DELETE = withAuth(
       message: "Cart cleared successfully",
       data: user.cart, // will be empty
     });
-  }, { resourceName: "cart" })
+  }, { resourceName: "cart" }),
+  { roles: ["user"] }
 );
 
 

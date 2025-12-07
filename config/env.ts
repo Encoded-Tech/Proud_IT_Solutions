@@ -29,3 +29,7 @@ export const EMAIL_FROM = process.env.EMAIL_FROM as string;
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL as string;
 export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD as string;
 export const ORDER_EXPIRY_HOURS = parseInt(process.env.ORDER_EXPIRY_HOURS as string);
+export const MIN_QTY_PER_ITEM = parseInt(process.env.MIN_QTY_PER_ITEM as string);
+export const ALLOWED_EXT_FOR_PAYMENT_PROOF: string[] = JSON.parse(process.env.ALLOWED_EXT_FOR_PAYMENT_PROOF || "[]");
+export const ALLOWED_MIME_TYPE_FOR_PAYMENT_PROOF: string[] = JSON.parse(process.env.ALLOWED_MIME_TYPE_FOR_PAYMENT_PROOF || "[]");
+export const MAX_SIZE_FOR_PAYMENT_PROOF = parseInt(process.env.MAX_SIZE_FOR_PAYMENT_PROOF as string);

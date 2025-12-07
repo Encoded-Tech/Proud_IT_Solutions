@@ -1,49 +1,25 @@
 import { uploadToCloudinary } from "@/config/cloudinary";
+import { ALLOWED_EXT_FOR_PAYMENT_PROOF, ALLOWED_MIME_TYPE_FOR_PAYMENT_PROOF, MAX_SIZE_FOR_PAYMENT_PROOF } from "@/config/env";
 import { getAuthUserId } from "@/lib/auth/getAuthUser";
 import { withDB } from "@/lib/HOF";
 import { withAuth } from "@/lib/HOF/withAuth";
 import { Order } from "@/models/orderModel";
 import { NextRequest, NextResponse } from "next/server";
 
-const ALLOWED_EXT = ["jpg", "jpeg", "png", "gif", "tiff", "tif", "pdf"];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-
 export const POST = withAuth(
-  
   withDB(async (req: NextRequest, _context?) => {
     const params = await _context?.params;
     const orderId = params?.id;
-    
     const userId = getAuthUserId(req);
 
-    const formData = await req.formData();
-    const file = formData.get("file") as File;
-
-    if (!file) {
+    if (!orderId) {
       return NextResponse.json(
-        { success: false, message: "No file uploaded" },
+        { success: false, message: "Order ID missing" },
         { status: 400 }
       );
     }
 
-    // Validate extension
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!ext || !ALLOWED_EXT.includes(ext)) {
-      return NextResponse.json(
-        { success: false, message: `Invalid file type. Allowed: ${ALLOWED_EXT.join(", ")}` },
-        { status: 400 }
-      );
-    }
-
-    // Validate size
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json(
-        { success: false, message: "File too large. Max size 5MB." },
-        { status: 400 }
-      );
-    }
-
-    // Verify order belongs to user
+        // Verify order belongs to user
     const order = await Order.findOne({ _id: orderId, user: userId });
 
     if (!order) {
@@ -66,12 +42,49 @@ export const POST = withAuth(
         { status: 400 }
       );
     }
+    
+    const formData = await req.formData();
+    const file = formData.get("file") as File;
 
-    // 🔥 USING YOUR EXACT PATTERN
-    const url = await uploadToCloudinary(file);
+    if (!file) {
+      return NextResponse.json(
+        { success: false, message: "No file uploaded" },
+        { status: 400 }
+      );
+    }
+
+    // Validate extension
+    const ext = file.name.toLowerCase().split(".").pop();
+    if (!ext || !ALLOWED_EXT_FOR_PAYMENT_PROOF.includes(ext)) {
+      return NextResponse.json(
+        { success: false, message: `Invalid file type. Allowed: ${ALLOWED_EXT_FOR_PAYMENT_PROOF.join(", ")}` },
+        { status: 400 }
+      );
+    }
+
+    // Validate size
+    if (file.size > MAX_SIZE_FOR_PAYMENT_PROOF) {
+      return NextResponse.json(
+        { success: false, message: "File too large. Max size 5MB." },
+        { status: 400 }
+      );
+    }
+    
+    // Validate mime type
+    if (!ALLOWED_MIME_TYPE_FOR_PAYMENT_PROOF.includes(file.type)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid file format" },
+        { status: 400 }
+      );
+    }
+
+
+
+
+    const imgUrl = await uploadToCloudinary(file);
 
     // Save details
-    order.paymentProof = url;
+    order.paymentProof = imgUrl;
     order.paymentStatus = "submitted";
     order.paymentSubmittedAt = new Date();
     await order.save();

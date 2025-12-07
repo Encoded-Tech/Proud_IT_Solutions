@@ -2,6 +2,7 @@ import { Schema, Types, model, models } from "mongoose";
 import uniqueValidator from "mongoose-unique-validator";
 
 export interface ICartItem extends Document{
+  _id: Types.ObjectId;
   product: Types.ObjectId; 
   variant?: Types.ObjectId; 
   quantity: number;

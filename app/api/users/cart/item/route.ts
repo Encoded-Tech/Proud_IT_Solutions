@@ -69,5 +69,6 @@ export const DELETE = withAuth(
       message: "Item removed from cart",
       data: user.cart,
     });
-  }, { resourceName: "cart" })
+  }, { resourceName: "cart" }),
+  { roles: ["user"] }
 );
