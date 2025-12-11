@@ -1,11 +1,10 @@
 import { FilterQuery } from "mongoose";
 import { Product, IProduct } from "@/models/productModel";
 import {  NextResponse } from "next/server";
-import { withAuth } from "@/lib/HOF/withAuth";
 import { withDB } from "@/lib/HOF";
 
 
- export const GET = withAuth(
+ export const GET = 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     withDB( async (req, context?) => {
          const url = new URL(req.url);
@@ -40,5 +39,5 @@ import { withDB } from "@/lib/HOF";
     pagination: { page, limit },
   });
     })
- )
+ 
 

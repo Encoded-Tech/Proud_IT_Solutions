@@ -4,11 +4,18 @@ import PageHeader from "../text/page-header";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import { ProductMock } from "@/data/product-mock";
+
 import ProductCard from "../card/product-card";
 import { Icon } from "@iconify/react/dist/iconify.js";
 
-const BestSellers = () => {
+import { productType } from "@/types/product";
+
+interface Props {
+  bestSellers: productType[];
+  title: string;
+}
+
+const BestSellers = ({bestSellers, title}: Props) => {
   const sliderRef = useRef<Slider | null>(null);
   const settings = {
     infinite: true,
@@ -81,13 +88,13 @@ const BestSellers = () => {
         </video>
       </div>
       <div className="col-span-2">
-        <PageHeader title="Our Best Sellers" />
-        {ProductMock.length > 3 ? (
+        <PageHeader title={title} />
+        {bestSellers.length > 3 ? (
           <div className="relative">
             <Slider {...settings} ref={sliderRef} className="my-10">
-              {ProductMock.map((item, index) => (
+              {bestSellers.map((item, index) => (
                 <div key={index} className="px-2">
-                  <ProductCard products={item} />
+                <ProductCard key={item.id} product={item} label="Best Seller" />
                 </div>
               ))}
             </Slider>
@@ -111,9 +118,9 @@ const BestSellers = () => {
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-x-4 my-10">
-            {ProductMock.map((item, index) => (
+            {bestSellers.map((item, index) => (
               <div key={index} className="px-2">
-                <ProductCard products={item} />
+                 <ProductCard key={item.id} product={item} label="Best Seller" />
               </div>
             ))}
           </div>

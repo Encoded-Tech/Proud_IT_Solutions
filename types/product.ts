@@ -3,7 +3,7 @@ export interface productType {
   name: string;
   slug: string;
   description: string;
-  featureImage: string;
+  images?: string[] | null;
   price: number;
   stock: number;
   offeredPrice: number;
@@ -58,8 +58,14 @@ export interface BrandType {
 }
 
 export interface ReviewType {
+  id: string;
+  user: UserType;
   rating: number;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
 }
+
 
 export interface AttributeDefinitionType {
   id: string;

@@ -5,10 +5,16 @@ import ProductCard from "../card/product-card";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import { ProductMock } from "@/data/product-mock";
-import { Icon } from "@iconify/react/dist/iconify.js";
 
-const Sale = () => {
+import { Icon } from "@iconify/react/dist/iconify.js";
+import { productType } from "@/types/product";
+
+type Props = {
+  newArrivals: productType[];
+  title: string;
+}
+
+const Sale = ({newArrivals, title}: Props) => {
   const sliderRef = useRef<Slider | null>(null);
 
   const settings = {
@@ -59,13 +65,13 @@ const Sale = () => {
 
   return (
     <main>
-      <PageHeader title="New Arrivals" />
-      {ProductMock.length > 4 ? (
+      <PageHeader title={title} />
+      {newArrivals.length > 4 ? (
         <div className="relative my-8">
           <Slider {...settings} ref={sliderRef} className="my-10">
-            {ProductMock.map((item, index) => (
+            {newArrivals.map((item, index) => (
               <div key={index} className="px-2">
-                <ProductCard products={item} />
+                <ProductCard key={item.id} product={item} label="New" />
               </div>
             ))}
           </Slider>
@@ -89,9 +95,9 @@ const Sale = () => {
         </div>
       ) : (
         <div className="grid lg:grid-cols-4 md:grid-cols-3 grid-cols-2 gap-4 my-10">
-          {ProductMock.map((item, index) => (
+          {newArrivals.map((item, index) => (
             <div key={index}>
-              <ProductCard products={item} />
+             <ProductCard key={item.id} product={item} label="New" />
             </div>
           ))}
         </div>

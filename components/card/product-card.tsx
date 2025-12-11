@@ -4,17 +4,23 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
-const ProductCard = ({ products }: { products: productType }) => {
+interface ProductCardProps {
+  product?: productType;
+  label?: string; 
+  
+}
+
+const ProductCard = ({ product, label }: ProductCardProps) => {
   const {
-    featureImage,
-    name,
-    price,
-    slug,
-    stock,
-    avgRating,
-    offeredPrice,
-    isOfferedPriceActive,
-  } = products;
+    images = [],
+    name = "",
+    price = 0,
+    slug = "",
+    stock = 0,
+    avgRating = 0,
+    offeredPrice = 0,
+    isOfferedPriceActive = false,
+  } = product || {};
 
   const availableStock = stock;
 
@@ -22,13 +28,15 @@ const ProductCard = ({ products }: { products: productType }) => {
     <main>
       <div className=" md:p-3 p-2 rounded-md shadow-sm  flex flex-col gap-2">
         <Link href={`/products/${slug}`} className="group relative">
-          <span className="absolute top-3 left-3 z-2 bg-primary text-white border-none  rounded-md text-xs px-3 py-1 font-medium">
-            New
-          </span>
+            {label && (
+            <span className="absolute top-3 left-3 z-2 bg-primary text-white border-none rounded-md text-xs px-3 py-1 font-medium">
+              {label}
+            </span>
+          )}
           <figure className="overflow-hidden rounded-md cursor-pointer ">
             <Image
-              src={featureImage}
-              alt="hero"
+              src={images?.[0] || "/placeholder.png"}
+              alt={name}
               width={1000}
               height={500}
               priority

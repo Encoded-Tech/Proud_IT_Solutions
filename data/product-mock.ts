@@ -7,8 +7,10 @@ export const ProductMock: productType[] = [
     slug: "apple-macbook-pro-14-inch-m3-2025",
     description:
       '<p><span style="background-color: rgb(255, 255, 255); color: rgb(23, 23, 23);">Intensely hydrating cream boosts moisture content in your skin and seals it inside, protecting your skin from further loss of hydration. Without feeling oily or heavy, this intensively hydrating cream makes the skin feel soft like clouds and provides long-lasting moisture.</span></p><p><br></p>',
-    featureImage:
-      "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    images: [
+       "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    ],
+     
     price: 3000,
     stock: 2, 
     offeredPrice: 2000,
@@ -78,8 +80,9 @@ export const ProductMock: productType[] = [
     slug: "logitech-mx-master-3s-wireless-mouse",
     description:
       '<p><span style="background-color: rgba(232, 232, 232, 0.4); color: rgb(23, 23, 23);">BENEFIT</span></p><p><span style="background-color: rgba(232, 232, 232, 0.4); color: rgb(23, 23, 23);">• Block UV rays </span></p><p><span style="background-color: rgba(232, 232, 232, 0.4); color: rgb(23, 23, 23);">• Soothes &amp; moisturizes skin </span></p><p><span style="background-color: rgba(232, 232, 232, 0.4); color: rgb(23, 23, 23);">• Lightweight texture</span></p><p><br></p><p><u style="background-color: rgba(232, 232, 232, 0.4); color: rgb(23, 23, 23);">TARGETS</u></p><p><span style="background-color: rgba(232, 232, 232, 0.4); color: rgb(23, 23, 23);">• Doesn\'t want a white cast</span></p><p><span style="background-color: rgba(232, 232, 232, 0.4); color: rgb(23, 23, 23);">• Enjoy outdoor activities often</span></p><p><span style="background-color: rgba(232, 232, 232, 0.4); color: rgb(23, 23, 23);">• Dehydrated skin</span></p><p><span style="background-color: rgba(232, 232, 232, 0.4); color: rgb(23, 23, 23);"> </span></p><p><br></p>',
-    featureImage:
-      "https://images.unsplash.com/photo-1628832307345-7404b47f1751?q=80&w=1183&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    images: [
+       "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    ],
     price: 5000,
     stock: 4,
 
@@ -149,8 +152,9 @@ export const ProductMock: productType[] = [
     slug: "razer-blackwidow-v4-pro-mechanical-keyboard",
     description:
       '<p><strong style="color: rgb(33, 37, 41);">The Pax Moly Trouble Relief Niacinamide 15% + Zinc 5% Serum is a potent serum designed to target blemishes, control oil production, and improve overall skin tone. With a high concentration of Niacinamide (15%) and Zinc (5%), this serum helps to calm acne-prone skin, reduce redness, and minimize the appearance of pores. The combination of these two key ingredients makes it ideal for those with oily, acne-prone, or troubled skin.</strong></p>',
-    featureImage:
-      "https://images.unsplash.com/photo-1602025882379-e01cf08baa51?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    images: [
+       "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    ],
     price: 800,
     stock: 4,
 
@@ -220,8 +224,9 @@ export const ProductMock: productType[] = [
     slug: "steelseries-arctis-nova-pro-wireless-headset",
     description:
       "<p>Perfect your complexion and achieve a radiant looking glow. Smooth, lightweight formula allows for flawless, buildable coverage without feeling heavy or weighed down.</p><p><br></p><p>Moisturizing ingredients with vitamin E and glycerin create a dewy finish and leaves the skin looking fresh all day.</p>",
-    featureImage:
-      "https://images.unsplash.com/photo-1673669236244-60f764c15f27?q=80&w=1074&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    images: [
+       "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+    ],
     price: 1800,
     stock: 4,
 

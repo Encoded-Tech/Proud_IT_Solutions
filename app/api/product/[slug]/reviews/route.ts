@@ -13,17 +13,17 @@ interface IReviewResponse {
 }
 
 //total apis
-//get-all-reviews api/product/[id]/reviews
-//review-create api/product/[id]/reviews
-//review-update- api/product/[id]/reviews
-//review-delete- api/product/[id]/reviews
+//get-all-reviews api/product/[slug]/reviews
+//review-create api/product/[slug]/reviews
+//review-update- api/product/[slug]/reviews
+//review-delete- api/product/[slug]/reviews
 
-// get-all-reviews api/product/[id]/reviews
+// get-all-reviews api/product/[slug]/reviews
 export const GET = withDB(async (req: NextRequest, _context?) => {
   const params = await _context?.params;
-  const id = params?.id;
+  const slug = params?.slug;
 
-  const product = await Product.findById(id)
+  const product = await Product.findOne({ slug })
     .populate({ path: "reviews.user", select: "name image" });
 
   if (!product) {
@@ -44,10 +44,10 @@ export const GET = withDB(async (req: NextRequest, _context?) => {
 }, { resourceName: "review" });
 
 
-// review-create api/product/[id]/reviews
+// review-create api/product/[slug]/reviews
 export const POST = withAuth(withDB(async (req: NextRequest, _context?) => {
-  const params = await _context?.params;
-  const id = params?.id;
+ const params = await _context?.params;
+  const slug = params?.slug;
   const userId = getAuthUserId(req);
   const { rating, comment } = await req.json();
 
@@ -60,7 +60,7 @@ export const POST = withAuth(withDB(async (req: NextRequest, _context?) => {
     message: "Comment is required"
   }, { status: 400 });
 
-  const product = await Product.findById(id);
+  const product = await Product.findOne({slug});
   if (!product) return NextResponse.json({
     success: false,
     message: "Product not found"
@@ -82,11 +82,11 @@ export const POST = withAuth(withDB(async (req: NextRequest, _context?) => {
   });
 }, { resourceName: "review" }));
 
-// review-update- api/product/[id]/reviews/[id]
+// review-update- api/product/[slug]/reviews
 export const PUT = withAuth(
   withDB(async (req: NextRequest, _context?) => {
-    const params = await _context?.params;
-    const id = params?.id;
+  const params = await _context?.params;
+  const slug = params?.slug;
     const userId = getAuthUserId(req);
     const { rating, comment } = await req.json();
 
@@ -104,7 +104,7 @@ export const PUT = withAuth(
       );
     }
 
-    const product = await Product.findById(id);
+    const product = await Product.findOne({slug});
     if (!product)
       return NextResponse.json(
         { success: false, message: "Product not found" },
@@ -139,13 +139,13 @@ export const PUT = withAuth(
   }, { resourceName: "review" })
 );
 
-// review-delete- api/product/[id]/reviews/[id]
+// review-delete- api/product/[slug]/reviews
 export const DELETE = withAuth(withDB(async (req: NextRequest, _context?) => {
-  const params = await _context?.params;
-  const id = params?.id;
+  const params =  _context?.params;
+  const slug = params?.slug;
   const userId = getAuthUserId(req);
 
-  const product = await Product.findById(id);
+  const product = await Product.findOne({slug});
   if (!product) return NextResponse.json({
     success: false,
     message: "Product not found"

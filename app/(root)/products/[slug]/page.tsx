@@ -6,10 +6,10 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Loader, Minus, Plus, ShoppingBag } from "lucide-react";
 import toast from "react-hot-toast";
-import ProductImages from "../product-images";
+// import ProductImages from "../product-images";
 import Review from "../product-review";
-import BestSellers from "@/components/products/best-sellers";
 import Link from "next/link";
+import HomeProducts from "@/components/server/ListHomeProducts";
 
 interface PageProps {
   params: Promise<{
@@ -53,9 +53,9 @@ const ProductPage = ({ params }: PageProps) => {
     name,
     price,
     description,
-    media,
+    // media,
     stock,
-    featureImage,
+    // featureImage,
     brand,
     category,
     reviews,
@@ -98,7 +98,7 @@ const ProductPage = ({ params }: PageProps) => {
       </div>
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="border rounded-md border-zinc-200 h-fit p-2">
-          <ProductImages media={media} featureImage={featureImage} />
+          {/* <ProductImages media={media} featureImage={featureImage} /> */}
         </div>
 
         <div className="flex flex-col  space-y-6">
@@ -239,7 +239,7 @@ const ProductPage = ({ params }: PageProps) => {
         <Review />
       </div>
 
-      <BestSellers />
+     <HomeProducts showBestSellers={false} showHotDeals={false} showNewArrivals={false} />
     </main>
   );
 };

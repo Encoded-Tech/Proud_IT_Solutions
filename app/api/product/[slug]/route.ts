@@ -1,30 +1,29 @@
-import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 
+import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { withDB } from "@/lib/HOF";
 import { withAuth } from "@/lib/HOF/withAuth";
-import { Product } from "@/models";
-import { IProduct } from "@/models/productModel";
+import { IProduct, Product } from "@/models/productModel";
 import { ApiResponse } from "@/types/api";
 import { NextResponse } from "next/server";
 
 //total apis
-//product-get-by-id api/product/[id]
-//product-update-by-id api/product/[id]
-//product-delete-by-id api/product/[id]
+//product-get-by-slug api/product/[slug]
+//product-update-by-slug api/product/[slug]
+//product-delete-by-slug api/product/[slug]
 
-// product-get-by-id api/product/[id]
+// product-get-by-slug api/product/[slug]
 export const GET = withDB(async (req, _context?) => {
     const params = await _context?.params;
-    const id = params?.id;
+    const slug = params?.slug;
 
-    if (!id) {
+    if (!slug) {
         return NextResponse.json({
             success: false,
-            message: "product id missing",
+            message: "product slug missing",
             status: 404
         })
     }
-    const singleProduct = await Product.findById(id).populate("category", "categoryName");
+    const singleProduct = await Product.findOne({ slug }).populate("category", "categoryName");
 
     const hasProducts = !!singleProduct;
     const response: ApiResponse<IProduct[]> = {
@@ -36,15 +35,22 @@ export const GET = withDB(async (req, _context?) => {
     return NextResponse.json(response, { status: response.status })
 }, { resourceName: "product" });
 
-
-// product-update-by-id api/product/[id]
+// product-update-by-slug api/product/[slug]
 export const PUT = withAuth(
     withDB(async (req, _context?) => {
 
         const params = await _context?.params;
-        const id = params?.id;
+        const slug = params?.slug;
 
-        const productToUpdate = await Product.findById(id);
+        if (!slug) {
+            return NextResponse.json({
+                success: false,
+                message: "product slug missing",
+                status: 404
+            })
+        }
+
+        const productToUpdate = await Product.findOne({ slug });
         if (!productToUpdate) {
             return NextResponse.json({
                 success: false,
@@ -57,7 +63,8 @@ export const PUT = withAuth(
         const price = formData.get("price") as string;
         const description = formData.get("description") as string;
         const category = formData.get("category") as string;
-     const stock = parseInt(formData.get("stock") as string, 10) || 0;
+       const rawStock = formData.get("stock") as string;
+const stock = rawStock ? parseInt(rawStock, 10) : undefined;
         const images = formData.getAll("images") as File[];
         const variants = formData.get("variants") as string | null;
         const isActive = formData.get("isActive") as string;
@@ -66,17 +73,19 @@ export const PUT = withAuth(
             productToUpdate.name = name;
         }
         if (price) {
-            productToUpdate.price = price;
+            productToUpdate.price = Number(price);
         }
+
         if (description) {
             productToUpdate.description = description;
         }
         if (category) {
             productToUpdate.category = category;
         }
-        if (stock) {
-            productToUpdate.stock = stock;
-        }
+      if (stock !== undefined && !isNaN(stock)) {
+    productToUpdate.stock = stock;
+}
+
         if (images && images.length > 0) {
             // Delete old images if exist
             if (productToUpdate.images?.length) {
@@ -97,9 +106,9 @@ export const PUT = withAuth(
         if (variants) {
             productToUpdate.variants = variants;
         }
-        if (isActive) {
-            productToUpdate.isActive = isActive;
-        }
+       if (isActive !== undefined) {
+    productToUpdate.isActive = isActive === "true";
+}
 
         await productToUpdate.save();
 
@@ -111,22 +120,22 @@ export const PUT = withAuth(
     }, { resourceName: "product" }),
     { roles: ["admin"] }
 )
-// product-delete-by-id api/product/[id]
+// product-delete-by-slug api/product/[slug]
 export const DELETE = withAuth(
     withDB(async (req, _context?) => {
 
         const params = await _context?.params;
-        const id = params?.id;
+        const slug = params?.slug;
 
-        if (!id) {
+        if (!slug) {
             return NextResponse.json({
                 success: false,
-                message: "product id missing",
+                message: "product slug missing",
                 status: 404
             })
-
         }
-        const productToDelete = await Product.findById(id);
+
+        const productToDelete = await Product.findOne({ slug });
         if (!productToDelete) {
             return NextResponse.json(
                 { success: false, message: "Product not found" },
@@ -152,4 +161,3 @@ export const DELETE = withAuth(
     }, { resourceName: "product" }),
     { roles: ["admin"] }
 );
-

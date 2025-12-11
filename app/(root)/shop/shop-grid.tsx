@@ -1,9 +1,10 @@
 import ProductCard from "@/components/card/product-card";
-import { ProductMock } from "@/data/product-mock";
+
+import { productType } from "@/types/product";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import React from "react";
 
-const ShopGrid = () => {
+const ShopGrid = ({ product }: { product?: productType[] }) => {
   return (
     <main className="grid md:grid-cols-7 gap-x-6">
       <section className="md:block hidden col-span-2 p-4 bg-zinc-50 rounded-md shadow-sm space-y-8">
@@ -120,9 +121,9 @@ const ShopGrid = () => {
       </section>
       <section className="col-span-5">
         <div className=" grid lg:grid-cols-3 grid-cols-2 gap-4 ">
-          {ProductMock.map((item, index) => (
+          {product?.map((item, index) => (
             <div key={index}>
-              <ProductCard products={item} />
+              <ProductCard product={item} />
             </div>
           ))}
         </div>

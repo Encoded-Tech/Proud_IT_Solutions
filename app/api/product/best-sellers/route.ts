@@ -2,10 +2,10 @@
 import {  NextResponse } from "next/server";
 import { IProduct, Product } from "@/models/productModel";
 import { FilterQuery } from "mongoose";
-import { withAuth } from "@/lib/HOF/withAuth";
+
 import { withDB } from "@/lib/HOF";
 
-export const GET = withAuth(
+export const GET = 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
 withDB (async (req, context?)=> {
    
@@ -42,5 +42,5 @@ const filter: FilterQuery<IProduct> = {
     , { resourceName: "product" })
 
 
-)
+
 

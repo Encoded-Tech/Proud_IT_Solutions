@@ -1,9 +1,13 @@
 import React from "react";
 
-import ShopGrid from "./shop-grid";
-import HotDeals from "../home/hot-deals";
+
+
 
 import ListCategories from "@/components/server/ListCategories";
+
+import HomeProducts from "@/components/server/ListHomeProducts";
+
+import ListProducts from "@/components/server/ListProducts";
 
 const page = () => {
   return (
@@ -12,8 +16,8 @@ const page = () => {
         Home / <span className="text-black "> Shop</span>
       </h2>
 <ListCategories page="shop" />
-      <ShopGrid />
-      <HotDeals />
+     <ListProducts />
+     <HomeProducts showHotDeals={true} showNewArrivals={false} showBestSellers={false} />
     </div>
   );
 };
