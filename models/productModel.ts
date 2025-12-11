@@ -1,6 +1,7 @@
 import { Schema, Document, model, models, Types } from "mongoose";
 
 export interface IProduct extends Document {
+  _id: Types.ObjectId;
     name: string;
     slug: string;
     description?: string;
@@ -13,6 +14,10 @@ export interface IProduct extends Document {
     reviews: IReview[];
     avgRating: number;
     totalReviews: number;
+    totalSales: number;
+    offeredPrice?: number;
+    isOfferedPriceActive?: boolean;
+    discountPercent?: number;
     isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -47,7 +52,11 @@ export interface IProduct extends Document {
       images: [{ type: String }],
       variants: [{ type: Schema.Types.ObjectId, ref: "ProductVariant" }],
       reviews: [reviewSchema],
-      avgRating: { type: Number, default: 0 },       
+      avgRating: { type: Number, default: 0 },   
+      totalSales: { type: Number, default: 0 },  
+      offeredPrice: { type: Number, default: 0 },             // Price after applying discount
+isOfferedPriceActive: { type: Boolean, default: false },  
+discountPercent: { type: Number, default: 0 },
       totalReviews: { type: Number, default: 0 },  
       isActive: { type: Boolean, default: true },
     },

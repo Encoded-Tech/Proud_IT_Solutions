@@ -2,6 +2,7 @@
 import { Schema, Document, model, models, Types } from "mongoose";
 
 export interface ICategory extends Document {
+  _id: Types.ObjectId;
   categoryName: string;
   categoryImage?: string;
   slug: string;
@@ -9,6 +10,10 @@ export interface ICategory extends Document {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ICategoryWithCount extends ICategory {
+  productCount: number;
 }
 
 const categorySchema = new Schema<ICategory>(

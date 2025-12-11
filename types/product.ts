@@ -82,10 +82,11 @@ export interface StockAndPriceType {
 
 export interface CategoryType {
   id: string;
-  name: string;
+  categoryName: string;
   slug: string;
-  image: string | null;
-  parentId: string;
+  categoryImage: string;
+  parentId?: string;
+  productCount: number;
   isActive: boolean;
   createdAt: string;
 }

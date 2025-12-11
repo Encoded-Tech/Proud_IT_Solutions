@@ -5,8 +5,9 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import Slider from "react-slick";
 import Link from "next/link";
+import { CategoryType } from "@/types/product";
 
-const ShopCategories = () => {
+const ShopCategories = ({ categories }: { categories: CategoryType[] }) => {
   const sliderRef = useRef<Slider | null>(null);
 
   const settings = {
@@ -58,15 +59,15 @@ const ShopCategories = () => {
 
   return (
     <div className="relative  md:p-6 p-4 rounded-md bg-primary/20">
-      {categorydata.length > 5 ? (
+      {categories.length > 5 ? (
         <section>
           <Slider {...settings} ref={sliderRef} className="my-10">
-            {categorydata.map((item, index) => (
+            {categories.map((item, index) => (
               <div key={index} className="px-2">
-                <Link href="/">
+                <Link href="/shop">
                   <figure className="overflow-hidden rounded-md cursor-pointer">
                     <Image
-                      src={item.img}
+                      src={item.categoryImage}
                       alt="hero"
                       width={1000}
                       height={500}
@@ -76,9 +77,9 @@ const ShopCategories = () => {
                   </figure>
 
                   <div className="flex flex-col justify-center items-center my-2">
-                    <h2 className="font-medium text-md">{item.title}</h2>
+                    <h2 className="font-medium text-md">{item.categoryName}</h2>
                     <p className="text-zinc-500 font-medium text-sm">
-                      {item.num} Products
+                      {item.productCount} Products
                     </p>
                   </div>
                 </Link>
@@ -88,12 +89,12 @@ const ShopCategories = () => {
         </section>
       ) : (
         <section className="grid grid-cols-5 my-10">
-          {categorydata.map((item, index) => (
+          {categories.map((item, index) => (
             <div key={index} className="px-2">
-              <Link href="/">
+              <Link href="/shop">
                 <figure className="overflow-hidden rounded-md cursor-pointer">
                   <Image
-                    src={item.img}
+                    src={item.categoryImage}
                     alt="hero"
                     width={1000}
                     height={500}
@@ -103,9 +104,9 @@ const ShopCategories = () => {
                 </figure>
 
                 <div className="flex flex-col justify-center items-center my-2">
-                  <h2 className="font-medium text-md">{item.title}</h2>
+                  <h2 className="font-medium text-md">{item.categoryName}</h2>
                   <p className="text-zinc-500 font-medium text-sm">
-                    {item.num} Products
+                    {item.productCount} Products
                   </p>
                 </div>
               </Link>
@@ -119,45 +120,3 @@ const ShopCategories = () => {
 
 export default ShopCategories;
 
-const categorydata = [
-  {
-    title: "Keyboards",
-    num: 23,
-    img: "/category/ct1.jpg",
-  },
-  {
-    title: "Keyboards",
-    num: 23,
-    img: "/category/ct2.jpg",
-  },
-  {
-    title: "Keyboards",
-    num: 23,
-    img: "/category/ct3.jpg",
-  },
-  {
-    title: "Keyboards",
-    num: 23,
-    img: "/category/ct4.jpg",
-  },
-  {
-    title: "Keyboards",
-    num: 23,
-    img: "/category/ct5.jpg",
-  },
-  {
-    title: "Keyboards",
-    num: 23,
-    img: "/category/ct1.jpg",
-  },
-  {
-    title: "Keyboards",
-    num: 23,
-    img: "/category/ct2.jpg",
-  },
-  {
-    title: "Keyboards",
-    num: 23,
-    img: "/category/ct3.jpg",
-  },
-];

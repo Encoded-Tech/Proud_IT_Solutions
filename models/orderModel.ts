@@ -29,6 +29,7 @@ export interface IOrder extends Document {
   deliveryInfo: IDeliveryInfo;
   expiresAt?: Date;
   stockProcessed: boolean;
+  totalSalesUpdated: boolean;
   createdAt: Date;
   updatedAt: Date;
   deliveredAt?: Date;
@@ -92,6 +93,10 @@ const orderSchema = new Schema<IOrder>(
       type: Boolean,
       default: false,
     },
+
+    totalSalesUpdated: {
+      type: Boolean, 
+      default: false },
 
     orderStatus: {
       type: String,

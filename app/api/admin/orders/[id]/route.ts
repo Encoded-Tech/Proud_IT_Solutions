@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { withDB } from "@/lib/HOF";
 import { withAuth } from "@/lib/HOF/withAuth";
 import { IOrder, Order } from "@/models/orderModel";
-import { IProduct } from "@/models/productModel";
+import { IProduct, Product } from "@/models/productModel";
+import { AnyBulkWriteOperation } from "mongoose";
 
 //total apis
 //admin-get-order-by-id api/admin/orders/[id]
 //admin-update-order-by-id api/admin/orders/[id]
+
+interface OrderItem {
+  product: IProduct | null;
+  quantity: number;
+}
 
 // Define allowed values for better type safety
 type PaymentStatus = "pending" | "submitted" | "paid" | "failed";
@@ -86,16 +92,20 @@ export const PUT = withAuth(
     const orderId = params?.id;
 
     if (!orderId) {
-      return NextResponse.json(
-        { success: false, message: "Order ID is required" },
+      return NextResponse.json({
+        success: false,
+        message: "Order ID is required"
+      },
         { status: 400 }
       );
     }
 
     const order = await Order.findById(orderId).populate("orderItems.product");
     if (!order) {
-      return NextResponse.json(
-        { success: false, message: "Order not found" },
+      return NextResponse.json({
+        success: false,
+        message: "Order not found"
+      },
         { status: 404 }
       );
     }
@@ -110,66 +120,90 @@ export const PUT = withAuth(
     const orderStatus: OrderStatus | undefined = body.orderStatus;
 
     if (!paymentStatus && !orderStatus) {
-      return NextResponse.json(
-        { success: false, message: "No updates provided" },
+      return NextResponse.json({
+        success: false,
+        message: "No updates provided"
+      },
         { status: 400 }
       );
     }
 
-    if (prevPaymentStatus === "paid" && paymentStatus === "failed") {
-      return NextResponse.json(
-        { success: false, message: "Cannot change a paid order to failed" },
+    // if (prevPaymentStatus === "paid" && paymentStatus === "failed") {
+    //   return NextResponse.json(
+    //     { success: false, message: "Cannot change a paid order to failed" },
+    //     { status: 400 }
+    //   );
+    // }
+
+    // if (prevPaymentStatus === "paid" && paymentStatus === "pending") {
+    //   return NextResponse.json(
+    //     { success: false, message: "Cannot change a paid order to pending" },
+    //     { status: 400 }
+    //   );
+    // }
+
+    // if (prevPaymentStatus === "paid" && paymentStatus === "submitted") {
+    //   return NextResponse.json(
+    //     { success: false, message: "Cannot change a paid order to submitted" },
+    //     { status: 400 }
+    //   );
+    // }
+
+
+    // Prevent illegal payment status transitions
+    if (prevPaymentStatus === "paid" && paymentStatus && paymentStatus !== "paid") {
+      return NextResponse.json({
+        success: false,
+        message: "Cannot change a paid order to this status"
+      },
         { status: 400 }
       );
     }
 
-    if (prevPaymentStatus === "paid" && paymentStatus === "pending") {
-      return NextResponse.json(
-        { success: false, message: "Cannot change a paid order to pending" },
-        { status: 400 }
-      );
-    }
 
-    if (prevPaymentStatus === "paid" && paymentStatus === "submitted") {
-      return NextResponse.json(
-        { success: false, message: "Cannot change a paid order to submitted" },
-        { status: 400 }
-      );
-    }
+    // if (prevOrderStatus === "delivered" && orderStatus === "cancelled") {
+    //   return NextResponse.json(
+    //     { success: false, message: "Delivered order cannot be cancelled" },
+    //     { status: 400 }
+    //   );
+    // }
 
-    if (prevOrderStatus === "delivered" && orderStatus === "cancelled") {
-      return NextResponse.json(
-        { success: false, message: "Delivered order cannot be cancelled" },
-        { status: 400 }
-      );
-    }
+    // if (prevOrderStatus === "cancelled" && orderStatus === "processing") {
+    //   return NextResponse.json(
+    //     { success: false, message: "Cancelled order cannot be reprocessed" },
+    //     { status: 400 }
+    //   );
+    // }
 
-    if (prevOrderStatus === "cancelled" && orderStatus === "processing") {
-      return NextResponse.json(
-        { success: false, message: "Cancelled order cannot be reprocessed" },
+
+    // Prevent illegal order status transitions
+    if ((prevOrderStatus === "delivered" && orderStatus === "cancelled") ||
+      (prevOrderStatus === "cancelled" && orderStatus === "processing")) {
+      return NextResponse.json({
+        success: false,
+        message: "Cannot perform this order status transition"
+      },
         { status: 400 }
       );
     }
 
     // Block only if admin tries to re-set paymentStatus to paid
-    if (
-      order.stockProcessed &&
-      prevPaymentStatus === "paid" &&
-      paymentStatus === "paid"
-    ) {
-      return NextResponse.json(
-        { success: false, message: "Payment is already completed and cannot be re-paid" },
+    // Block re-paying
+    if (order.stockProcessed && prevPaymentStatus === "paid" && paymentStatus === "paid") {
+      return NextResponse.json({
+        success: false,
+        message: "Payment is already completed and cannot be re-paid"
+      },
         { status: 409 }
       );
     }
 
-    if (
-      prevStockProcessed &&
-      prevOrderStatus === "cancelled" &&
-      (orderStatus === "cancelled")
-    ) {
-      return NextResponse.json(
-        { success: false, message: "Order is already cancelled and settled" },
+    // Block redundant cancel
+    if (prevStockProcessed && prevOrderStatus === "cancelled" && orderStatus === "cancelled") {
+      return NextResponse.json({
+        success: false,
+        message: "Order is already cancelled and settled"
+      },
         { status: 409 }
       );
     }
@@ -183,71 +217,89 @@ export const PUT = withAuth(
         order.orderStatus = "processing";
       }
       if (!order.paymentSubmittedAt) order.paymentSubmittedAt = new Date();
+
     }
 
-    if (paymentStatus === "failed" && !body.orderStatus) {
+    if (paymentStatus === "failed" && !orderStatus) {
       order.orderStatus = "failed";
     }
 
-    if (body.orderStatus === "delivered") {
-      // Delivered order must be paid
+    // Handle delivered/cancelled timestamps
+    if (orderStatus === "delivered") {
       if (order.paymentStatus !== "paid") {
-        return NextResponse.json(
-          { success: false, message: "Cannot mark delivered when payment is not paid" },
+        return NextResponse.json({
+          success: false,
+          message: "Cannot mark delivered when payment is not paid"
+        },
           { status: 400 }
         );
       }
       (order as IOrder).deliveredAt = new Date();
     }
 
-    if (body.orderStatus === "cancelled") {
+    if (orderStatus === "cancelled") {
       (order as IOrder).cancelledAt = new Date();
     }
 
-    //  Stock processing logic
-    const doPaymentBecamePaid =
-      prevPaymentStatus !== "paid" && order.paymentStatus === "paid";
-    const doPaymentBecameFailed =
-      prevPaymentStatus !== "failed" && order.paymentStatus === "failed";
-    const doOrderBecameCancelled =
-      prevOrderStatus !== "cancelled" && order.orderStatus === "cancelled";
 
-    if (
-      !order.stockProcessed &&
-      (doPaymentBecamePaid || doPaymentBecameFailed || doOrderBecameCancelled)
-    ) {
-      for (const item of order.orderItems) {
+    // Determine stock processing actions
+    const doPaymentBecamePaid = prevPaymentStatus !== "paid" && order.paymentStatus === "paid";
+    const doPaymentBecameFailed = prevPaymentStatus !== "failed" && order.paymentStatus === "failed";
+    const doOrderBecameCancelled = prevOrderStatus !== "cancelled" && order.orderStatus === "cancelled";
+
+    // Bulk stock and totalSales update to avoid N+1
+    if (!order.stockProcessed && (doPaymentBecamePaid || doPaymentBecameFailed || doOrderBecameCancelled)) {
+      const bulkOps: AnyBulkWriteOperation<IProduct>[] = [];
+
+      (order.orderItems as OrderItem[]).forEach((item) => {
         const product = item.product as IProduct;
-        if (!product) continue;
+        if (!product) return;
 
-        // Paid → move reserved stock to sold
+        // Paid → decrement stock, increment totalSales
         if (doPaymentBecamePaid) {
-          product.reservedStock = Math.max((product.reservedStock || 0) - item.quantity, 0);
-          product.stock = Math.max((product.stock || 0) - item.quantity, 0);
-          if (product.stock === 0) product.isActive = false;
-          await product.save();
+          bulkOps.push({
+            updateOne: {
+              filter: { _id: product._id },
+              update: {
+                $inc: { totalSales: item.quantity, stock: -item.quantity },
+                $set: { reservedStock: Math.max((product.reservedStock || 0) - item.quantity, 0) },
+              },
+            },
+          });
         }
 
-        // Failed or cancelled → release reserved stock
+        // Failed/cancelled → release reserved stock
         if (doPaymentBecameFailed || doOrderBecameCancelled) {
-          product.reservedStock = Math.max((product.reservedStock || 0) - item.quantity, 0);
-          await product.save();
+          bulkOps.push({
+            updateOne: {
+              filter: { _id: product._id },
+              update: {
+                $set: { reservedStock: Math.max((product.reservedStock || 0) - item.quantity, 0) },
+              },
+            },
+          });
         }
+      });
+
+      if (bulkOps.length > 0) {
+        await Product.bulkWrite(bulkOps);
       }
 
       order.stockProcessed = true;
-
-      // Ensure processing status for paid payments
       if (doPaymentBecamePaid) order.orderStatus = "processing";
+      order.totalSalesUpdated = order.totalSalesUpdated || doPaymentBecamePaid;
     }
+
     // Ensure processing orders are valid
     if (order.orderStatus === "processing") {
       if (order.paymentMethod === "COD") {
         // COD orders are allowed to be in processing even if paymentStatus !== "paid"
       } else if (order.paymentStatus !== "paid") {
         // Online payment orders must be paid to move to processing
-        return NextResponse.json(
-          { success: false, message: "Processing orders must be paid for online payments" },
+        return NextResponse.json({
+          success: false,
+          message: "Processing orders must be paid for online payments"
+        },
           { status: 400 }
         );
       }

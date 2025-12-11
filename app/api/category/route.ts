@@ -3,7 +3,7 @@ import { uploadToCloudinary } from "@/config/cloudinary";
 import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
 import { withDB } from "@/lib/HOF";
 import { withAuth } from "@/lib/HOF/withAuth";
-import { Category } from "@/models";
+import { Category, Product } from "@/models";
 import { ICategory } from "@/models/categoryModel";
 import { ApiResponse } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
@@ -14,20 +14,53 @@ import { NextRequest, NextResponse } from "next/server";
 
 // category-get-all api/category
 export const GET = withDB(async () => {
+  // 1) Fetch categories
   const categories = await Category.find()
     .populate("parentId", "categoryName")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean<ICategory[]>(); // IMPORTANT: gives plain objects for merging
 
-  const hasCategory = categories.length > 0
-  const response: ApiResponse<ICategory[]> = {
-    success: hasCategory,
-    message: hasCategory ? "categories fetched successfully" : "no categories found",
-    data: categories,
-    status: hasCategory ? 200 : 404
+  if (!categories.length) {
+    const response: ApiResponse<ICategory[]> = {
+      success: false,
+      message: "no categories found",
+      data: [],
+      status: 404,
+    };
+    return NextResponse.json(response, { status: 404 });
   }
-  return NextResponse.json(response, { status: response.status })
-}, { resourceName: "category" }
-)
+
+  // 2) Fetch product counts (single DB query)
+  const productCounts = await Product.aggregate([
+    {
+      $group: {
+        _id: "$category",
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  // Convert counts to a Map for O(1) lookup
+  const countMap = new Map(
+    productCounts.map((item) => [item._id.toString(), item.count])
+  );
+
+  // 3) Merge categories + counts
+  const categoriesWithCount = categories.map((cat) => ({
+    ...cat,
+    productCount: countMap.get(cat._id.toString()) || 0,
+  }));
+
+
+  return NextResponse.json({
+    success: true,
+    message: "categories fetched successfully",
+    data: categoriesWithCount,
+  
+  }, { status: 200 });
+}, {
+  resourceName: "category",
+});
 
 // category-create api/category
 export const POST = withAuth(

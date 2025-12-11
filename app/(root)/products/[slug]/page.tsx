@@ -103,7 +103,7 @@ const ProductPage = ({ params }: PageProps) => {
 
         <div className="flex flex-col  space-y-6">
           <p className="text-xs px-4 py-1 rounded-md text-white bg-primary w-fit">
-            {category.name}
+            {category.categoryName}
           </p>
 
           <div className="flex items-center ">

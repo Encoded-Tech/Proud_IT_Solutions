@@ -57,12 +57,13 @@ export const ProductMock: productType[] = [
 
     category: {
       id: "cmemd01oi001kjweejy3jhlpo",
-      name: "Laptops",
+      categoryName: "Laptops",
       slug: "laptops",
-      image: null,
+      categoryImage: "",
       parentId: "cmeb7s3660001jw6vz3rwepch",
       isActive: true,
       createdAt: "2025-08-22T04:57:35.874Z",
+      productCount: 2
     },
     user: {
       id: "cmeb2dygn0002jwhv5u3liaa8",
@@ -127,12 +128,13 @@ export const ProductMock: productType[] = [
 
     category: {
       id: "cmemd01oi001kjweejy3jhlpo",
-      name: "Mice",
+      categoryName: "Mice",
       slug: "mice",
-      image: null,
+      categoryImage: "",
       parentId: "cmeb7s3660001jw6vz3rwepch",
       isActive: true,
       createdAt: "2025-08-22T04:57:35.874Z",
+      productCount: 2
     },
     user: {
       id: "cmeb2dygn0002jwhv5u3liaa8",
@@ -197,12 +199,13 @@ export const ProductMock: productType[] = [
 
     category: {
       id: "cmemcw6y9001hjweeacp73noc",
-      name: "Keyboards",
+      categoryName: "Keyboards",
       slug: "keyboards",
-      image: null,
+      categoryImage: "",
       parentId: "cmeb7s3660001jw6vz3rwepch",
       isActive: true,
       createdAt: "2025-08-22T04:54:36.082Z",
+      productCount: 2
     },
     user: {
       id: "cmeb2dygn0002jwhv5u3liaa8",
@@ -267,12 +270,13 @@ export const ProductMock: productType[] = [
 
     category: {
       id: "cmemckv53000ujweerv34mjl1",
-      name: "Headsets",
+      categoryName: "Headsets",
       slug: "Headsets",
-      image: null,
+      categoryImage: "",
       parentId: "cmemcjxno000sjwee44x5rtw5",
       isActive: true,
       createdAt: "2025-08-22T04:45:47.559Z",
+      productCount: 2
     },
     user: {
       id: "cmeb2dygn0002jwhv5u3liaa8",

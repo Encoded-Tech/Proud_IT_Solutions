@@ -7,8 +7,12 @@ import "slick-carousel/slick/slick-theme.css";
 import Slider from "react-slick";
 import Link from "next/link";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import { CategoryType } from "@/types/product";
 
-const Categories = () => {
+
+
+
+export default function SliderClient({ categories }: { categories: CategoryType[] }) {
   const sliderRef = useRef<Slider | null>(null);
 
   const settings = {
@@ -68,15 +72,15 @@ const Categories = () => {
   return (
     <div className="relative">
       <PageHeader title="Popular Categories" />
-      {categorydata.length > 5 ? (
+      {categories.length > 5 ? (
         <section>
           <Slider {...settings} ref={sliderRef} className="my-10">
-            {categorydata.map((item, index) => (
+            {categories?.map((item, index) => (
               <div key={index} className="px-2">
                 <Link href="/shop">
                   <figure className="overflow-hidden rounded-md cursor-pointer">
                     <Image
-                      src={item.img}
+                      src={item.categoryImage}
                       alt="hero"
                       width={1000}
                       height={500}
@@ -86,9 +90,9 @@ const Categories = () => {
                   </figure>
 
                   <div className="flex flex-col justify-center items-center my-2">
-                    <h2 className="font-medium text-md">{item.title}</h2>
+                    <h2 className="font-medium text-md">{item.categoryName}</h2>
                     <p className="text-zinc-500 font-medium text-sm">
-                      {item.num} Products
+                      {item.productCount} Products
                     </p>
                   </div>
                 </Link>
@@ -115,12 +119,12 @@ const Categories = () => {
         </section>
       ) : (
         <section className="grid grid-cols-5 my-10">
-          {categorydata.map((item, index) => (
+          {categories?.map((item, index) => (
             <div key={index} className="px-2">
               <Link href="/">
                 <figure className="overflow-hidden rounded-md cursor-pointer">
                   <Image
-                    src={item.img}
+                    src={item.categoryImage}
                     alt="hero"
                     width={1000}
                     height={500}
@@ -130,9 +134,9 @@ const Categories = () => {
                 </figure>
 
                 <div className="flex flex-col justify-center items-center my-2">
-                  <h2 className="font-medium text-lg">{item.title}</h2>
+                  <h2 className="font-medium text-lg">{item.categoryName}</h2>
                   <p className="text-zinc-500 font-medium">
-                    {item.num} Products
+                      {item.productCount} Products 
                   </p>
                 </div>
               </Link>
@@ -144,47 +148,5 @@ const Categories = () => {
   );
 };
 
-export default Categories;
 
-const categorydata = [
-  {
-    title: "Keyboards",
-    num: 23,
-    img: "/category/ct1.jpg",
-  },
-  {
-    title: "Headsets",
-    num: 23,
-    img: "/category/ct2.jpg",
-  },
-  {
-    title: "Mouse",
-    num: 23,
-    img: "/category/ct3.jpg",
-  },
-  {
-    title: "Gamepads",
-    num: 23,
-    img: "/category/ct4.jpg",
-  },
-  {
-    title: "Keyboards",
-    num: 23,
-    img: "/category/ct5.jpg",
-  },
-  {
-    title: "Mat",
-    num: 23,
-    img: "/category/ct1.jpg",
-  },
-  {
-    title: "HeadSets",
-    num: 23,
-    img: "/category/ct2.jpg",
-  },
-  {
-    title: "Keyboards",
-    num: 23,
-    img: "/category/ct3.jpg",
-  },
-];
+

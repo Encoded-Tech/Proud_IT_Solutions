@@ -19,6 +19,10 @@ const nextConfig: NextConfig = {
         hostname: "lacosmeticsnepal.s3.ap-south-1.amazonaws.com",
         port: "",
       },
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+      },
     ],
   },
 };
