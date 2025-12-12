@@ -7,6 +7,7 @@ export interface productType {
   price: number;
   stock: number;
   offeredPrice: number;
+  discountPercent: number;
   isOfferedPriceActive: boolean;
   offerStartDate: Date | null;
   offerEndDate: Date | null;
@@ -96,6 +97,7 @@ export interface CategoryType {
   isActive: boolean;
   createdAt: string;
 }
+
 
 export interface UserType {
   id: string;

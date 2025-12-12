@@ -1,0 +1,48 @@
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total?: number;
+  totalPages?: number;
+}
+
+export interface PaginatedProductResponse<T> {
+  success: boolean;
+  message: string;
+  data: T[] | null;
+  pagination?: PaginationMeta;
+  error?: string | null;
+}
+
+/**
+ * A safe wrapper to execute server-side queries with automatic error handling.
+ * Returns a consistent PaginatedProductResponse<T> structure.
+ */
+export async function safeQuery<T>(
+  fn: () => Promise<{ data: T[]; pagination?: PaginationMeta }>,
+  message: string
+): Promise<PaginatedProductResponse<T>> {
+  try {
+    const { data, pagination } = await fn();
+
+    return {
+      success: true,
+      message: `${message} fetched successfully`,
+      data,
+      pagination,
+      error: null,
+    };
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Unexpected server error";
+
+    console.error(`Server Component Query Error (${message}):`, errorMessage);
+
+    return {
+      success: false,
+      message: `Failed to fetch ${message.toLowerCase()}`,
+      data: null,
+      pagination: undefined,
+      error: errorMessage,
+    };
+  }
+}

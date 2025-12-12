@@ -1,27 +1,16 @@
-
-import { FRONTEND_URL } from "@/config/env";
+import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
 import SliderClient from "../products/categories";
 import ShopCategories from "@/app/(root)/shop/shop-category";
 
 export const revalidate = 60;
-
-async function getCategories() {
-  const res = await fetch(`${FRONTEND_URL}/api/category`, {
-    next: { revalidate: 60 },
-  });
-
-  if (!res.ok) return [];
-
-  const data = await res.json();
-  return data?.data || [];
-}
 type Props = {
   page: "home" | "shop";
 };
 
 export default async function ListCategories( { page }: Props) {
-  const categories = await getCategories();
-  
+  const res = await fetchCategories();
+
+  const categories = res.data || [];
 
   return (
     <div className="relative">

@@ -239,7 +239,11 @@ export const PUT = withAuth(
 
     if (orderStatus === "cancelled") {
       (order as IOrder).cancelledAt = new Date();
+
+
+
     }
+
 
 
     // Determine stock processing actions

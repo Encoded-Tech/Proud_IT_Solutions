@@ -24,6 +24,7 @@ export interface IProduct extends Document {
   }
   
   export interface IReview extends Document {
+    _id: Types.ObjectId;
     user: Types.ObjectId;   
     rating: number;           
     comment: string;

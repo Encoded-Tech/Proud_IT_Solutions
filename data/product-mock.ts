@@ -13,6 +13,7 @@ export const ProductMock: productType[] = [
      
     price: 3000,
     stock: 2, 
+    discountPercent: 0,
     offeredPrice: 2000,
     isOfferedPriceActive: true,
     offerStartDate: null,
@@ -87,6 +88,7 @@ export const ProductMock: productType[] = [
     stock: 4,
 
     offeredPrice: 2000,
+       discountPercent: 0,
     isOfferedPriceActive: false,
     offerStartDate: null,
     offerEndDate: null,
@@ -159,6 +161,7 @@ export const ProductMock: productType[] = [
     stock: 4,
 
     offeredPrice: 0,
+       discountPercent: 0,
     isOfferedPriceActive: false,
     offerStartDate: null,
     offerEndDate: null,
@@ -231,6 +234,7 @@ export const ProductMock: productType[] = [
     stock: 4,
 
     offeredPrice: 0,
+       discountPercent: 0,
     isOfferedPriceActive: false,
     offerStartDate: null,
     offerEndDate: null,

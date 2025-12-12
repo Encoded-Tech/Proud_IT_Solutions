@@ -10,6 +10,7 @@ export interface ICategory extends Document {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  
 }
 
 export interface ICategoryWithCount extends ICategory {

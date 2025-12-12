@@ -1,0 +1,295 @@
+import { IProduct, Product } from "@/models/productModel";
+import { FilterQuery } from "mongoose";
+import { connectDB } from "@/db";
+import { mapProductToFrontend } from "../mappers/MapProductData";
+import { productType } from "@/types/product";
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total?: number;
+  totalPages?: number;
+}
+
+export interface PaginatedProductResponse<T> {
+  success: boolean;
+  message: string;
+  data: T[] | null;
+  pagination?: PaginationMeta;
+  error?: string | null;
+}
+
+export async function fetchBestSellers(
+  page = 1,
+  limit = 10,
+  category?: string
+): Promise<PaginatedProductResponse<productType>> {
+  try {
+    await connectDB();
+
+    const skip = (page - 1) * limit;
+
+    // Base filter
+    const filter: FilterQuery<IProduct> = {
+      isActive: true,
+      totalSales: { $gt: 0 },
+    };
+
+    if (category) filter.category = category;
+
+    // Count total
+    const total = await Product.countDocuments(filter);
+
+    // Query
+    const products = await Product.find(filter)
+      .sort({ totalSales: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("category", "categoryName")
+      .populate({
+        path: "variants",
+        match: { isActive: true },
+        select: "price stock specs images isActive",
+      })
+      .lean<IProduct[]>();
+
+    return {
+      success: true,
+      message: "Best Sellers fetched successfully",
+      data: products.map(mapProductToFrontend),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unexpected server error";
+
+    console.error("Best Sellers Fetch Error:", errorMessage);
+
+    return {
+      success: false,
+      message: "Failed to fetch best sellers",
+      data: null,
+      error: errorMessage,
+    };
+  }
+}
+
+export async function fetchNewArrivals(
+  page = 1,
+  limit = 10,
+  category?: string
+): Promise<PaginatedProductResponse<productType>> {
+  try {
+    await connectDB();
+
+    const skip = (page - 1) * limit;
+
+    const filter: FilterQuery<IProduct> = {
+      isActive: true,
+    };
+
+    if (category) filter.category = category;
+
+    const total = await Product.countDocuments(filter);
+
+    const products = await Product.find(filter)
+      .sort({ createdAt: -1 }) // ← newest first
+      .skip(skip)
+      .limit(limit)
+      .populate("category", "categoryName")
+      .populate({
+        path: "variants",
+        match: { isActive: true },
+        select: "price stock specs images isActive",
+      })
+      .lean<IProduct[]>();
+
+    return {
+      success: true,
+      message: "New Arrivals fetched successfully",
+      data: products.map(mapProductToFrontend),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unexpected server error";
+
+    console.error("New Arrivals Fetch Error:", errorMessage);
+
+    return {
+      success: false,
+      message: "Failed to fetch new arrivals",
+      data: null,
+      error: errorMessage || "Unexpected error",
+    };
+  }
+}
+
+export async function fetchHotDeals(
+  page = 1,
+  limit = 10,
+  category?: string
+): Promise<PaginatedProductResponse<productType>> {
+  try {
+    await connectDB();
+
+    const skip = (page - 1) * limit;
+
+    // Detect hot deals
+    const filter: FilterQuery<IProduct> = {
+      isActive: true,
+      $or: [
+        { discountPercent: { $gt: 0 } },
+        { offeredPrice: { $gt: 0 }, isOfferedPriceActive: true },
+      ],
+    };
+    if (category) filter.category = category;
+
+    const total = await Product.countDocuments(filter);
+
+    const products = await Product.find(filter)
+      .sort({ discountPercent: -1 }) // highest discount first
+      .skip(skip)
+      .limit(limit)
+      .populate("category", "categoryName")
+      .populate({
+        path: "variants",
+        match: { isActive: true },
+        select: "price salePrice stock specs images isActive",
+      })
+      .lean<IProduct[]>();
+
+    return {
+      success: true,
+      message: "Hot Deals fetched successfully",
+      data: products.map(mapProductToFrontend),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+
+    const errorMessage =
+      error instanceof Error ? error.message : "Unexpected server error";
+    console.error("Hot Deals Fetch Error:", errorMessage);
+
+    return {
+      success: false,
+      message: "Failed to fetch hot deals",
+      data: null,
+      error: errorMessage || "Unexpected error",
+    };
+  }
+}
+
+export async function fetchAllProducts(
+  page = 1,
+  limit = 20,
+  filters?: FilterQuery<IProduct>
+): Promise<PaginatedProductResponse<productType>> {
+  try {
+    await connectDB();
+
+    const skip = (page - 1) * limit;
+
+    const filter: FilterQuery<IProduct> = { isActive: true, ...filters };
+
+    const total = await Product.countDocuments(filter);
+
+    const products = await Product.find(filter)
+      .sort({ createdAt: -1 }) // newest first
+      .skip(skip)
+      .limit(limit)
+      .populate("category", "categoryName")
+      .populate({
+        path: "variants",
+        match: { isActive: true },
+        select: "price stock specs images isActive",
+      })
+      .lean<IProduct[]>();
+
+    return {
+      success: true,
+      message: "Products fetched successfully",
+      data: products.map(mapProductToFrontend),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unexpected server error";
+    console.error("Fetch All Products Error:", errorMessage);
+
+    return {
+      success: false,
+      message: "Failed to fetch products",
+      data: null,
+      error: errorMessage,
+    };
+  }
+}
+export interface ApiSingleProductResponse {
+  success: boolean;
+  message: string;
+  data: productType | null;
+  status: number;
+  error?: string | null;
+}
+
+export async function fetchProductBySlug(slug: string): Promise<ApiSingleProductResponse> {
+  try {
+    await connectDB();
+
+    const product = await Product.findOne({ slug, isActive: true })
+      .populate("category", "categoryName")
+      .populate({
+        path: "variants",
+        match: { isActive: true },
+        select: "price stock specs images isActive",
+      })
+      .lean<IProduct>();
+
+    if (!product) {
+      return {
+        success: false,
+        message: "Product not found",
+        data: null,
+        status: 404,
+      };
+    }
+
+    return {
+      success: true,
+      message: "Single product fetched successfully",
+      data: mapProductToFrontend(product),
+      status: 200,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unexpected server error";
+    console.error("Fetch Product By Slug Error:", errorMessage);
+
+    return {
+      success: false,
+      message: "Failed to fetch product",
+      data: null,
+      status: 500,
+      error: errorMessage,
+    };
+  }
+}

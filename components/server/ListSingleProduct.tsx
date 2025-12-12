@@ -1,21 +1,23 @@
-import { FRONTEND_URL } from "@/config/env";
-import { productType } from "@/types/product";
+
+import { fetchProductBySlug } from "@/lib/server/fetchers/fetchProducts";
+
 
 export const revalidate = 60;
-async function getProductBySlug(slug: string): Promise<productType | null> {
-  const res = await fetch(`${FRONTEND_URL}/api/product/${slug}`);
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data?.data || null;
-}
 
 export default async function ListSingleProduct({ slug }: { slug: string }) {
-  const product = await getProductBySlug(slug);
-  if (!product) return null;
+  const res = await fetchProductBySlug(slug);
+
+  if (!res.success || !res.data) {
+    return <div>Product not found</div>;
+  }
+
+  const product = res.data || {};
+
+  console.log("product", product);
 
   return (
     <div className="space-y-20">
-      
+      {/* <ProductPageClient product={product} /> */}
     </div>
   );
-}   
+}
