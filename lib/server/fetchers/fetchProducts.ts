@@ -213,7 +213,10 @@ export async function fetchAllProducts(
       .sort({ createdAt: -1 }) // newest first
       .skip(skip)
       .limit(limit)
-      .populate("category", "categoryName")
+      .populate({
+    path: "category",
+    select: "categoryName slug categoryImage isActive createdAt"
+  })
       .populate({
         path: "variants",
         match: { isActive: true },
@@ -257,7 +260,10 @@ export async function fetchProductBySlug(slug: string): Promise<ApiSingleProduct
     await connectDB();
 
     const product = await Product.findOne({ slug, isActive: true })
-      .populate("category", "categoryName")
+      .populate({
+    path: "category",
+    select: "categoryName slug categoryImage isActive createdAt"
+  })
       .populate({
         path: "variants",
         match: { isActive: true },

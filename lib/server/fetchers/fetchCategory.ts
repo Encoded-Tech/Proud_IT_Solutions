@@ -12,6 +12,13 @@ export interface ApiCategoryResponse {
   error?: string | null;
 }
 
+export interface ApiSingleCategoryResponse {
+  success: boolean;
+  message: string;
+  data: CategoryType | null;
+  error?: string | null;
+}
+
 export async function fetchCategories(): Promise<ApiCategoryResponse> {
   try {
     // 1) Fetch categories from DB
@@ -54,6 +61,63 @@ export async function fetchCategories(): Promise<ApiCategoryResponse> {
     return {
       success: false,
       message: "Failed to fetch categories",
+      data: null,
+      error: errorMessage,
+    };
+  }
+}
+export async function fetchCategoryBySlug(
+  slug: string
+): Promise<ApiSingleCategoryResponse> {
+  try {
+    // 1) Fetch single category
+    const category: ICategory | null = await Category.findOne({ slug }).lean<ICategory>();
+
+    if (!category) {
+      return {
+        success: false,
+        message: "Category not found",
+        data: null,
+        error: null,
+      };
+    }
+
+    // 2) Count products in this category
+    const productCount = await Product.countDocuments({
+      category: category._id,
+    });
+
+    // 3) Build plain object with count
+    const categoryWithCount = {
+      _id: category._id.toString(),
+      categoryName: category.categoryName,
+      categoryImage: category.categoryImage || "",
+      slug: category.slug,
+      parentId: category.parentId?.toString() || null,
+      isActive: category.isActive,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
+      productCount,
+    };
+
+    // 4) Map to frontend type
+    const frontendCategory = mapCategoryToFrontend(categoryWithCount);
+
+    return {
+      success: true,
+      message: "Category fetched successfully",
+      data: frontendCategory,
+      error: null,
+    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unexpected server error";
+
+    console.error("Fetch Category Error:", errorMessage);
+
+    return {
+      success: false,
+      message: "Failed to fetch category",
       data: null,
       error: errorMessage,
     };

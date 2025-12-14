@@ -1,7 +1,31 @@
+
 import { IProduct } from "@/models/productModel";
 import { productType } from "@/types/product";
 
+// types/server/product-populated.ts
+import { Types } from "mongoose";
+
+import { ICategory } from "@/models/categoryModel";
+
+export interface IProductPopulated
+  extends Omit<IProduct, "category"> {
+  category?: Types.ObjectId | ICategory;
+}
+
+export function isPopulatedCategory(
+  value: Types.ObjectId | ICategory | undefined | null
+): value is ICategory {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "categoryName" in value
+  );
+}
+
 export function mapProductToFrontend(product: IProduct): productType {
+  const category = isPopulatedCategory(product.category)
+    ? product.category
+    : null;
   return {
     id: product._id.toString(),
     name: product.name,
@@ -19,14 +43,18 @@ export function mapProductToFrontend(product: IProduct): productType {
     offerStartDate: null,
     offerEndDate: null,
     userId: "",             
-    categoryId: product.category?.toString() || "",
+  categoryId: product.category?._id?.toString() || "",
+  
     isFeatured: false,
     seoMetaId: "",
     brandId: "",
 
     // Large structures not in Mongoose model
     media: [],
-    tags: [],
+    tags: product.tags?.map(t => ({
+      id: t.id ||   "",
+      name: t.name
+    })) || [],
     seoMeta: {
       id: "",
       model: "",
@@ -56,14 +84,15 @@ export function mapProductToFrontend(product: IProduct): productType {
       updatedAt: r.updatedAt.toISOString()
     })) || [],
 
-    category: {
-      id: product.category?.toString() ?? "",
-      categoryName: "",
-      slug: "",
-      categoryImage: "",
+   
+     category: {
+      id: category?._id.toString() ?? "",
+      categoryName: category?.categoryName ?? "",
+      slug: category?.slug ?? "",
+      categoryImage: category?.categoryImage ?? "",
       productCount: 0,
-      isActive: true,
-      createdAt: ""
+      isActive: category?.isActive ?? true,
+      createdAt: category?.createdAt?.toISOString() ?? ""
     },
 
     user: {

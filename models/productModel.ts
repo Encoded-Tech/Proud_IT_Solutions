@@ -16,6 +16,7 @@ export interface IProduct extends Document {
     totalReviews: number;
     totalSales: number;
     offeredPrice?: number;
+    tags?: { id: string; name: string }[];
     isOfferedPriceActive?: boolean;
     discountPercent?: number;
     isActive: boolean;
@@ -56,7 +57,13 @@ export interface IProduct extends Document {
       avgRating: { type: Number, default: 0 },   
       totalSales: { type: Number, default: 0 },  
       offeredPrice: { type: Number, default: 0 },             // Price after applying discount
-isOfferedPriceActive: { type: Boolean, default: false },  
+isOfferedPriceActive: { type: Boolean, default: false },
+tags: [
+    {
+      id: { type: String },
+      name: { type: String, required: true }
+    }
+  ],  
 discountPercent: { type: Number, default: 0 },
       totalReviews: { type: Number, default: 0 },  
       isActive: { type: Boolean, default: true },

@@ -5,6 +5,7 @@ import { withAuth } from "@/lib/HOF/withAuth";
 import { Product } from "@/models";
 import { IProduct } from "@/models/productModel";
 import { ApiResponse } from "@/types/api";
+import { Types } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
 //total apis
@@ -50,7 +51,18 @@ export const POST = withAuth(
     const isActive =
       isActiveRaw === null ? undefined : isActiveRaw === "true";
 
-    const requiredFields = { name, price, category, stock };
+      const tagsRaw = formData.get("tags") as string | null; 
+// expecting JSON string like '[{"name":"tag1"},{"name":"tag2"}]'
+
+
+const tags = tagsRaw
+  ? (JSON.parse(tagsRaw) as { id?: string; name: string }[]).map(tag => ({
+      id: tag.id || new Types.ObjectId().toString(),
+      name: tag.name,
+    }))
+  : [];
+
+    const requiredFields = { name, price, category, stock, };
     const missingFields = checkRequiredFields(requiredFields);
     if (missingFields) return missingFields;
 
@@ -83,6 +95,7 @@ export const POST = withAuth(
       price: priceNumber,
       stock,
       category,
+      tags,
       images: imageUrl,
       variants: variants ? JSON.parse(variants) : [],
       isActive
