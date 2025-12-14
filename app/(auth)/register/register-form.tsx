@@ -1,38 +1,45 @@
 "use client";
+
 import type React from "react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { Icon } from "@iconify/react";
-import { toast } from "react-hot-toast";
 import { signIn } from "next-auth/react";
+import { useFormState, useFormStatus } from "react-dom";
+import {
+  registerAction,
+  type RegisterState,
+} from "@/lib/server/actions/auth/register";
 
+const initialState: RegisterState = {};
 
 export default function RegisterForm() {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [state, formAction] = useFormState(registerAction, initialState);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    password: "",
+    hashedPassword: "",
     confirmPassword: "",
+    phone: "",
   });
 
   const [errors, setErrors] = useState({
     name: "",
     email: "",
-    password: "",
+    hashedPassword: "",
     confirmPassword: "",
+    phone: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Clear error when user types
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -43,7 +50,7 @@ export default function RegisterForm() {
     const newErrors = { ...errors };
 
     if (!formData.name.trim()) {
-      newErrors.name = "First name is required";
+      newErrors.name = "Full name is required";
       valid = false;
     }
 
@@ -51,23 +58,28 @@ export default function RegisterForm() {
       newErrors.email = "Email is required";
       valid = false;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
+      newErrors.email = "Invalid email address";
       valid = false;
     }
 
-    if (!formData.password) {
-      newErrors.password = "Password is required";
+    if (!formData.hashedPassword) {
+      newErrors.hashedPassword = "Password is required";
       valid = false;
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
+    } else if (formData.hashedPassword.length < 8) {
+      newErrors.hashedPassword = "Password must be at least 8 characters";
       valid = false;
     }
 
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = "Please confirm your password";
       valid = false;
-    } else if (formData.password !== formData.confirmPassword) {
+    } else if (formData.hashedPassword !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match";
+      valid = false;
+    }
+
+    if (!formData.phone) {
+      newErrors.phone = "Phone number is required";
       valid = false;
     }
 
@@ -75,209 +87,158 @@ export default function RegisterForm() {
     return valid;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  return (
+    <div className="w-full bg-white p-4 rounded-md shadow-sm">
+      <form
+        action={formAction}
+        onSubmit={(e) => {
+          if (!validateForm()) e.preventDefault();
+        }}
+        className="space-y-4"
+      >
+        {/* SERVER ERROR */}
+        {state.error && (
+          <p className="text-sm text-red-600 bg-red-50 p-2 rounded">
+            {state.error}
+          </p>
+        )}
 
-    if (!validateForm()) return;
+        {/* Name */}
+        <Input
+          label="Full Name"
+          name="name"
+          value={formData.name}
+          error={errors.name}
+          onChange={handleChange}
+        />
 
-    setIsLoading(true);
+        {/* Email */}
+        <Input
+          label="Email"
+          name="email"
+          type="email"
+          value={formData.email}
+          error={errors.email}
+          onChange={handleChange}
+        />
 
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SERVER_API}/auth/register`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            password: formData.password,
-          }),
-        }
-      );
+        {/* Phone */}
+        <Input
+          label="Phone"
+          name="phone"
+          value={formData.phone}
+          error={errors.phone}
+          onChange={handleChange}
+        />
 
-      const data = await res.json();
+        {/* Password */}
+        <PasswordInput
+          label="Password"
+          name="hashedPassword"
+          value={formData.hashedPassword}
+          error={errors.hashedPassword}
+          show={showPassword}
+          toggle={() => setShowPassword(!showPassword)}
+          onChange={handleChange}
+        />
 
-      if (!res.ok) {
-        console.error("Login failed:", data.message || data.error);
-        toast.error(data.message || data.error);
-        return;
-      }
-      toast.success("Registration Successfull");
-      router.push(`verifyEmail?email=${encodeURIComponent(data.data.email)}`);
-    } catch (error) {
-      console.error("Registration failed", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        {/* Confirm Password */}
+        <PasswordInput
+          label="Confirm Password"
+          name="confirmPassword"
+          value={formData.confirmPassword}
+          error={errors.confirmPassword}
+          show={showConfirmPassword}
+          toggle={() => setShowConfirmPassword(!showConfirmPassword)}
+          onChange={handleChange}
+        />
+
+        <SubmitButton />
+      </form>
+
+      {/* OAuth */}
+      <button
+        onClick={() => signIn("google")}
+        className="w-full h-11 mt-4 flex items-center justify-center border rounded-md"
+      >
+        <Icon icon="flat-color-icons:google" width={24} height={24} />
+      </button>
+
+      <p className="mt-6 text-sm text-center">
+        Already have an account?{" "}
+        <Link href="/login" className="text-primary font-medium">
+          Sign in
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+/* ---------- REUSABLE INPUTS ---------- */
+
+function Input({
+  label,
+  error,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  error?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm font-medium">{label}</label>
+      <input {...props} className="w-full p-3 border rounded-lg" />
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+function PasswordInput({
+  label,
+  show,
+  toggle,
+  error,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  label: string;
+  show: boolean;
+  toggle: () => void;
+  error?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm font-medium">{label}</label>
+      <div className="relative">
+        <input
+          {...props}
+          type={show ? "text" : "password"}
+          className="w-full p-3 border rounded-lg"
+        />
+        <button
+          type="button"
+          onClick={toggle}
+          className="absolute right-3 top-1/2 -translate-y-1/2"
+        >
+          {show ? <EyeOff size={16} /> : <Eye size={16} />}
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+/* ---------- SUBMIT BUTTON ---------- */
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
 
   return (
-    <div className="w-full overflow-hidden bg-white p-4 rounded-md shadow-sm">
-      <div className="relative space-y-6 ">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="fullName" className="text-sm font-medium">
-              Full Name
-            </label>
-            <input
-              id="name"
-              name="name"
-              placeholder="John"
-              autoComplete="given-name"
-              value={formData.name}
-              onChange={handleChange}
-              className="md:p-3 p-2 rounded-lg border-zinc-200 bg-white outline-none md:text-sm text-xs  border w-full"
-              disabled={isLoading}
-            />
-            {errors.name && (
-              <p className="text-xs font-medium text-red-500">{errors.name}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="fullName" className="text-sm font-medium">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="name@example.com"
-              autoComplete="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="md:p-3 p-2 rounded-lg border-zinc-200 bg-white outline-none md:text-sm text-xs  border w-full"
-              disabled={isLoading}
-            />
-            {errors.email && (
-              <p className="text-xs font-medium text-red-500">{errors.email}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="fullName" className="text-sm font-medium">
-              Password
-            </label>
-            <div className="relative">
-              <input
-                id="password"
-                name="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="••••••••"
-                autoComplete="new-password"
-                value={formData.password}
-                onChange={handleChange}
-                className="md:p-3 p-2 rounded-lg border-zinc-200 bg-white outline-none md:text-sm text-xs  border w-full"
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                tabIndex={-1}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-            {errors.password && (
-              <p className="text-xs font-medium text-red-500">
-                {errors.password}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="fullName" className="text-sm font-medium">
-              ConfirmPassword
-            </label>
-            <div className="relative">
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="••••••••"
-                autoComplete="new-password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="md:p-3 p-2 rounded-lg border-zinc-200 bg-white outline-none md:text-sm text-xs  border w-full"
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                tabIndex={-1}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="text-xs font-medium text-red-500">
-                {errors.confirmPassword}
-              </p>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            className="w-full h-11 bg-primary rounded-md text-white font-medium transition-all duration-200 hover:shadow-md hover:translate-y-[-1px]"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating account...
-              </>
-            ) : (
-              "Create account"
-            )}
-          </button>
-        </form>
-
-        <div className="relative">
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Or continue with
-            </span>
-          </div>
-        </div>
-
-        <div className="relative">
-          <div className="relative text-xs uppercase">
-            <button
-              className="w-full h-11 transition-all duration-200 flex justify-center items-center shadow-sm rounded-md border border-zinc-200"
-              disabled={isLoading}
-              onClick={()=> signIn("google")}
-            >
-              <Icon icon="flat-color-icons:google" width="24" height="24" />
-              <span className="sr-only">Google</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="relative flex justify-center mt-6">
-        <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link
-            href={`/login`}
-            className="font-medium text-primary hover:text-primary/80 hover:underline transition-colors"
-          >
-            Sign in
-          </Link>
-        </p>
-      </div>
-    </div>
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-full h-11 bg-primary text-white rounded-md"
+    >
+      {pending ? "Creating account..." : "Create account"}
+    </button>
   );
 }

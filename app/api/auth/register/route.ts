@@ -33,8 +33,6 @@ export const POST = withDB(async (req: NextRequest, context?) => {
     }, { status: 400 });
   }
 
-
-
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     // Case 1: User exists but NOT verified
@@ -85,7 +83,7 @@ export const POST = withDB(async (req: NextRequest, context?) => {
     emailVerificationExpiry: verifyTokenExpiry,
   });
 
-  const verifyUrl = `${FRONTEND_URL}/auth/verify-email?token=${rawVerifyToken}&email=${encodeURIComponent(
+  const verifyUrl = `${FRONTEND_URL}/verify-email/confirm?token=${rawVerifyToken}&email=${encodeURIComponent(
     email
   )}`;
 

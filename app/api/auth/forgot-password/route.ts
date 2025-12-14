@@ -48,7 +48,7 @@ export const POST = withDB(async (req: NextRequest, context?) => {
 
   // Send email
   const frontendUrl = process.env.FRONTEND_URL;
-  const resetUrl = `${frontendUrl}/auth/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`;
+  const resetUrl = `${frontendUrl}/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`;
 
   const html = `
     <p>Hello ${user.name || ""},</p>

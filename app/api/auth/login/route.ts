@@ -70,7 +70,9 @@ export const POST = withDB(async (req: NextRequest, context?) => {
     logSecurity("login_failed_unverified_email", { email, ip });
     return NextResponse.json({
       success: false,
-      message: "Please verify your email address before logging in."
+      message: "Please verify your email address before logging in.",
+      email: user.email,
+      expiresAt: user.emailVerificationExpiry,
     }, { status: 401 });
   }
 

@@ -41,7 +41,7 @@ export const POST = withDB(async (req, context?) => {
     await user.save();
 
     // 3️⃣ Create verification URL  
-    const verifyUrl = `${FRONTEND_URL}/auth/verify-email?token=${rawVerifyToken}&email=${encodeURIComponent(email)}`;
+    const verifyUrl = `${FRONTEND_URL}/verify-email/confirm?token=${rawVerifyToken}&email=${encodeURIComponent(email)}`;
 
     // 4️⃣ Build email HTML
     const html = `
@@ -73,7 +73,10 @@ export const POST = withDB(async (req, context?) => {
 
     return NextResponse.json({
         success: true,
-        message: "Verification email resent!"
+        message: "Verification email resent!",
+        email: user.email,
+        expiresAt: user.emailVerificationExpiry,
+
     });
 
 }, { resourceName: "user" });
