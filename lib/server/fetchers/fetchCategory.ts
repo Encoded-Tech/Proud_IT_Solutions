@@ -1,3 +1,4 @@
+"use server";
 import { Category, Product } from "@/models";
 import { ICategoryWithCountPlain, mapCategoryToFrontend } from "../mappers/MapCategory";
 import { CategoryType } from "@/types/product";

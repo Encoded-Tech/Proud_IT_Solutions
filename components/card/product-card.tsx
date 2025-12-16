@@ -1,8 +1,10 @@
+
 import { productType } from "@/types/product";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+import AddToCartButton from "../client/AddToCartButton";
 
 interface ProductCardProps {
   product?: productType;
@@ -107,10 +109,19 @@ const ProductCard = ({ product, label }: ProductCardProps) => {
         )}
       </div>
 
-      <button className="mt-4 border border-lighttext rounded-md  inset-shdaow-xs md:px-6 px-4 text-sm py-2  hover:bg-primary/90 hover:text-white hover:border-none cursor-pointer ease-in-out duration-100  w-full flex items-center gap-2 justify-center">
-        <Icon icon="mynaui:cart-solid" width="24" height="24" />
-        Add to Cart
-      </button>
+{/* 
+      <button className="mt-4 border border-lighttext rounded-md  inset-shdaow-xs md:px-6 px-4 text-sm py-2  hover:bg-primary/90 hover:text-white hover:border-none cursor-pointer ease-in-out duration-100  w-full flex items-center gap-2 justify-center"
+      
+  onClick={() => {
+    if (!product) return;
+    addToCartAction({ productId: product.id, quantity: 1 });
+  }}
+>
+    <Icon icon="mynaui:cart-solid" width="24" height="24" />
+  Add to Cart
+</button> */}
+
+<AddToCartButton  productId={product?.id} />
     </main>
   );
 };

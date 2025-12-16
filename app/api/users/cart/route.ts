@@ -5,8 +5,8 @@ import { withDB } from "@/lib/HOF";
 import { Product, ProductVariant } from "@/models";
 import { getAuthUserId } from "@/lib/auth/getAuthUser";
 import userModel, { ICartItem } from "@/models/userModel";
-import { IProduct } from "@/models/productModel";
-import { IProductVariant } from "@/models/productVariantsModel";
+
+
 
 
 //total apis
@@ -27,10 +27,13 @@ export interface CartProduct {
 
 export interface CartVariant {
   _id: string;
-  name?: string;
-  price?: number;
-  stock?: number;
+  specs: string;
+  price: number;
+  stock: number;
+  images: string[];
+  sku: string;
 }
+
 
 export interface CartItem {
   _id: string;
@@ -43,6 +46,28 @@ export interface CartItem {
   selectedOptions?: Record<string, string>;
 }
 
+interface LeanCartItem {
+  _id: string;
+  product: {
+    _id: string;
+    name: string;
+    slug: string;
+    price: number;
+    stock: number;
+    images: string[];
+  };
+  variant?: {
+    _id: string;
+    specs: string;
+    price: number;
+    stock: number;
+    images: string[];
+    sku: string;
+  };
+  quantity: number;
+  addedAt: Date;
+  updatedAt: Date;
+}
 
 
 
@@ -53,36 +78,38 @@ export const GET = withAuth(
     const userId = getAuthUserId(req);
 
     const user = await userModel
-      .findById(userId)
-      .populate({
-        path: "cart.product",
-        select: "name slug images price stock",
-      })
-      .populate({
-        path: "cart.variant",
-        select: "specs price stock images sku",
-      })
-      .lean<{ cart: CartItem[] }>()
-      .sort({ createdAt: -1 });
+  .findById(userId)
+  .populate({
+    path: "cart.product",
+    select: "name slug images price stock",
+  })
+  .populate({
+    path: "cart.variant",
+    select: "specs price stock images sku",
+  })
+  .lean<{ cart: LeanCartItem[] }>();
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: "User not found" },
-        { status: 404 }
-      );
-    }
+if (!user) {
+  return NextResponse.json(
+    { success: false, message: "User not found" },
+    { status: 404 }
+  );
+}
 
-    const cartWithRemaining = user.cart.map((item: CartItem) => {
-      // Cast to populated types
-      const product = item.product as unknown as IProduct;
-      const variant = item.variant as unknown as IProductVariant | undefined;
+const cartWithRemaining: ReadonlyArray<CartItem> = user.cart.map((item) => {
+  const stock = item.variant
+    ? item.variant.stock
+    : item.product.stock;
 
-      const productStock = variant ? variant.stock : product.stock;
-
-      return {
-        ...item,
-        remainingStock: Math.max(productStock - item.quantity, 0),
-      };
+  return {
+    _id: item._id,
+    product: item.product,
+    variant: item.variant ?? null,
+    quantity: item.quantity,
+    addedAt: item.addedAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+    remainingStock: Math.max(stock - item.quantity, 0),
+  };
 
     });
     return NextResponse.json({

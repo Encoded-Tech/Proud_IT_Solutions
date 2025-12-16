@@ -1,3 +1,4 @@
+"use server";
 import { IProduct, Product } from "@/models/productModel";
 import { FilterQuery } from "mongoose";
 import { connectDB } from "@/db";

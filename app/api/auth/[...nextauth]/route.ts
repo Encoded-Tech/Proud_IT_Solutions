@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     ...baseOptions,
     callbacks: {
       ...baseOptions.callbacks,
-      async signIn({ user }) {
+      async signIn({ user }) { 
         await connectDB();
 
         const ip =

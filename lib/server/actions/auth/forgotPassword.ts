@@ -1,4 +1,3 @@
-// app/actions/auth.ts
 "use server";
 
 import { FRONTEND_URL } from "@/config/env";
