@@ -1,10 +1,12 @@
 "use server";
 import { connectDB } from "@/db";
 import userModel, { ICartItem } from "@/models/userModel";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/authOptions";
-import { CartItem } from "@/app/api/users/cart/route";
+
+
 import mongoose from "mongoose";
+import { requireSession } from "@/lib/auth/requireSession";
+import { ICartItemPopulated, mapSingleCartItemToDTO } from "../../mappers/MapCart";
+import { CartItem } from "@/types/product";
 
 interface UpdateCartQtyParams {
   productId: string;
@@ -12,25 +14,29 @@ interface UpdateCartQtyParams {
   quantity: number;
 }
 
-export async function updateCartQuantity({
-  productId,
-  variantId,
-  quantity,
-}: UpdateCartQtyParams) {
+export async function updateCartQuantity(input: UpdateCartQtyParams) {
+  const { productId, variantId, quantity } = input;
+
   if (quantity < 1) {
     return { success: false, message: "Quantity must be at least 1" };
   }
 
-  await connectDB();
-
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
+    return { success: false, message: "Invalid productId" };
   }
 
-  const user = await userModel
-    .findById(session.user.id)
-    .populate("cart.product cart.variant");
+  if (variantId && !mongoose.Types.ObjectId.isValid(variantId)) {
+    return { success: false, message: "Invalid variantId" };
+  }
+
+  await connectDB();
+
+  const userSession = await requireSession({ roles: ["user"], emailVerified: true });
+
+const user = await userModel
+  .findById(userSession.id)
+  .populate<{ cart: ICartItemPopulated[] }>("cart.product cart.variant");
+
 
   if (!user) {
     return { success: false, message: "User not found" };
@@ -69,33 +75,13 @@ export async function updateCartQuantity({
 
   await user.save();
 
-
+const cartDTO = user.cart.map((item : ICartItemPopulated) => mapSingleCartItemToDTO(item));
 
   return {
     success: true,
     message: "Cart quantity updated successfully",
-   data: user.cart.map((item: CartItem) => ({
-    _id: item._id,
-    quantity: item.quantity,
-    product: {
-      _id: typeof item.product === "string" ? item.product : item.product._id,
-      name: item.product.name,
-      price: item.product.price,
-      stock: item.product.stock,
-      slug: item.product.slug,
-      images: item.product.images,
-    },
-    variant: item.variant
-      ? {
-          _id: item.variant._id,
-          price: item.variant.price,
-          stock: item.variant.stock,
-          specs: item.variant.specs,
-          images: item.variant.images,
-        }
-      : null,
-  })),
-  };
+   data: cartDTO
+}
 }
 
 
@@ -106,18 +92,8 @@ interface RemoveCartItemParams {
   variantId?: string | null;
 }
 
-export async function removeCartItem({ productId, variantId }: RemoveCartItemParams) {
-  await connectDB();
-
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return { success: false, message: "Unauthorized" };
-  }
-
-  const user = await userModel.findById(session.user.id);
-  if (!user) {
-    return { success: false, message: "User not found" };
-  }
+export async function removeCartItem(input: RemoveCartItemParams) {
+  const { productId, variantId } = input;
 
   if (!productId && !variantId) {
     return { success: false, message: "productId or variantId is required" };
@@ -130,6 +106,24 @@ export async function removeCartItem({ productId, variantId }: RemoveCartItemPar
   if (variantId && !mongoose.Types.ObjectId.isValid(variantId)) {
     return { success: false, message: "Invalid variantId" };
   }
+
+  await connectDB();
+
+  const userSession = await requireSession({
+    roles: ["user"],
+    emailVerified: true,
+  });
+
+ const user = await userModel
+  .findById(userSession.id)
+  .populate<{ cart: ICartItemPopulated[] }>("cart.product cart.variant");
+
+
+
+  if (!user) {
+    return { success: false, message: "User not found" };
+  }
+  
 
   const originalCartLength = user.cart.length;
 
@@ -150,29 +144,12 @@ export async function removeCartItem({ productId, variantId }: RemoveCartItemPar
 
   await user.save();
 
-  return {
-    success: true,
-    message: "Item removed from cart",
-    data:  user.cart.map((item: CartItem) => ({
-    _id: item._id,
-    quantity: item.quantity,
-    product: {
-      _id: typeof item.product === "string" ? item.product : item.product._id,
-      name: item.product.name,
-      price: item.product.price,
-      stock: item.product.stock,
-      slug: item.product.slug,
-      images: item.product.images,
-    },
-    variant: item.variant
-      ? {
-          _id: item.variant._id,
-          price: item.variant.price,
-          stock: item.variant.stock,
-          specs: item.variant.specs,
-          images: item.variant.images,
-        }
-      : null,
-  })),
-  };
+const cartDTO = user.cart.map((item : ICartItemPopulated) => mapSingleCartItemToDTO(item));
+
+return {
+  success: true,
+  message: "Item removed from cart",
+  data:cartDTO
+};
+
 }

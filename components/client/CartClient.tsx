@@ -1,106 +1,109 @@
-
 "use client";
-
-import { useState, useMemo } from "react";
-import { CartItem } from "@/app/api/users/cart/route";
+import { useEffect, useState, useMemo } from "react";
 import { Icon } from "@iconify/react";
 import Image from "next/image";
 import Link from "next/link";
-import { removeCartItem, updateCartQuantity } from "@/lib/server/actions/cart/updateCart";
+import { CartItem } from "@/types/product";
 import toast from "react-hot-toast";
-
+import { ArrowLeftIcon } from "lucide-react";
+import {
+  removeCartItem,
+  updateCartQuantity,
+} from "@/lib/server/actions/cart/updateCart";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import {
+  selectCartItems,
+  selectCartTotalItems,
+  setCart,
+  updateCartItem,
+  removeCartItemLocal,
+  selectCartCount,
+} from "@/redux/cart/cartSlice";
 
 interface CartClientProps {
   initialCart: CartItem[];
 }
 
 const CartClient = ({ initialCart }: CartClientProps) => {
-  const [cart, setCart] = useState<CartItem[]>(initialCart || []);
+  const dispatch = useAppDispatch();
 
-  const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+  // ✅ Hydrate Redux slice on mount
+  useEffect(() => {
+    dispatch(setCart(initialCart));
+  }, [dispatch, initialCart]);
 
+  // ✅ Select cart items from Redux
+  const cart = useAppSelector(selectCartItems);
 
+  const cartItems = useAppSelector(selectCartCount);
 
+  // ✅ Calculate total items dynamically using selector
+  const totalItems = useAppSelector(selectCartTotalItems);
 
-  // Calculate totals dynamically
+  // ✅ Calculate subtotal using useMemo for performance
   const subtotal = useMemo(() => {
-    return cart.reduce((acc, item) => {
+    return cart.reduce((acc: number, item: CartItem) => {
       const price = item.variant?.price ?? item.product.price;
       return acc + price * item.quantity;
     }, 0);
   }, [cart]);
 
-  const tax = subtotal * 0.13;
-  const total = subtotal + tax;
+ 
 
-  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null); // loading state for buttons
 
-  const updateQuantity = async (itemId: string, newQty: number) => {
-    // prevent double click
-    if (loadingId === itemId) return;
+  /** Update cart item quantity */
+  const handleUpdateQuantity = async (itemId: string, newQty: number) => {
+    if (loadingId === itemId) return; // prevent double click
 
-    const item = cart.find((i) => i._id === itemId);
+    const item = cart.find((i: CartItem) => i._id === itemId);
     if (!item) return;
 
     const prevQty = item.quantity;
 
     setLoadingId(itemId);
 
-    // 🔄 Optimistic UI
-    setCart((prev) =>
-      prev.map((i) =>
-        i._id === itemId ? { ...i, quantity: newQty } : i
-      )
-    );
+    // 🔄 Optimistic UI update
+    dispatch(updateCartItem({ id: itemId, quantity: newQty }));
 
     try {
       const res = await updateCartQuantity({
         productId:
-          typeof item.product === "string"
-            ? item.product
-            : item.product._id,
+          typeof item.product === "string" ? item.product : item.product._id,
         variantId: item.variant?._id ?? null,
         quantity: newQty,
       });
 
       if (!res.success) {
-        // rollback
-        setCart((prev) =>
-          prev.map((i) =>
-            i._id === itemId ? { ...i, quantity: prevQty } : i
-          )
-        );
-
-
+        // rollback on failure
+        dispatch(updateCartItem({ id: itemId, quantity: prevQty }));
         toast.error(res.message);
         return;
       }
 
-      setCart(res.data);
+      // ✅ Sync Redux with server data
+      dispatch(setCart(res.data));
       toast.success(res.message);
     } catch (error) {
       // rollback on unexpected error
-      setCart((prev) =>
-        prev.map((i) =>
-          i._id === itemId ? { ...i, quantity: prevQty } : i
-        )
-      );
-
+      dispatch(updateCartItem({ id: itemId, quantity: prevQty }));
       toast.error(error instanceof Error ? error.message : "Something went wrong");
     } finally {
       setLoadingId(null);
     }
-
-
   };
 
-    const removeItem = async (itemId: string) => {
+  /** Remove cart item */
+  const handleRemoveItem = async (itemId: string) => {
     if (loadingId === itemId) return;
 
-    const item = cart.find((i) => i._id === itemId);
+    const item = cart.find((i: CartItem) => i._id === itemId);
     if (!item) return;
 
     setLoadingId(itemId);
+
+    // Optional optimistic remove
+    dispatch(removeCartItemLocal(itemId));
 
     try {
       const res = await removeCartItem({
@@ -109,18 +112,25 @@ const CartClient = ({ initialCart }: CartClientProps) => {
       });
 
       if (!res.success) {
+        // rollback if failed
+        dispatch(setCart(cart));
         toast.error(res.message);
         return;
       }
 
-      setCart(res.data);
+      // ✅ Sync Redux with server data
+      dispatch(setCart(res.data));
       toast.success(res.message);
     } catch (error) {
+      // rollback on unexpected error
+      dispatch(setCart(cart));
       toast.error(error instanceof Error ? error.message : "Something went wrong");
     } finally {
       setLoadingId(null);
     }
   };
+
+  /** Empty cart UI */
   if (!cart || cart.length === 0) {
     return (
       <div className="max-w-7xl xl:mx-auto mx-4 my-10">
@@ -145,50 +155,67 @@ const CartClient = ({ initialCart }: CartClientProps) => {
     );
   }
 
+  /** Main cart UI */
   return (
     <div>
-      <h1 className="relative text-2xl font-semibold inline-flex items-center gap-2">
-        Your Cart has
-        <span className="bg-red-500 text-white rounded-full min-w-[20px] h-5 px-1 text-xs flex items-center justify-center">
-          {totalItems} items
-        </span>
-      </h1>
+      <div className="space-y-3">
+        {/* Continue shopping link */}
+        <Link
+          href="/shop"
+          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary transition group"
+        >
+          <ArrowLeftIcon className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          Continue shopping
+        </Link>
+
+        {/* Cart heading */}
+        <h1 className="text-2xl font-semibold flex items-center gap-3">
+          Your cart has
+          {/* Distinct items count */}
+          <span className="bg-primary text-white rounded-full min-w-[24px] h-6 px-2 text-sm flex items-center justify-center shadow-sm">
+            {cartItems} {/* number of different products */}
+          </span>
+          items (
+          {/* Total quantity count */}
+          <span className="bg-primary text-white rounded-full min-w-[24px] h-6 px-2 text-sm flex items-center justify-center shadow-sm">
+            {totalItems} {/* total units */}
+          </span>
+          units) in total
+        </h1>
+      </div>
 
       <div className="max-w-7xl xl:mx-auto mx-4 my-10 flex flex-col lg:flex-row gap-8 items-start">
-
         {/* Cart Items */}
         <div className="flex-1 space-y-4">
-
-
-          {cart.map((item) => {
+          {cart.map((item: CartItem) => {
             const product = item.product;
             const variant = item.variant;
             const price = variant?.price ?? product.price;
             const availableStock = variant?.stock ?? product.stock;
 
             return (
-              <div key={item._id} className="flex items-center gap-4 border rounded-md p-4">
+              <div
+                key={item._id}
+                className="flex items-center gap-4 border rounded-md p-4"
+              >
                 <Image
-                  src={variant?.images?.[0] || product.images[0]}
-                  alt={product.name}
+                  src={variant?.images?.[0] ?? product.images?.[0] ?? "/placeholder.png"}
+                  alt={product.name || "Product Image"}
                   width={100}
                   height={100}
                   className="rounded-md"
                 />
-
                 <div className="flex-1 flex flex-col gap-1">
                   <h3 className="font-medium">{product.name}</h3>
-
                   {variant && <p className="text-sm text-gray-500">{variant.specs}</p>}
+
                   {/* Stock info */}
                   <p
-                    className={`text-xs font-medium ${(variant?.stock ?? product.stock) > 0
-                      ? "text-green-600"
-                      : "text-red-500"
+                    className={`text-xs font-medium ${availableStock > 0 ? "text-green-600" : "text-red-500"
                       }`}
                   >
-                    {(variant?.stock ?? product.stock) > 0
-                      ? `${variant?.stock ?? product.stock} in stock`
+                    {availableStock > 0
+                      ? `${availableStock} in stock`
                       : "Out of stock"}
                   </p>
 
@@ -197,7 +224,9 @@ const CartClient = ({ initialCart }: CartClientProps) => {
                     <button
                       className="px-2 py-1 bg-gray-200 rounded disabled:opacity-50"
                       disabled={loadingId === item._id || item.quantity <= 1}
-                      onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                      onClick={() =>
+                        handleUpdateQuantity(item._id, item.quantity - 1)
+                      }
                     >
                       -
                     </button>
@@ -205,21 +234,25 @@ const CartClient = ({ initialCart }: CartClientProps) => {
                     <button
                       className="px-2 py-1 bg-gray-200 rounded"
                       disabled={loadingId === item._id || item.quantity >= availableStock}
-                      onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                      onClick={() =>
+                        handleUpdateQuantity(item._id, item.quantity + 1)
+                      }
                     >
                       +
                     </button>
+
                     {/* Remove button */}
                     <button
                       className="px-2 py-1 bg-red-500 text-white rounded ml-2"
                       disabled={loadingId === item._id}
-                      onClick={() => removeItem(item._id)}
+                      onClick={() => handleRemoveItem(item._id)}
                     >
                       Remove
                     </button>
                   </div>
                 </div>
 
+                {/* Item total price */}
                 <div className="font-semibold">Rs. {price * item.quantity}</div>
               </div>
             );
@@ -227,27 +260,39 @@ const CartClient = ({ initialCart }: CartClientProps) => {
         </div>
 
         {/* Order Summary */}
-        <div className="w-full lg:w-96 p-6 border rounded-md bg-white h-fit">
-          <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-          <div className="flex justify-between mb-2">
-            <span>Subtotal</span>
-            <span>Rs. {subtotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between mb-2">
-            <span>Tax (13%)</span>
-            <span>Rs. {tax.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between font-semibold text-lg mb-4 border-t pt-2">
-            <span>Total</span>
-            <span>Rs. {total.toFixed(2)}</span>
-          </div>
+        <div className="w-full lg:w-96 p-5 border rounded-md bg-white flex flex-col gap-3 shadow-md">
+  {/* Header */}
+  <h2 className="text-xl font-semibold border-b border-gray-200 pb-2 mb-2">Order Summary</h2>
 
-          <Link href="/checkout">
-            <button className="w-full bg-primary text-white p-3 rounded-md font-medium hover:bg-primary/90 transition">
-              Checkout
-            </button>
-          </Link>
-        </div>
+  {/* Encouraging text */}
+  <p className="text-sm text-gray-600">
+      You&apos;re almost there! Complete your order by clicking the button below.
+  </p>
+
+  {/* Totals */}
+  <div className="flex justify-between font-medium text-base">
+    <span>Total items</span>
+    <span>{totalItems}</span>
+  </div>
+
+  <div className="flex justify-between font-medium text-base">
+    <span>Total (including tax)</span>
+    <span>Rs. {subtotal.toFixed(2)}</span>
+  </div>
+
+  {/* Note about prices */}
+  <p className="text-xs text-gray-500 italic">
+    Prices are final and include all taxes. Please review your order.
+  </p>
+
+  {/* Checkout button */}
+  <Link href="/checkout" className="mt-3">
+    <button className="w-full bg-primary text-white p-3 rounded-md font-medium hover:bg-primary/90 transition transform hover:-translate-y-0.5 hover:scale-105">
+      Proceed to Checkout
+    </button>
+  </Link>
+</div>
+
       </div>
     </div>
   );

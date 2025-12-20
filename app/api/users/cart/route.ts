@@ -5,6 +5,7 @@ import { withDB } from "@/lib/HOF";
 import { Product, ProductVariant } from "@/models";
 import { getAuthUserId } from "@/lib/auth/getAuthUser";
 import userModel, { ICartItem } from "@/models/userModel";
+import { CartItem } from "@/types/product";
 
 
 
@@ -16,35 +17,7 @@ import userModel, { ICartItem } from "@/models/userModel";
 //user-remove-from-cart api/users/cart
 
 
-export interface CartProduct {
-  _id: string;
-  name: string;
-  price: number;
-  stock: number;
-  images: string[];
-  slug: string;
-}
 
-export interface CartVariant {
-  _id: string;
-  specs: string;
-  price: number;
-  stock: number;
-  images: string[];
-  sku: string;
-}
-
-
-export interface CartItem {
-  _id: string;
-  product: CartProduct;
-  variant: CartVariant | null;
-  quantity: number;
-  addedAt: string;
-  updatedAt: string;
-  remainingStock: number;
-  selectedOptions?: Record<string, string>;
-}
 
 interface LeanCartItem {
   _id: string;

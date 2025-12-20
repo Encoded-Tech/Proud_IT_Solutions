@@ -121,7 +121,8 @@ const ProductCard = ({ product, label }: ProductCardProps) => {
   Add to Cart
 </button> */}
 
-<AddToCartButton  productId={product?.id} />
+{product?.id && <AddToCartButton productId={product.id} variant="card" />}
+
     </main>
   );
 };

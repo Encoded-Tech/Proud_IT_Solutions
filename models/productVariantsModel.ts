@@ -1,6 +1,7 @@
 import { Schema, Document, model, models, Types } from "mongoose";
 
 export interface IProductVariant extends Document {
+    _id: Types.ObjectId;
   product: Types.ObjectId;
   specs: {
     cpu: string;

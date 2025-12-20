@@ -198,7 +198,7 @@ export async function fetchHotDeals(
 
 export async function fetchAllProducts(
   page = 1,
-  limit = 20,
+  limit = 6,
   filters?: FilterQuery<IProduct>
 ): Promise<PaginatedProductResponse<productType>> {
   try {

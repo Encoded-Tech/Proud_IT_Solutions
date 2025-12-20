@@ -104,3 +104,34 @@ export interface UserType {
   name: string;
   email: string;
 }
+
+
+export interface CartProduct {
+  _id: string;
+  name: string;
+  price: number;
+  stock: number;
+  images: string[];
+  slug: string;
+}
+
+export interface CartVariant {
+  _id: string;
+  specs: string;
+  price: number;
+  stock: number;
+  images: string[];
+  sku: string;
+}
+
+
+export interface CartItem {
+  _id: string;
+  product: CartProduct;
+  variant: CartVariant | null;
+  quantity: number;
+  addedAt: string;
+  updatedAt: string;
+  remainingStock: number;
+  selectedOptions?: Record<string, string>;
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { Loader, Minus, Plus, ShoppingBag } from "lucide-react";
+import {  Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -9,6 +9,8 @@ import Link from "next/link";
 import { CategoryType, MediaType, productType } from "@/types/product";
 import Review from "@/app/(root)/products/product-review";
 import ProductImages from "@/app/(root)/products/product-images";
+import AddToCartButton from "../client/AddToCartButton";
+
 
 type Tag = {
   id?: string;
@@ -25,7 +27,7 @@ export default function ProductPageClient({
   category: CategoryType | null;
 }) {
   const [quantity, setQuantity] = useState(1);
-  const [loading] = useState(false);
+
 
 
 
@@ -38,7 +40,7 @@ export default function ProductPageClient({
     description,
     stock,
     brand,
- 
+ id,
     reviews,
     tags,
     isActive,
@@ -184,14 +186,16 @@ const media: MediaType[] = product.images?.slice(1).map((img, idx) => ({
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <button className="flex  gap-2 items-center cursor-pointer  py-3 px-4 rounded-md bg-primary text-white text-sm hover:bg-primary/90">
+                {/* <button className="flex  gap-2 items-center cursor-pointer  py-3 px-4 rounded-md bg-primary text-white text-sm hover:bg-primary/90">
                   {loading ? (
                     <Loader className="animate-spin h-4 w-4" />
                   ) : (
                     <ShoppingBag className="h-4 w-4" />
                   )}
                   {loading ? "ADDING" : " ADD TO CART"}
-                </button>
+                </button> */}
+
+                <AddToCartButton productId={id} variant="page" quantity={quantity} />
 
                 <div className="cursor-pointer flex items-center gap-2 font-medium text-lighttext hover:text-primarymain text-sm">
                   <Icon

@@ -4,9 +4,16 @@ import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { navitems } from "@/constants";
 import { usePathname } from "next/navigation";
+import {  useAppSelector } from "@/redux/hooks";
+import { selectCartTotalAmount, selectCartTotalItems } from "@/redux/cart/cartSlice";
+
 
 const BottomCategory = () => {
-  const pathname = usePathname();
+   const pathname = usePathname();
+ const totalItems = useAppSelector(selectCartTotalItems);
+ const totalAmount = useAppSelector(selectCartTotalAmount);
+
+
   return (
     <div className="lg:bg-primary bg-blue-100 lg:p-4 p-2 text-white">
       <div className="max-w-7xl mx-auto flex justify-between items-center gap-6">
@@ -45,12 +52,12 @@ const BottomCategory = () => {
           >
             <Icon icon="ion:cart-outline" width="22" height="22" />{" "}
             <span className="absolute -right-4 -top-2 bg-white h-6 w-6 flex justify-center items-center aspect-auto rounded-full text-sm">
-              0
+              {totalItems}
             </span>
           </Link>
 
           <div>
-            <h2 className="font-medium">Rs 0.00</h2>
+            <h2 className="font-medium">Rs {totalAmount.toFixed(2)}</h2>
           </div>
         </div>
 

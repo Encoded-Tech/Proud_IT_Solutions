@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Jost } from "next/font/google";
 import { APP_DESCRIPTION, APP_NAME, SERVER_URL } from "@/constants";
-import { Toaster } from "react-hot-toast";
-import { SessionWrapper } from "@/components/session/SessionWrapper";
+import { Providers } from "./providers/providers";
 
 const jost = Jost({
   subsets: ["latin"],
@@ -29,9 +28,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={jost.variable}>
       <body className={jost.variable}>
-       <SessionWrapper> {children}</SessionWrapper>
-        </body>
-      <Toaster position="top-right" reverseOrder={false} />
+        <Providers>{children} </Providers>
+      </body>
     </html>
   );
 }
