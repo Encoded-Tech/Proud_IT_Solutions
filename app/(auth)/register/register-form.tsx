@@ -4,13 +4,12 @@ import type React from "react";
 import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
-import { Icon } from "@iconify/react";
-import { signIn } from "next-auth/react";
 import { useFormState, useFormStatus } from "react-dom";
 import {
   registerAction,
   type RegisterState,
 } from "@/lib/server/actions/auth/register";
+import GoogleSignIn from "@/components/client/GoogleLogin";
 
 const initialState: RegisterState = {};
 
@@ -156,13 +155,7 @@ export default function RegisterForm() {
         <SubmitButton />
       </form>
 
-      {/* OAuth */}
-      <button
-        onClick={() => signIn("google")}
-        className="w-full h-11 mt-4 flex items-center justify-center border rounded-md"
-      >
-        <Icon icon="flat-color-icons:google" width={24} height={24} />
-      </button>
+ 
 
       <p className="mt-6 text-sm text-center">
         Already have an account?{" "}
@@ -170,6 +163,9 @@ export default function RegisterForm() {
           Sign in
         </Link>
       </p>
+
+           {/* OAuth */}
+   <GoogleSignIn />
     </div>
   );
 }

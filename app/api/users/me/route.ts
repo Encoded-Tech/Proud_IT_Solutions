@@ -3,7 +3,7 @@ import UserModel, { IUser } from "@/models/userModel";
 import { withAuth } from "@/lib/HOF/withAuth";
 import { withDB } from "@/lib/HOF";
 
-import { getAuthUserId } from "@/lib/auth/getAuthUser";
+import {  getAuthUserId } from "@/lib/auth/getAuthUser";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { ApiResponse } from "@/types/api";
 
@@ -31,7 +31,7 @@ const exclusions = {
 export const GET = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
-    const id = getAuthUserId(req);
+       const id = getAuthUserId(req);
     const dbUser = await UserModel.findById(id)
       .select(exclusions);
 

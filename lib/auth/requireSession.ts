@@ -1,4 +1,4 @@
-// lib/auth/requireSession.ts
+
 import { getServerSession } from "next-auth";
 import { authOptions } from "./authOptions";
 

@@ -1,13 +1,37 @@
-// lib/auth/getAuthUser.ts
 import { NextRequest } from "next/server";
+import { AuthenticatedRequest } from "../HOF/withAuth";
+import User from "@/models/userModel";
 
-export const getAuthUserId = (req: NextRequest): string => {
-  const currentUser = req.user;
+/**
+ * Resolves the authenticated user's Mongo _id from a request.
+ * Supports direct auth.id or OAuth providerId.
+ */
+export async function getAuthUserId(req: NextRequest): Promise<string> {
+  const authReq = req as AuthenticatedRequest;
 
-  if (!currentUser || !currentUser.id) {
-    // This should NEVER happen if withAuth is working
-    throw new Error("Authenticated user missing on request");
+  if (!authReq.auth) {
+    throw new Error("UNAUTHORIZED");
   }
 
-  return currentUser.id;
-};
+  // If auth.id is present, verify it exists in Mongo
+  if (authReq.auth.id) {
+    const user = await User.findById(authReq.auth.id).select("_id");
+    if (!user) throw new Error("UNAUTHORIZED");
+    // Ensure auth.id is normalized to Mongo _id string
+    authReq.auth.id = user._id.toString();
+    return authReq.auth.id;
+  }
+
+  // Fallback: use providerId (Google or other OAuth)
+  if (authReq.auth.providerId) {
+    const user = await User.findOne({ providerId: authReq.auth.providerId }).select("_id");
+    if (!user) throw new Error("UNAUTHORIZED");
+
+    // Cache the Mongo _id for downstream usage
+    authReq.auth.id = user._id.toString();
+    return authReq.auth.id;
+  }
+
+  // If neither id nor providerId exist, throw
+  throw new Error("UNAUTHORIZED");
+}

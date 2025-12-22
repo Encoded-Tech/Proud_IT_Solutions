@@ -17,7 +17,7 @@ export interface IWishlistItem extends Document {
   addedAt: Date;
 }
 export interface IUser extends Document {
-  _id: string;
+ _id: Types.ObjectId;
   name: string;
   email: string;
   phone?: string | null;
@@ -44,11 +44,18 @@ export interface IUser extends Document {
   signupIP?: string | null;
 
   // Login History
-  loginHistory: {
-    ip: string;
-    userAgent: string;
-    at: Date;
-  }[];
+loginHistory: {
+  ip: string;
+  userAgent: string;
+  device?: string;
+  at: Date;
+  isNewIP?: boolean;
+  isNewDevice?: boolean;
+  isSuspicious?: boolean;
+}[];
+
+
+  
 
   // Cart & Wishlist
   cart: ICartItem[];
@@ -180,13 +187,18 @@ const userSchema = new Schema<IUser>(
       default: null,
     },
 
-    loginHistory: [
-      {
-        ip: String,
-        userAgent: String,
-        at: { type: Date, default: Date.now },
-      },
-    ],
+  loginHistory: [
+  {
+    ip: String,
+    userAgent: String,
+    device: String,
+    isNewIP: Boolean,
+    isNewDevice: Boolean,
+    isSuspicious: Boolean,
+    at: { type: Date, default: Date.now },
+  },
+],
+
     cart: [cartSchema],
 
     wishlist: [wishlistSchema]

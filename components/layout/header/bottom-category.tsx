@@ -5,13 +5,22 @@ import Link from "next/link";
 import { navitems } from "@/constants";
 import { usePathname } from "next/navigation";
 import {  useAppSelector } from "@/redux/hooks";
-import { selectCartTotalAmount, selectCartTotalItems } from "@/redux/cart/cartSlice";
+import { selectCartTotalAmount, selectCartTotalItems,  } from "@/redux/cart/cartSlice";
+
+import { selectIsAuthenticated } from "@/redux/user/userSlice";
+import { signOut } from "next-auth/react";
 
 
 const BottomCategory = () => {
    const pathname = usePathname();
  const totalItems = useAppSelector(selectCartTotalItems);
  const totalAmount = useAppSelector(selectCartTotalAmount);
+ const isLoggedIn = useAppSelector(selectIsAuthenticated);
+
+
+ const handleLogout = () => {
+  signOut({ callbackUrl: "/login" }); // full reset + rerender
+};
 
 
   return (
@@ -33,9 +42,18 @@ const BottomCategory = () => {
         </div>
 
         <div className="lg:flex hidden gap-4 items-center">
-          <Link href="/login" className="bg-white p-2 rounded-full text-black ">
-            <Icon icon="et:profile-male" width="22" height="22" />{" "}
-          </Link>
+     {isLoggedIn ? (
+            <button
+              onClick={handleLogout}
+              className="bg-white p-2 rounded-full text-black flex items-center gap-1"
+            >
+              <Icon icon="mdi-light:logout" width="22" height="22" /> Logout
+            </button>
+          ) : (
+            <Link href="/login" className="bg-white p-2 rounded-full text-black">
+              <Icon icon="et:profile-male" width="22" height="22" />
+            </Link>
+          )}
 
           <Link
             href="/wishlist"

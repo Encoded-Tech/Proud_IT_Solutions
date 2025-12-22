@@ -2,7 +2,7 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 import { RouteHandler } from "../types";
-import { JWT } from "next-auth/jwt";
+
 
 export type UserRole = "admin" | "user";
 
@@ -12,12 +12,15 @@ interface AuthOptions {
 }
 
 export interface AuthenticatedRequest extends NextRequest {
-  user: JWT & {
+  auth?: {
     id: string;
-    role: "admin" | "user";
+    role: UserRole;
     emailVerified: boolean;
+    providerId?: string;
+    email?: string;
   };
 }
+
 
 export function withAuth(
   handler: RouteHandler<AuthenticatedRequest>,
@@ -27,7 +30,13 @@ export function withAuth(
     const req = args[0] as AuthenticatedRequest;
     const context = args[1];
 
-    const token = await getToken({ req });
+   const token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+
+    console.log("TOKEN:", token);
+
 
     if (!token) {
       return NextResponse.json(
@@ -43,15 +52,20 @@ export function withAuth(
       );
     }
 
-    if (options.roles && !options.roles.includes(token.role)) {
+    if (options.roles && !options.roles.includes(token.role as UserRole)) {
       return NextResponse.json(
         { success: false, message: "Forbidden: Access denied" },
         { status: 403 }
       );
     }
 
-    req.user = token as AuthenticatedRequest["user"];
-
+   (req as AuthenticatedRequest).auth = {
+  id: (token.id || token.providerId) as string, // fallback to providerId
+  role: token.role as UserRole,
+  emailVerified: token.emailVerified as boolean,
+  email: token.email as string,
+  providerId: token.providerId as string | undefined,
+};
     
     return handler(
       ...(context ? [req, context] : [req])

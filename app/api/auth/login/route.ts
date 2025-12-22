@@ -214,6 +214,7 @@ export const POST = withDB(async (req: NextRequest, context?) => {
 
   const nextAuthToken = await encode({
     token: {
+       sub: user._id.toString(),
       id: user._id.toString(),
       email: user.email,
       role: user.role,

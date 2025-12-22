@@ -3,15 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { Icon } from "@iconify/react";
 import { toast } from "react-hot-toast";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { loginAction, LoginState } from "@/lib/server/actions/auth/login";
+
+import GoogleSignIn from "@/components/client/GoogleLogin";
+
 
 export default function LoginForm() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+
+
 
   const [formData, setFormData] = useState({
     email: "",
@@ -23,107 +25,90 @@ export default function LoginForm() {
     password: "",
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  /** Handle input changes */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
+  /** Form validation */
   const validateForm = () => {
     let valid = true;
-    const newErrors = { ...errors };
+    const nextErrors = { ...errors };
 
     if (!formData.email) {
-      newErrors.email = "Email is required";
+      nextErrors.email = "Email is required";
       valid = false;
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
+      nextErrors.email = "Email is invalid";
       valid = false;
     }
 
     if (!formData.password) {
-      newErrors.password = "Password is required";
+      nextErrors.password = "Password is required";
       valid = false;
     }
 
-    setErrors(newErrors);
+    setErrors(nextErrors);
     return valid;
   };
 
+  /** Handle form submission */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!validateForm()) return;
 
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        body: new FormData(e.currentTarget),
-      });
+      const result: LoginState = await loginAction(new FormData(e.currentTarget));
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.message || "Login failed");
-
-        // ✅ Handle unverified email
-        if (data.email && data.expiresAt) {
-          router.replace(
-            `/verify-email?email=${encodeURIComponent(
-              data.email
-            )}&expiresAt=${data.expiresAt}`
-          );
-        }
-        return;
-      }
-
-      // ✅ Successful login
-      toast.success(data.message || "Login successful");
-
-      // redirect based on role if needed
-      if (data.data?.user?.role === "admin") {
-        router.replace("/admin");
+      if (result.success) {
+        toast.success(result.message || "Login successful");
+        router.replace("/"); // redirect after login
       } else {
-        router.replace("/"); // normal user
+        toast.error(result.error || "Login failed");
       }
-    } catch (error) {
-      console.error("Login failed", error);
-      toast.error("Login failed");
+    } catch {
+      toast.error("Unexpected error occurred");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="w-full overflow-hidden bg-white p-4 rounded-md shadow-sm">
       <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Email */}
         <div className="space-y-2">
           <label className="text-sm font-medium">Email</label>
           <input
             name="email"
             type="email"
-            placeholder="name@example.com"
             autoComplete="email"
             value={formData.email}
             onChange={handleChange}
-            className="md:p-3 p-2 rounded-lg border-zinc-200 bg-white outline-none md:text-sm text-xs border w-full"
-            disabled={isLoading}
+            disabled={isSubmitting}
+            className="md:p-3 p-2 rounded-lg border border-zinc-200 w-full"
           />
-          {errors.email && (
-            <p className="text-xs font-medium text-red-500">{errors.email}</p>
-          )}
+          {errors.email && <p className="text-xs font-medium text-red-500">{errors.email}</p>}
         </div>
 
+        {/* Password */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">Password</label>
             <Link
               href="/forgot-password"
-              className="text-xs font-medium text-primary hover:text-primary/80 hover:underline transition-colors"
+              className="text-xs font-medium text-primary hover:underline"
             >
               Forgot password?
             </Link>
@@ -132,65 +117,58 @@ export default function LoginForm() {
             <input
               name="password"
               type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
               autoComplete="current-password"
               value={formData.password}
               onChange={handleChange}
-              className="md:p-3 p-2 rounded-lg border-zinc-200 bg-white outline-none md:text-sm text-xs border w-full"
-              disabled={isLoading}
+              disabled={isSubmitting}
+              className="md:p-3 p-2 rounded-lg border border-zinc-200 w-full"
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               tabIndex={-1}
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          {errors.password && (
-            <p className="text-xs font-medium text-red-500">{errors.password}</p>
-          )}
+          {errors.password && <p className="text-xs font-medium text-red-500">{errors.password}</p>}
         </div>
 
-    <button
-  type="submit"
-  className="w-full h-11 bg-primary rounded-md text-white font-medium transition-all duration-200 hover:shadow-md hover:translate-y-[-1px] flex items-center justify-center gap-2"
-  disabled={isLoading}
->
-  {isLoading ? (
-    <>
-      <Loader2 className="h-4 w-4 animate-spin" />
-      Signing in...
-    </>
-  ) : (
-    "Sign in"
-  )}
-</button>
-
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full h-11 bg-primary rounded-md text-white font-medium flex items-center justify-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            "Sign in"
+          )}
+        </button>
       </form>
 
+      {/* Register */}
       <div className="mt-4 text-center">
         <p className="text-sm text-muted-foreground">
-         {" Don't"} have an account?{" "}
-          <Link
-            href="/register"
-            className="font-medium text-primary hover:text-primary/80 hover:underline transition-colors"
-          >
+          Don&apos;t have an account?{" "}
+          <Link href="/register" className="font-medium text-primary hover:underline">
             Sign up
           </Link>
         </p>
+
       </div>
 
+      {/* Google login */}
       <div className="mt-4">
-        <button
-          className="w-full h-11 transition-all duration-200 flex justify-center items-center shadow-sm rounded-md border border-zinc-200"
-          disabled={isLoading}
-          onClick={() => signIn("google")}
-        >
-          <Icon icon="flat-color-icons:google" width="24" height="24" />
-          <span className="sr-only">Google</span>
-        </button>
+       {/* Google login */}
+<GoogleSignIn
+/>
+
       </div>
     </div>
   );

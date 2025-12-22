@@ -66,7 +66,7 @@ export const POST = withAuth(withDB(async (req: NextRequest, _context?) => {
     message: "Product not found"
   }, { status: 404 });
 
-  const existingReview = product.reviews.find((r: IReview) => r.user.toString() === userId);
+  const existingReview = product.reviews.find((r: IReview) => r.user.toString() === userId.toString());
   if (existingReview) return NextResponse.json({
     success: false, message: "You have already reviewed this product"
   }, { status: 400 });
@@ -112,7 +112,7 @@ export const PUT = withAuth(
       );
 
     const existingReview = product.reviews.find(
-      (r: IReview) => r.user.toString() === userId
+      (r: IReview) => r.user.toString() === userId.toString()
     );
 
     if (!existingReview)
@@ -151,13 +151,13 @@ export const DELETE = withAuth(withDB(async (req: NextRequest, _context?) => {
     message: "Product not found"
   }, { status: 404 });
 
-  const existingReview = product.reviews.find((r: IReview) => r.user.toString() === userId);
+  const existingReview = product.reviews.find((r: IReview) => r.user.toString() === userId.toString());
   if (!existingReview) return NextResponse.json({
     success: false,
     message: "You have not reviewed this product"
   }, { status: 400 });
 
-  product.reviews = product.reviews.filter((r: IReview) => r.user.toString() !== userId);
+  product.reviews = product.reviews.filter((r: IReview) => r.user.toString() !== userId.toString());
   recalculateRating(product);
   await product.save();
 

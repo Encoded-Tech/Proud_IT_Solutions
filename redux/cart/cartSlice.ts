@@ -55,8 +55,12 @@ export const getCartItemUnitPrice = (item: CartItem): number =>
   item.variant?.price ?? item.product.price;
 
 /** Selectors */
-export const selectCartItems = (state: RootState) => state.cart.items;
-export const selectCartCount = (state: RootState) => state.cart.items.length;
-export const selectCartTotalItems = (state: RootState) => state.cart.items.reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
-export const selectCartTotalAmount = (state: RootState) =>state.cart.items.reduce( (sum, item) => sum + getCartItemUnitPrice(item) * item.quantity, 0);
-
+export const selectCartItems = (state: RootState) => state.cart?.items ?? [];
+export const selectCartCount = (state: RootState) => state.cart?.items?.length ?? 0;
+export const selectCartTotalItems = (state: RootState) =>
+  (state.cart?.items ?? []).reduce((sum: number, item: CartItem) => sum + item.quantity, 0);
+export const selectCartTotalAmount = (state: RootState) =>
+  (state.cart?.items ?? []).reduce(
+    (sum, item) => sum + getCartItemUnitPrice(item) * item.quantity,
+    0
+  );

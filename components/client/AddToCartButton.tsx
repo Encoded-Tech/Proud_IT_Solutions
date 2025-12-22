@@ -2,10 +2,11 @@
 import { Icon } from "@iconify/react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { useAppDispatch } from "@/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { useState } from "react";
-import { addToCartAction } from "@/lib/server/actions/cart/addToCart";
+
 import { setCart } from "@/redux/cart/cartSlice";
+import { selectAuthHydrated, selectIsAuthenticated } from "@/redux/user/userSlice";
 
 interface AddToCartButtonProps {
   productId: string ;
@@ -13,21 +14,60 @@ interface AddToCartButtonProps {
   quantity?: number; // allow custom quantity if needed
 }
 
+async function addToCartApi({
+  productId,
+  quantity = 1,
+}: {
+  productId: string;
+  quantity?: number;
+}) {
+  const res = await fetch("/api/users/cart", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include", // 
+    body: JSON.stringify({ productId, quantity }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Failed to add to cart");
+  }
+
+  return data;
+}
+
+
 const AddToCartButton = ({ productId, variant = "page", quantity = 1 }: AddToCartButtonProps) => {
 const dispatch = useAppDispatch();
   const router = useRouter();
+    const isLoggedIn = useAppSelector(selectIsAuthenticated);
+    const authHydrated = useAppSelector(selectAuthHydrated);
+
 
 const [loading, setLoading] = useState(false);
 
 const handleAddToCart = async () => {
+
+  if (!authHydrated) {
+    toast.loading("Checking login...");
+    return;
+  }
+     if (!isLoggedIn) {
+      toast.error("Please login first!");
+      router.push("/login");
+      return;
+    }
+
     setLoading(true);
     try {
       // Call your server action directly
-      const result = await addToCartAction({ productId, quantity });
+      const result = await addToCartApi({ productId, quantity });
+      console.log(result);
 
       if (result.success) {
         // Update Redux slice
-        dispatch(setCart(result.cart ));
+        dispatch(setCart(result.data ));
 
         toast.success(result.message || "Added to cart!");
         if (variant === "page") router.push("/cart");

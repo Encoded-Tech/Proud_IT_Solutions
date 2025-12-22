@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { withAuth } from "@/lib/HOF/withAuth";
 import { withDB } from "@/lib/HOF";
 import { Product, ProductVariant } from "@/models";
-import { getAuthUserId } from "@/lib/auth/getAuthUser";
+import {  getAuthUserId } from "@/lib/auth/getAuthUser";
 import userModel, { ICartItem } from "@/models/userModel";
 import { CartItem } from "@/types/product";
 
@@ -48,7 +48,9 @@ interface LeanCartItem {
 export const GET = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
-    const userId = getAuthUserId(req);
+const userId = await getAuthUserId(req);
+
+
 
     const user = await userModel
   .findById(userId)
@@ -151,7 +153,7 @@ export const POST = withAuth(
       stock = product.stock;
     }
 
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
     const user = await userModel.findById(userId).populate("cart.product cart.variant");
     if (!user) {
       return NextResponse.json(
@@ -242,7 +244,7 @@ export const PUT = withAuth(
       );
     }
 
-    const userId = getAuthUserId(req);
+const userId = await getAuthUserId(req);
 
     const user = await userModel
       .findById(userId)
@@ -308,7 +310,7 @@ export const PUT = withAuth(
 export const DELETE = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
-    const userId = getAuthUserId(req);
+  const userId = await getAuthUserId(req);
 
     const user = await userModel.findById(userId);
     if (!user) {
