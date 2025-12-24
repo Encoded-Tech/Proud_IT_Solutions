@@ -5,18 +5,20 @@ import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { useState } from "react";
 
-import { setCart } from "@/redux/cart/cartSlice";
-import { selectAuthHydrated, selectIsAuthenticated } from "@/redux/user/userSlice";
+import { setCart } from "@/redux/features/cart/cartSlice";
+import { selectAuthHydrated, selectIsAuthenticated } from "@/redux/features/auth/userSlice";
 
 interface AddToCartButtonProps {
-  productId: string ;
+  productId: string;
   variant?: "card" | "page"; // new prop for style variant
   quantity?: number; // allow custom quantity if needed
+  children?: React.ReactNode;
 }
 
-async function addToCartApi({
+export async function addToCartApi({
   productId,
   quantity = 1,
+
 }: {
   productId: string;
   quantity?: number;
@@ -38,22 +40,22 @@ async function addToCartApi({
 }
 
 
-const AddToCartButton = ({ productId, variant = "page", quantity = 1 }: AddToCartButtonProps) => {
-const dispatch = useAppDispatch();
+const AddToCartButton = ({ productId, variant = "page", quantity = 1, children }: AddToCartButtonProps) => {
+  const dispatch = useAppDispatch();
   const router = useRouter();
-    const isLoggedIn = useAppSelector(selectIsAuthenticated);
-    const authHydrated = useAppSelector(selectAuthHydrated);
+  const isLoggedIn = useAppSelector(selectIsAuthenticated);
+  const authHydrated = useAppSelector(selectAuthHydrated);
 
 
-const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-const handleAddToCart = async () => {
+  const handleAddToCart = async () => {
 
-  if (!authHydrated) {
-    toast.loading("Checking login...");
-    return;
-  }
-     if (!isLoggedIn) {
+    if (!authHydrated) {
+      toast.loading("Checking login...");
+      return;
+    }
+    if (!isLoggedIn) {
       toast.error("Please login first!");
       router.push("/login");
       return;
@@ -67,7 +69,7 @@ const handleAddToCart = async () => {
 
       if (result.success) {
         // Update Redux slice
-        dispatch(setCart(result.data ));
+        dispatch(setCart(result.data));
 
         toast.success(result.message || "Added to cart!");
         if (variant === "page") router.push("/cart");
@@ -94,9 +96,12 @@ const handleAddToCart = async () => {
       className={`${baseStyles} ${variantStyles} ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
       onClick={handleAddToCart}
       disabled={loading}
-    >
-      <Icon icon="mynaui:cart-solid" width="24" height="24" />
-      {loading ? "Adding..." : "Add to Cart"}
+    >{children ?? (
+      <>
+        <Icon icon="mynaui:cart-solid" width="24" height="24" />
+        {loading ? "Adding..." : "Add to Cart"}</>
+    )}
+
     </button>
   );
 };

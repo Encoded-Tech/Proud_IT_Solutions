@@ -1,58 +1,66 @@
 "use server";
 
-import { cookies } from "next/headers";
-import { FRONTEND_URL } from "@/config/env";
+import { connectDB } from "@/db";
+import userModel from "@/models/userModel";
+
+
 import { CartItem } from "@/types/product";
+import { ICartItemPopulated, mapCartItemsArrayToDTO } from "../mappers/MapCart";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth/authOptions";
 
-export async function getCartAction(): Promise<{
-  success: boolean;
+interface GetCartActionResponse {
   cart: CartItem[];
+  success?: boolean;
+  message?: string;
   totalItems?: number;
-    message?: string; 
- 
-}> {
+}
+
+export async function getCartAction(): Promise<GetCartActionResponse> {
   try {
-    const cookieStore = await cookies();
+    await connectDB();
 
-    const res = await fetch(`${FRONTEND_URL}/api/users/cart`, {
-      method: "GET",
-      headers: {
-        Cookie: cookieStore.toString(),
-      },
-      cache: "no-store",
-    });
+  
+        const session = await getServerSession(authOptions);
+      if (!session?.user?.email) return { cart: [] };
 
-    if (!res.ok) {
-      return {
-        success: false,
-        message: "Failed to fetch cart",
-        cart: [],
-      };
+    const user = await userModel
+      .findById(session.user.id)
+      .populate<{ cart: ICartItemPopulated[] }>({
+        path: "cart.product",
+        select: "name slug images price stock",
+      })
+      .populate({
+        path: "cart.variant",
+        select: "specs price stock images sku",
+      })
+       .lean<{ cart: ICartItemPopulated[] }>();
+
+    if (!user) {
+      return { cart: [] };
     }
 
-    const data = await res.json();
-    const cart: CartItem[] = data.data ?? [];
-
-    // total number of items
-    const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
-
-    // calculate totals
- 
- 
+    const cartDTO: CartItem[] = mapCartItemsArrayToDTO(user.cart);
 
     return {
+      cart: cartDTO,
       success: true,
-      cart,
-      message: "Cart fetched successfully",
-      totalItems,
-    
+      totalItems: cartDTO.reduce(
+        (sum, item) => sum + item.quantity,
+        0
+      ),
     };
   } catch (error) {
-    console.error("Fetch cart error:", error);
+    console.error("getCartAction error:", error);
+
+    // IMPORTANT: always return cart
     return {
-      success: false,
-      message: `Failed to fetch cart: ${error instanceof Error ? error.message : "Unexpected server error"}`,
       cart: [],
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch cart",
     };
   }
 }

@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useAppDispatch } from "@/redux/hooks";
-import { setUser, clearUser } from "@/redux/user/userSlice";
+import { setUser, clearUser, markHydrated } from "@/redux/features/auth/userSlice";
 
 export function useAuthSync() {
   const { data: session, status } = useSession();
@@ -25,6 +25,10 @@ export function useAuthSync() {
 
     if (status === "unauthenticated") {
       dispatch(clearUser());
+    }
+
+      if (status !== "loading") {
+      dispatch(markHydrated());
     }
   }, [status, session, dispatch]);
 }

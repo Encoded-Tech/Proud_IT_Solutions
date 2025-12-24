@@ -51,7 +51,6 @@ export const GET = withAuth(
 const userId = await getAuthUserId(req);
 
 
-
     const user = await userModel
   .findById(userId)
   .populate({

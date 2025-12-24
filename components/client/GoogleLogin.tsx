@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { signIn, useSession } from "next-auth/react";
 import { useAppDispatch } from "@/redux/hooks";
-import { setUser, clearUser, markHydrated } from "@/redux/user/userSlice";
+import { setUser, clearUser, markHydrated } from "@/redux/features/auth/userSlice";
 import { getCurrentUserAction } from "@/lib/server/fetchers/fetchUser";
 
 const GoogleSignIn = () => {

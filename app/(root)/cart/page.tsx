@@ -1,5 +1,4 @@
 export const dynamic = "force-dynamic";
-
 import CartPage from "@/components/server/ListCart";
 import React from "react";
 

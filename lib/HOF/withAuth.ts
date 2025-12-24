@@ -35,9 +35,6 @@ export function withAuth(
       secret: process.env.NEXTAUTH_SECRET,
     });
 
-    console.log("TOKEN:", token);
-
-
     if (!token) {
       return NextResponse.json(
         { success: false, message: "Unauthorized" },

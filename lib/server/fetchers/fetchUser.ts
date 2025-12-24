@@ -2,7 +2,7 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/authOptions";
-import { AuthUser } from "@/redux/user/userSlice";
+import { AuthUser } from "@/redux/features/auth/userSlice";
 import User from "@/models/userModel";
 
 

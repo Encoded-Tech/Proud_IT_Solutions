@@ -17,6 +17,6 @@ export const SessionWrapper = ({
 };
 
 function AuthSyncGate({ children }: { children: React.ReactNode }) {
-  useAuthSync(); // ✅ now safely inside SessionProvider
+  useAuthSync(); 
   return <>{children}</>;
 }

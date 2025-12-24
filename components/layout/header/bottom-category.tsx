@@ -5,10 +5,11 @@ import Link from "next/link";
 import { navitems } from "@/constants";
 import { usePathname } from "next/navigation";
 import {  useAppSelector } from "@/redux/hooks";
-import { selectCartTotalAmount, selectCartTotalItems,  } from "@/redux/cart/cartSlice";
+import { selectCartTotalAmount, selectCartTotalItems,  } from "@/redux/features/cart/cartSlice";
 
-import { selectIsAuthenticated } from "@/redux/user/userSlice";
+import { selectIsAuthenticated } from "@/redux/features/auth/userSlice";
 import { signOut } from "next-auth/react";
+import { selectWishlistCount } from "@/redux/features/wishlist/wishListSlice";
 
 
 const BottomCategory = () => {
@@ -17,9 +18,11 @@ const BottomCategory = () => {
  const totalAmount = useAppSelector(selectCartTotalAmount);
  const isLoggedIn = useAppSelector(selectIsAuthenticated);
 
+ const totalwihslist = useAppSelector(selectWishlistCount);
+
 
  const handleLogout = () => {
-  signOut({ callbackUrl: "/login" }); // full reset + rerender
+  signOut({ callbackUrl: "/login" }); 
 };
 
 
@@ -61,7 +64,7 @@ const BottomCategory = () => {
           >
             <Icon icon="mdi-light:heart" width="22" height="22" />{" "}
             <span className="absolute -right-4 -top-2 bg-white h-6 w-6 flex justify-center items-center aspect-auto rounded-full text-sm">
-              0
+             {totalwihslist}
             </span>
           </Link>
           <Link

@@ -37,7 +37,7 @@ const ProductCard = ({ product, label }: ProductCardProps) => {
           )}
           <figure className="overflow-hidden rounded-md cursor-pointer ">
             <Image
-              src={images?.[0] || "/placeholder.png"}
+              src={images?.[0] || ""}
               alt={name}
               width={1000}
               height={500}

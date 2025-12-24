@@ -10,6 +10,9 @@ import { CategoryType, MediaType, productType } from "@/types/product";
 import Review from "@/app/(root)/products/product-review";
 import ProductImages from "@/app/(root)/products/product-images";
 import AddToCartButton from "../client/AddToCartButton";
+import { addWishlistAction } from "@/lib/server/actions/wishlist/addToWishlist";
+import { setWishlist } from "@/redux/features/wishlist/wishListSlice";
+import { useAppDispatch } from "@/redux/hooks";
 
 
 type Tag = {
@@ -27,6 +30,8 @@ export default function ProductPageClient({
   category: CategoryType | null;
 }) {
   const [quantity, setQuantity] = useState(1);
+
+  const dispatch = useAppDispatch();
 
 
 
@@ -49,7 +54,7 @@ export default function ProductPageClient({
     isOfferedPriceActive,
   } = product;
   // Feature image
-const featureImage = product.images?.[0] || "/placeholder.png";
+const featureImage = product.images?.[0] || "";
 
 // Media array for slider/thumbnails
 const media: MediaType[] = product.images?.slice(1).map((img, idx) => ({
@@ -61,6 +66,30 @@ const media: MediaType[] = product.images?.slice(1).map((img, idx) => ({
 
 
   const availableStock = stock;
+
+  const handleAddToWishlist = async () => {
+  try {
+    const res = await addWishlistAction({
+      productId: id,
+    });
+
+    if (!res.success) {
+      toast.error(res.message || "Failed to add to wishlist");
+      return;
+    }
+
+    toast.success(res.message || "Added to wishlist");
+
+    // later:
+    dispatch(setWishlist(res.wishlist));
+
+  } catch (err) {
+
+    const errorMessage = err instanceof Error ? err.message : "Unexpected server error";
+    toast.error(errorMessage);
+  }
+};
+
 
   const decreaseQuantity = () =>
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
@@ -198,10 +227,17 @@ const media: MediaType[] = product.images?.slice(1).map((img, idx) => ({
                 <AddToCartButton productId={id} variant="page" quantity={quantity} />
 
                 <div className="cursor-pointer flex items-center gap-2 font-medium text-lighttext hover:text-primarymain text-sm">
-                  <Icon
-                    icon="mdi:heart-circle"
-                    className="text-pink-600 text-5xl hover:scale-110 ease-in-out duration-300 cursor-pointer"
-                  />{" "}
+                 <button
+  onClick={handleAddToWishlist}
+  className="flex items-center gap-2 hover:scale-110 transition"
+  aria-label="Add to wishlist"
+>
+  <Icon
+    icon="mdi:heart-circle"
+    className="text-pink-600 text-5xl"
+  />
+</button>
+
                 </div>
               </div>
             </section>

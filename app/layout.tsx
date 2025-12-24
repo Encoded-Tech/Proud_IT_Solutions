@@ -4,6 +4,7 @@ import { Jost } from "next/font/google";
 import { APP_DESCRIPTION, APP_NAME, SERVER_URL } from "@/constants";
 import { Providers } from "./providers/providers";
 
+
 const jost = Jost({
   subsets: ["latin"],
   weight: ["100", "300", "400", "500", "700", "900"],
@@ -20,15 +21,21 @@ export const metadata: Metadata = {
   metadataBase: new URL(SERVER_URL),
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+
+  
   return (
     <html lang="en" className={jost.variable}>
       <body className={jost.variable}>
-        <Providers>{children} </Providers>
+        <Providers>
+        
+              {children} 
+          </Providers>
       </body>
     </html>
   );

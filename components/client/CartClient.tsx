@@ -18,7 +18,7 @@ import {
   updateCartItem,
   removeCartItemLocal,
   selectCartCount,
-} from "@/redux/cart/cartSlice";
+} from "@/redux/features/cart/cartSlice";
 
 interface CartClientProps {
   initialCart: CartItem[];
@@ -169,7 +169,7 @@ const CartClient = ({ initialCart }: CartClientProps) => {
         </Link>
 
         {/* Cart heading */}
-        <h1 className="text-2xl font-semibold flex items-center gap-3">
+        <h1 className="text-2xl font-semibold flex items-center mb-8 gap-3">
           Your cart has
           {/* Distinct items count */}
           <span className="bg-primary text-white rounded-full min-w-[24px] h-6 px-2 text-sm flex items-center justify-center shadow-sm">
@@ -184,7 +184,7 @@ const CartClient = ({ initialCart }: CartClientProps) => {
         </h1>
       </div>
 
-      <div className="max-w-7xl xl:mx-auto mx-4 my-10 flex flex-col lg:flex-row gap-8 items-start">
+      <div className="max-w-7xl xl:mx-auto mx-4  flex flex-col lg:flex-row gap-8 items-start">
         {/* Cart Items */}
         <div className="flex-1 space-y-4">
           {cart.map((item: CartItem) => {
@@ -199,7 +199,7 @@ const CartClient = ({ initialCart }: CartClientProps) => {
                 className="flex items-center gap-4 border rounded-md p-4"
               >
                 <Image
-                  src={variant?.images?.[0] ?? product.images?.[0] ?? "/placeholder.png"}
+                  src={variant?.images?.[0] ?? product.images?.[0] ?? ""}
                   alt={product.name || "Product Image"}
                   width={100}
                   height={100}

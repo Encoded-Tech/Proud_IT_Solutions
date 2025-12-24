@@ -17,9 +17,7 @@ export default async function ListSingleProduct({ slug }: { slug: string }) {
   const product = res.data || {};
 
    const category = product.category;
-   console.log(product);
 
-   console.log(category);
 
 
   return (

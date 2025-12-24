@@ -3,33 +3,11 @@
 
 import { IProduct } from "@/models/productModel";
 import { IProductVariant } from "@/models/productVariantsModel";
+import { CartItem } from "@/types/product";
 
 export type ProductDocument = IProduct;
 export type ProductVariantDocument = IProductVariant;
 
-// Frontend-ready DTO
-export interface CartItemDTO {
-  _id: string;
-  quantity: number;
-  addedAt: Date;
-  updatedAt: Date;
-  selectedOptions?: Record<string, string> | null;
-  product: {
-    _id: string;
-    name: string;
-    price: number;
-    stock: number;
-    slug: string;
-    images: string[];
-  };
-  variant?: {
-    _id: string;
-    price: number;
-    stock: number;
-    specs?: Record<string, string>;
-    images?: string[];
-  } | null;
-}
 
 // Populated cart item type
 export interface ICartItemPopulated {
@@ -41,39 +19,51 @@ export interface ICartItemPopulated {
   product: IProduct;               // populated product
   variant?: IProductVariant | null; // populated variant
 }
+
+function formatSpecs(specs?: Record<string, string>) {
+  if (!specs) return "";
+  return Object.entries(specs)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(", ");
+}
 // Single item mapper
-export function mapSingleCartItemToDTO(item: ICartItemPopulated): CartItemDTO {
+export function mapSingleCartItemToDTO(item: ICartItemPopulated): CartItem {
   const { product, variant } = item;
+
+  const remainingStock = variant?.stock ?? product.stock;
 
   return {
     _id: item._id.toString(),
-    quantity: item.quantity,
-    addedAt: item.addedAt,
-    updatedAt: item.updatedAt,
-  selectedOptions: item.selectedOptions || null,
-   
     product: {
       _id: product._id.toString(),
       name: product.name,
       price: product.price,
       stock: product.stock,
+      images: Array.isArray(product.images) ? product.images : [],
       slug: product.slug,
-      images: product.images || [],
     },
     variant: variant
       ? {
           _id: variant._id.toString(),
           price: variant.price,
           stock: variant.stock,
-          specs: variant.specs || {},
-          images: variant.images || [],
+          specs: formatSpecs(variant.specs), // string
+          sku: variant.sku,
+          images: Array.isArray(variant.images) ? variant.images : [], // string[]
         }
       : null,
+    quantity: item.quantity,
+    addedAt: item.addedAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+    remainingStock,
+    selectedOptions: item.selectedOptions || {},
   };
 }
 
-// Array mapper
-export function mapCartItemsArrayToDTO(items: ICartItemPopulated[]): CartItemDTO[] {
+export function mapCartItemsArrayToDTO(items: ICartItemPopulated[]): CartItem[] {
   return items.map(mapSingleCartItemToDTO);
 }
+
+
+// Array mapper
 

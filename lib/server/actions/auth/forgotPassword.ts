@@ -19,3 +19,6 @@ export async function forgotPasswordAction(email: string) {
     throw err;
   }
 }
+
+
+//next time replace this with a function and not call own apis directly
