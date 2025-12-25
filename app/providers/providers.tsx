@@ -9,8 +9,9 @@ import StoreHydration from "@/redux/hydration/storeHydration";
 export const Providers = ({ children }: { children: ReactNode }) => {
   return (
     <StoreProvider>
-      <StoreHydration />
+      
       <SessionWrapper>
+        <StoreHydration />
         {children}
         <Toaster position="top-right" reverseOrder={false} />
       </SessionWrapper>

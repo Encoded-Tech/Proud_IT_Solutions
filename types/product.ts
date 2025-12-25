@@ -64,7 +64,15 @@ export interface ReviewType {
   rating: number;
   comment: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
+}
+
+
+export interface ReviewState {
+  reviews: ReviewType[];
+  totalReviews: number;
+  avgRating: number;
+  currentUserId?: string;
 }
 
 
@@ -103,6 +111,7 @@ export interface UserType {
   id: string;
   name: string;
   email: string;
+  image?: string | null;
 }
 
 

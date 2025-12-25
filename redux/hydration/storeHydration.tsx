@@ -7,13 +7,17 @@ import { getWishlistAction } from "@/lib/server/fetchers/fetchWishlist";
 import { getCartAction } from "@/lib/server/fetchers/fetchCart";
 import { setWishlist } from "../features/wishlist/wishListSlice";
 import { setCart } from "../features/cart/cartSlice";
+import { useSession } from "next-auth/react";
 
 
 export default function StoreHydration() {
   const dispatch = useAppDispatch();
+    const { status } = useSession();
 
   useEffect(() => {
     const hydrateStore = async () => {
+
+         if (status !== "authenticated") return;
       try {
         const [wishlistRes, cartRes] = await Promise.all([
           getWishlistAction(),
@@ -33,7 +37,7 @@ export default function StoreHydration() {
     };
 
     hydrateStore();
-  }, [dispatch]);
+  }, [status, dispatch]);
 
   return null;
 }

@@ -4,6 +4,7 @@ import storage from 'redux-persist/lib/storage'
 import cartReducer from './features/cart/cartSlice'
 import userReducer from './features/auth/userSlice'
 import wishlistReducer from './features/wishlist/wishListSlice'
+import reviewReducer from './features/review/reviewSlice'
 
 const persistConfig = {
   key: 'root',
@@ -20,6 +21,7 @@ export const makeStore = () =>
       cart: persistedCartReducer,
       auth: userReducer,
       wishlist: wishlistReducer,
+      review: reviewReducer,
     }, middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
         serializableCheck: {

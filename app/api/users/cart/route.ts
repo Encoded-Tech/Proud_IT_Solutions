@@ -182,7 +182,7 @@ export const POST = withAuth(
     if (currentQty + qty > stock) {
       return NextResponse.json({
         success: false,
-        message: `Cannot add ${qty} item(s). Only ${stock - currentQty} left in stock.`,
+        message: `Stock had ${stock} items. You added all of them now they are out of stock, please pruchase what you have in cart.`,
       }, { status: 400 });
     }
 

@@ -59,6 +59,12 @@ export const authOptions: AuthOptions = {
 
     // Try to find a user with providerId
     let user = await UserModel.findOne({ providerId: profile.sub });
+
+      // 🔹 If user exists but image is missing, update it
+  if (user && !user.image && profile.picture) {
+    user.image = profile.picture;
+    await user.save();
+  }
     if (!user) {
   user = await UserModel.findOne({ email: profile.email });
   
@@ -66,6 +72,10 @@ export const authOptions: AuthOptions = {
     // Link Google providerId to existing account
     user.providerId = profile.sub;
     user.emailVerified = true;
+
+      if (!user.image && profile.picture) {
+        user.image = profile.picture;
+      }
     await user.save();
   }
 }
@@ -78,6 +88,7 @@ export const authOptions: AuthOptions = {
         providerId: profile.sub, // save Google sub here
         emailVerified: profile.email_verified || true,
         role: "user",
+        image: profile.picture 
       });
     }
 
@@ -88,6 +99,7 @@ export const authOptions: AuthOptions = {
       email: user.email,
       role: user.role,
       emailVerified: Boolean(user.emailVerified),
+     image: user.image || profile.picture,
     };
   },
 }),

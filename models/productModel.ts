@@ -35,7 +35,7 @@ export interface IProduct extends Document {
   
   const reviewSchema = new Schema<IReview>(
     {
-      user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+      user: { type: Schema.Types.ObjectId, ref: "User", required: false },
       rating: { type: Number, required: true, min: 1, max: 5 },
       comment: { type: String, required: true, trim: true },
     },

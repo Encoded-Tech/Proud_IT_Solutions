@@ -1,10 +1,10 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
-import { useFormState, useFormStatus } from "react-dom";
+import {  useFormStatus } from "react-dom";
 import {
   registerAction,
   type RegisterState,
@@ -14,7 +14,9 @@ import GoogleSignIn from "@/components/client/GoogleLogin";
 const initialState: RegisterState = {};
 
 export default function RegisterForm() {
-  const [state, formAction] = useFormState(registerAction, initialState);
+  
+  const [state, formAction] = useActionState(registerAction, initialState);
+
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);

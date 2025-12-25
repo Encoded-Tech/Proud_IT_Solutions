@@ -9,22 +9,26 @@ import AddToCartButton from "../client/AddToCartButton";
 interface ProductCardProps {
   product?: productType;
   label?: string; 
+   avgRating?: number;
+  totalReviews?: number;
   
 }
 
-const ProductCard = ({ product, label }: ProductCardProps) => {
+const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
   const {
     images = [],
     name = "",
     price = 0,
     slug = "",
     stock = 0,
-    avgRating = 0,
+
     offeredPrice = 0,
     isOfferedPriceActive = false,
   } = product || {};
 
   const availableStock = stock;
+
+   const  resolvedAvgRating = avgRating ?? product?.avgRating ?? 0;
 
   return (
     <main>
@@ -61,14 +65,14 @@ const ProductCard = ({ product, label }: ProductCardProps) => {
           </h2>
 
           <div className="flex items-center">
-            {[...Array(Math.floor(avgRating))].map((_, i) => (
+            {[...Array(Math.floor(resolvedAvgRating))].map((_, i) => (
               <Icon
                 key={i}
                 icon="ic:round-star"
                 className="fill-yellow-500 text-yellow-500 md:text-xl text-sm"
               />
             ))}
-            {avgRating % 1 !== 0 && (
+            {resolvedAvgRating % 1 !== 0 && (
               <Icon
                 icon="ic:round-star-half"
                 className="fill-yellow-500 text-yellow-500 text-xl"
