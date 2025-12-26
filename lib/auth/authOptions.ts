@@ -4,7 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import jwt from "jsonwebtoken";
+
 
 import { connectDB } from "@/db";
 import UserModel, { IUser } from "@/models/userModel";
@@ -13,8 +13,7 @@ import {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   NEXTAUTH_SECRET,
-  JWT_SECRET,
-  JWT_EXPIRES_IN,
+
   HARDLOCK_THRESHOLD,
   HARDLOCK_WINDOW,
   MAX_ATTEMPTS,
@@ -50,59 +49,59 @@ export const authOptions: AuthOptions = {
 
   providers: [
     /* ---------- Google ---------- */
-  GoogleProvider({
-  clientId: GOOGLE_CLIENT_ID,
-  clientSecret: GOOGLE_CLIENT_SECRET,
-  async profile(profile) {
-    // profile.sub is the Google unique id
-    await connectDB();
+    GoogleProvider({
+      clientId: GOOGLE_CLIENT_ID,
+      clientSecret: GOOGLE_CLIENT_SECRET,
+      async profile(profile) {
+        // profile.sub is the Google unique id
+        await connectDB();
 
-    // Try to find a user with providerId
-    let user = await UserModel.findOne({ providerId: profile.sub });
+        // Try to find a user with providerId
+        let user = await UserModel.findOne({ providerId: profile.sub });
 
-      // 🔹 If user exists but image is missing, update it
-  if (user && !user.image && profile.picture) {
-    user.image = profile.picture;
-    await user.save();
-  }
-    if (!user) {
-  user = await UserModel.findOne({ email: profile.email });
-  
-  if (user) {
-    // Link Google providerId to existing account
-    user.providerId = profile.sub;
-    user.emailVerified = true;
+        // 🔹 If user exists but image is missing, update it
+        if (user && !user.image && profile.picture) {
+          user.image = profile.picture;
+          await user.save();
+        }
+        if (!user) {
+          user = await UserModel.findOne({ email: profile.email });
 
-      if (!user.image && profile.picture) {
-        user.image = profile.picture;
-      }
-    await user.save();
-  }
-}
+          if (user) {
+            // Link Google providerId to existing account
+            user.providerId = profile.sub;
+            user.emailVerified = true;
 
-    if (!user) {
-      // If user doesn't exist, create new one
-      user = await UserModel.create({
-        name: profile.name,
-        email: profile.email,
-        providerId: profile.sub, // save Google sub here
-        emailVerified: profile.email_verified || true,
-        role: "user",
-        image: profile.picture 
-      });
-    }
+            if (!user.image && profile.picture) {
+              user.image = profile.picture;
+            }
+            await user.save();
+          }
+        }
 
-    // Always return MongoDB _id
-    return {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      emailVerified: Boolean(user.emailVerified),
-     image: user.image || profile.picture,
-    };
-  },
-}),
+        if (!user) {
+          // If user doesn't exist, create new one
+          user = await UserModel.create({
+            name: profile.name,
+            email: profile.email,
+            providerId: profile.sub, // save Google sub here
+            emailVerified: profile.email_verified || true,
+            role: "user",
+            image: profile.picture
+          });
+        }
+
+        // Always return MongoDB _id
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          emailVerified: Boolean(user.emailVerified),
+          image: user.image || profile.picture,
+        };
+      },
+    }),
 
     /* ---------- Credentials ---------- */
     CredentialsProvider({
@@ -127,8 +126,8 @@ export const authOptions: AuthOptions = {
 
         const ip = normalizeIP(
           headers["x-forwarded-for"] ||
-            headers["x-real-ip"] ||
-            "unknown"
+          headers["x-real-ip"] ||
+          "unknown"
         );
 
         const userAgent = headers["user-agent"] || "unknown";
@@ -229,38 +228,40 @@ export const authOptions: AuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user, account }) {
+
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role || "user";
+        token.role = user.role ?? "user";
         token.emailVerified = !!user.emailVerified;
-        token.providerId = user.providerId;
-
-        token.backendJwt = jwt.sign(
-          {
-            id: token.id,
-            email: token.email,
-            role: token.role,
-            emailVerified: token.emailVerified,
-          },
-          JWT_SECRET,
-          { expiresIn: JWT_EXPIRES_IN }
-        );
       }
+      // Safety fallback for malformed / legacy tokens
+      token.role ??= "user";
+      token.emailVerified ??= false;
 
-       // If signing in with Google, mark email as verified
-      if (account?.provider === "google" && user) {
-        token.emailVerified = true;
-      }
       return token;
     },
 
     async session({ session, token }) {
-      session.user.id = token.id!;
-      session.user.role = token.role!;
-      session.user.emailVerified = !!token.emailVerified;
-      session.backendJwt = token.backendJwt as string;
+      if (!token.id) return session;
+
+      await connectDB();
+
+      const user = await UserModel.findById(token.id).lean<IUser>();
+
+      if (!user) return session;
+      session.user = {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        image: user.image,
+        role: user.role,
+        emailVerified: Boolean(user.emailVerified),
+      };
+
       return session;
-    },
+    }
+
   },
 };

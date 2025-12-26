@@ -126,12 +126,13 @@ export const POST = withDB(async (req: NextRequest, context?) => {
       user: {
 
         //in production //
-        //   name: newUser.name,
-        //   email: newUser.email,
-        //   image: newUser.image
+        _id: newUser._id.toString(),
+          name: newUser.name,
+          email: newUser.email,
+          image: newUser.image
 
         //in development//
-        newUser
+        // newUser
       }
     }
   })

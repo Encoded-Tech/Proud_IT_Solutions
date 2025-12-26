@@ -1,50 +1,88 @@
-  import { Schema, Types, model, models } from "mongoose";
-  import uniqueValidator from "mongoose-unique-validator";
+import { Schema, Types, model, models, Document } from "mongoose";
+import uniqueValidator from "mongoose-unique-validator";
 
-  export interface ICartItem extends Document{
-    _id: Types.ObjectId;
-    product: Types.ObjectId; 
-    variant?: Types.ObjectId; 
-    quantity: number;
-    selectedOptions?: Record<string, string>;
-    addedAt: Date;
-    updatedAt: Date;
-  }
+export const NEPAL_PROVINCES = [
+  "Koshi",
+  "Madhesh",
+  "Bagmati",
+  "Gandaki",
+  "Lumbini",
+  "Karnali",
+  "Sudurpashchim",
+] as const;
 
-  export interface IWishlistItem extends Document {
-    _id: Types.ObjectId;
-    product: Types.ObjectId; 
-    variant?: Types.ObjectId; 
-    addedAt: Date;
-  }
-  export interface IUser extends Document {
+export type NepalProvince = typeof NEPAL_PROVINCES[number];
+
+
+export interface IUserAddress {
+  fullName: string;
+  phone: string;
+
+  province: NepalProvince;
+  district: string;
+
+  municipality: string;
+  ward: number;
+
+  street?: string;
+  landmark?: string;
+
+  postalCode?: string;
+  country?: string;
+
+  city?: string;
+  state?: string;    // added
+  zip?: string;      // added
+
+}
+
+
+export interface ICartItem extends Document {
   _id: Types.ObjectId;
-    name: string;
-    email: string;
-    phone?: string | null;
-    image?: string | null;
-    hashedPassword?: string | null;
-    provider: "credentials" | "google" | null;
-    providerId?: string | null;
-    emailVerified: boolean;
-    emailVerificationToken?: string;
-    emailVerificationExpiry?: Date;
-    resetPasswordToken?: string;
-    resetPasswordExpiry?: Date;
+  product: Types.ObjectId;
+  variant?: Types.ObjectId;
+  quantity: number;
+  selectedOptions?: Record<string, string>;
+  addedAt: Date;
+  updatedAt: Date;
+}
 
-    // Security & Locking
-    failedLoginAttempts: number;
-    lockUntil?: Date | null;
-    hardLock: boolean;
-    lockCount: number;
-    lastLockTime?: Date | null;
-    isLocked: boolean;
+export interface IWishlistItem extends Document {
+  _id: Types.ObjectId;
+  product: Types.ObjectId;
+  variant?: Types.ObjectId;
+  addedAt: Date;
+}
+export interface IUser extends Document {
+  _id: Types.ObjectId;
+  name: string;
+  email: string;
+  phone?: string | null;
+  image?: string | null;
+  hashedPassword?: string | null;
+  address?: IUserAddress | null;
+  provider: "credentials" | "google" | null;
+  providerId?: string | null;
+  emailVerified: boolean;
+  emailVerificationToken?: string;
+  emailVerificationExpiry?: Date;
+  resetPasswordToken?: string;
+  resetPasswordExpiry?: Date;
+  bio?: string;
 
-    role: "user" | "admin";
-    lastLogin?: Date | null;
-    signupIP?: string | null;
+  // Security & Locking
+  failedLoginAttempts: number;
+  lockUntil?: Date | null;
+  hardLock: boolean;
+  lockCount: number;
+  lastLockTime?: Date | null;
+  isLocked: boolean;
 
-    // Login History
+  role: "user" | "admin";
+  lastLogin?: Date | null;
+  signupIP?: string | null;
+
+  // Login History
   loginHistory: {
     ip: string;
     userAgent: string;
@@ -55,173 +93,230 @@
     isSuspicious?: boolean;
   }[];
 
+  // Cart & Wishlist
+  cart: ICartItem[];
+  wishlist: IWishlistItem[];
 
-    
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-    // Cart & Wishlist
-    cart: ICartItem[];
-    wishlist: IWishlistItem[];
-
-    // Timestamps
-    createdAt: Date;
-    updatedAt: Date;
-  }
-
-  const cartSchema = new Schema<ICartItem>(
-    {
-      product: { type: Schema.Types.ObjectId, ref: "Product" },
-      variant: { type: Schema.Types.ObjectId, ref: "ProductVariant", default: null },
-      quantity: { type: Number, default: 1 },
-      selectedOptions: { type: Map, of: String },
-      addedAt: { type: Date, default: Date.now },
-      updatedAt: { type: Date, default: Date.now },
+const userAddressSchema = new Schema<IUserAddress>(
+  {
+    fullName: { type: String, trim: true },
+    phone: {
+      type: String,
+      match: /^[0-9]{10,15}$/,
     },
-  )
 
-  const wishlistSchema = new Schema<IWishlistItem>(
-    {
-      product: { type: Schema.Types.ObjectId, ref: "Product" },
-      variant: { type: Schema.Types.ObjectId, ref: "ProductVariant", default: null },
-      addedAt: { type: Date, default: Date.now },
-    }
-  )
+    province: {
+      type: String,
+      enum: [
+        "Koshi",
+        "Madhesh",
+        "Bagmati",
+        "Gandaki",
+        "Lumbini",
+        "Karnali",
+        "Sudurpashchim",
+      ],
+    },
 
+    district: { type: String, trim: true },
 
-  const userSchema = new Schema<IUser>(
-    {
-      name: {
-        type: String,
-        required: true,
-        trim: true,
-        minLength: 2,
-        maxLength: 50,
-      },
+    municipality: { type: String, trim: true },
 
-      email: {
-        type: String,
-        required: true,
-        unique: true,
-        lowercase: true,
-        trim: true,
-        match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        index: true,
-      },
+    ward: {
+      type: Number,
+      min: 1,
+      max: 35, // Kathmandu max wards
+    },
 
-      image: {
-        type: String,
-        default: null,
-      },
+    street: { type: String, trim: true },
+    landmark: { type: String, trim: true },
 
-      phone: {
-        type: String,
-        match: /^[0-9]{10,15}$/,
-        default: null,
-      },
+    postalCode: { type: String, trim: true },
+    city: { type: String, trim: true },
+    state: { type: String, trim: true },
+    zip: { type: String, trim: true },
 
-      hashedPassword: {
-        type: String,
-        select: false,
-        default: null,
-      },
-
-      provider: {
-        type: String,
-        enum: ["credentials", "google", null],
-        default: "credentials",
-      },
-
-      providerId: {
-        type: String,
-        default: null,
-        index: true,
-      },
-
-      emailVerified: { type: Boolean, default: false },
-
-      emailVerificationToken: { type: String },
-      emailVerificationExpiry: { type: Date },
-
-      resetPasswordToken: { type: String, select: false },
-      resetPasswordExpiry: { type: Date, select: false },
+    country: {
+      type: String,
+      default: "Nepal",
+    },
+  },
+  { _id: false }
+);
 
 
-      // SECURITY + LOCKING
-      failedLoginAttempts: {
-        type: Number,
-        default: 0,
-      },
+const cartSchema = new Schema<ICartItem>(
+  {
+    product: { type: Schema.Types.ObjectId, ref: "Product" },
+    variant: { type: Schema.Types.ObjectId, ref: "ProductVariant", default: null },
+    quantity: { type: Number, default: 1 },
+    selectedOptions: { type: Map, of: String },
+    addedAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+  },
+)
 
-      lockUntil: {
-        type: Date,
-        default: null,
-        select: false,
-      },
+const wishlistSchema = new Schema<IWishlistItem>(
+  {
+    product: { type: Schema.Types.ObjectId, ref: "Product" },
+    variant: { type: Schema.Types.ObjectId, ref: "ProductVariant", default: null },
+    addedAt: { type: Date, default: Date.now },
+  }
+)
 
-      hardLock: {
-        type: Boolean,
-        default: false,
-      },
 
-      lockCount: {
-        type: Number,
-        default: 0,
-      },
+const userSchema = new Schema<IUser>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      minLength: 2,
+      maxLength: 50,
+    },
 
-      lastLockTime: {
-        type: Date,
-        default: null,
-      },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+      index: true,
+    },
 
-      role: {
-        type: String,
-        enum: ["user", "admin"],
-        default: "user",
-      },
+    image: {
+      type: String,
+      default: null,
+    },
 
-      lastLogin: {
-        type: Date,
-        default: null,
-      },
+    phone: {
+      type: String,
+      match: /^[0-9]{10,15}$/,
+      default: null,
+    },
+    bio: {
+      type: String,
+      default: null,
+    },
 
-      signupIP: {
-        type: String,
-        default: null,
-      },
+    hashedPassword: {
+      type: String,
+      select: false,
+      default: null,
+    },
+
+    provider: {
+      type: String,
+      enum: ["credentials", "google", null],
+      default: "credentials",
+    },
+
+    providerId: {
+      type: String,
+      default: null,
+      index: true,
+    },
+
+    emailVerified: { type: Boolean, default: false },
+
+    emailVerificationToken: { type: String },
+    emailVerificationExpiry: { type: Date },
+
+    resetPasswordToken: { type: String, select: false },
+    resetPasswordExpiry: { type: Date, select: false },
+
+
+    // SECURITY + LOCKING
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+
+    lockUntil: {
+      type: Date,
+      default: null,
+      select: false,
+    },
+
+    hardLock: {
+      type: Boolean,
+      default: false,
+    },
+
+    lockCount: {
+      type: Number,
+      default: 0,
+    },
+
+    lastLockTime: {
+      type: Date,
+      default: null,
+    },
+
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
+
+    lastLogin: {
+      type: Date,
+      default: null,
+    },
+
+    signupIP: {
+      type: String,
+      default: null,
+    },
 
     loginHistory: [
-    {
-      ip: String,
-      userAgent: String,
-      device: String,
-      isNewIP: Boolean,
-      isNewDevice: Boolean,
-      isSuspicious: Boolean,
-      at: { type: Date, default: Date.now },
+      {
+        ip: String,
+        userAgent: String,
+        device: String,
+        isNewIP: Boolean,
+        isNewDevice: Boolean,
+        isSuspicious: Boolean,
+        at: { type: Date, default: Date.now },
+      },
+    ],
+    address: {
+      type: userAddressSchema,
+      default: null, 
     },
-  ],
 
-      cart: [cartSchema],
-
-      wishlist: [wishlistSchema]
-      
+    cart: {
+      type: [cartSchema],
+      default: [], 
     },
-    { timestamps: true }
-  );
+    wishlist: {
+      type: [wishlistSchema],
+      default: [],
+    },
 
-  // VIRTUAL: isLocked (CALCULATED, NOT STORED)
-  userSchema.virtual("isLocked").get(function () {
-    if (!this.lockUntil) return false;
-    return this.lockUntil.getTime() > Date.now();
-  });
+  },
+  { timestamps: true }
+);
+
+// VIRTUAL: isLocked (CALCULATED, NOT STORED)
+userSchema.virtual("isLocked").get(function () {
+  if (!this.lockUntil) return false;
+  return this.lockUntil.getTime() > Date.now();
+});
+
+// include virtuals in response JSON
+userSchema.set("toJSON", { virtuals: true });
+userSchema.set("toObject", { virtuals: true });
+
+// unique validation plugin
+userSchema.plugin(uniqueValidator);
 
 
-  // include virtuals in response JSON
-  userSchema.set("toJSON", { virtuals: true });
-  userSchema.set("toObject", { virtuals: true });
-
-  // unique validation plugin
-  userSchema.plugin(uniqueValidator);
-
-
-  export default models.User || model<IUser>("User", userSchema);
+export default models.User || model<IUser>("User", userSchema);
 

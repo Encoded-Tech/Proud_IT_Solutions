@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/authOptions";
 import { AuthUser } from "@/redux/features/auth/userSlice";
 import User from "@/models/userModel";
+import { serializeUser } from "../mappers/mapUser";
 
 
 export async function getCurrentUserAction(): Promise<AuthUser | null> {
@@ -22,6 +23,7 @@ export async function getCurrentUserAction(): Promise<AuthUser | null> {
         name: session.user.name,
         email: session.user.email,
          providerId: session.user.id, 
+         phone: session.user.phone,
         role: "user",
         emailVerified: session.user.emailVerified,
       });
@@ -35,11 +37,5 @@ export async function getCurrentUserAction(): Promise<AuthUser | null> {
 
   if (!user) return null;
 
-  return {
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role as "user" | "admin",
-    emailVerified: session.user.emailVerified,
-  };
+return serializeUser(user);
 }

@@ -5,10 +5,30 @@
     id: string;
     name: string;
     email: string;
+    phone?: string;
     role: "user" | "admin";
     image?: string;
     emailVerified?: boolean;
+    bio?: string;
+     address?: Partial<IUserAddressFrontend> | null;
+     
   }
+
+  export interface IUserAddressFrontend {
+  fullName: string;
+  phone: string;
+  province: string;
+  district: string;
+  municipality: string;
+  ward: number;
+  street?: string;
+  landmark?: string;
+  postalCode?: string;
+  country?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+}
 
   export interface AuthState {
     user: AuthUser | null;

@@ -61,6 +61,10 @@ export const PUT = withAuth(
     const phone = formData.get("phone")?.toString();
     const imageFile = formData.get("image") as File | null;
 
+      // Address comes as JSON string
+    const addressRaw = formData.get("address")?.toString();
+    const parsedAddress = addressRaw ? JSON.parse(addressRaw) : null;
+
     const user = await UserModel.findById(id)
       .select(exclusions);
     if (!user) {
@@ -72,6 +76,14 @@ export const PUT = withAuth(
 
     if (name) user.name = name;
     if (phone) user.phone = phone;
+
+     /* ---------------- ADDRESS (MERGE, NOT REPLACE) ---------------- */
+    if (parsedAddress && typeof parsedAddress === "object") {
+      user.address = {
+        ...(user.address?.toObject?.() ?? {}),
+        ...parsedAddress,
+      };
+    }
 
     if (imageFile && imageFile.size > 0) {
       if (user.image) {
