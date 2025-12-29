@@ -317,8 +317,6 @@ export async function updateReviewAction(
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) return { success: false, message: "Unauthorized" };
-
-    console.log(session)
     
 
     if (rating !== undefined && (rating < 1 || rating > 5)) {

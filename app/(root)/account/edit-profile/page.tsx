@@ -5,7 +5,7 @@
     const user = await getCurrentUserAction();
     if (!user) return <div className="p-10">Please login</div>;
 
-    console.log(user)
+  
 
     return (
       <main className="max-w-5xl mx-auto px-4">

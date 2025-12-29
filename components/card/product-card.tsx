@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import AddToCartButton from "../client/AddToCartButton";
+import BuyNowButton from "../client/buyNowButton";
 
 interface ProductCardProps {
   product?: productType;
@@ -125,7 +126,14 @@ const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
   Add to Cart
 </button> */}
 
-{product?.id && <AddToCartButton productId={product.id} variant="card" />}
+{product?.id && (
+  <>
+   <div className="flex gap-2">
+     <AddToCartButton productId={product.id} variant="card" />
+    <BuyNowButton productId={product.id} />
+   </div>
+  </>
+)}
 
     </main>
   );

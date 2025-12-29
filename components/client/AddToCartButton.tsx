@@ -86,10 +86,10 @@ const AddToCartButton = ({ productId, variant = "page", quantity = 1, children }
   const baseStyles =
     "flex items-center gap-2 justify-center text-sm rounded-md cursor-pointer ease-in-out duration-100";
 
-  const variantStyles =
-    variant === "card"
-      ? "w-full mt-4 border border-lighttext rounded-md inset-shadow-xs md:px-6 px-4 text-sm py-2 w-full flex items-center gap-2 justify-center hover:bg-primary/90 hover:text-white hover:border-none cursor-pointer ease-in-out duration-100"
-      : "py-3 px-4 rounded-md bg-primary text-white text-sm hover:bg-primary/90";
+const variantStyles =
+  variant === "card"
+    ? "w-full mt-4 border border-lighttext  rounded-md inset-shadow-xs text-xs px-2 py-2 md:px-4 md:py-2 md:text-sm flex items-center justify-center hover:bg-primary/90 hover:text-white hover:border-none cursor-pointer ease-in-out duration-100"
+    : "w-full py-2 px-4 rounded-md bg-primary text-white text-sm md:py-3 md:px-4 hover:bg-primary/90";
 
   return (
     <button
@@ -98,7 +98,7 @@ const AddToCartButton = ({ productId, variant = "page", quantity = 1, children }
       disabled={loading}
     >{children ?? (
       <>
-        <Icon icon="mynaui:cart-solid" width="24" height="24" />
+        <Icon icon="mynaui:cart-solid" width="24" height="24" className=" w-4 h-4 md:w-6 md:h-6" />
         {loading ? "Adding..." : "Add to Cart"}</>
     )}
 

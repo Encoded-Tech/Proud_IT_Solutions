@@ -13,11 +13,12 @@ import {
   removeWishlistItemLocal,
   removeWishlistItem,
 } from "@/redux/features/wishlist/wishListSlice";
-import { ArrowLeftIcon } from "lucide-react";
+
 import  { addToCartApi } from "./AddToCartButton";
 import { setCart } from "@/redux/features/cart/cartSlice";
 import toast from "react-hot-toast";
 import { removeWishlistAction } from "@/lib/server/actions/wishlist/addToWishlist";
+import ContinueShoppingLink from "../shared/ContinueShopping";
 
 interface WishlistClientProps {
   initialWishlist: WishlistItemDTO[];
@@ -66,14 +67,7 @@ const WishlistClient = ({ initialWishlist }: WishlistClientProps) => {
   return (
     <div className="max-w-7xl mx-auto my-10 px-4">
      <div className="space-y-3">
-        {/* Continue shopping link */}
-        <Link
-          href="/shop"
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary transition group"
-        >
-          <ArrowLeftIcon className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          Continue shopping
-        </Link>
+        <ContinueShoppingLink />
 
         {/* Cart heading */}
         <h1 className="text-2xl font-semibold flex items-center mb-8 gap-3">

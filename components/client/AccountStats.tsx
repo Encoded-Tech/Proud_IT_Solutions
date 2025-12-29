@@ -4,14 +4,20 @@ import { selectCartTotalItems } from "@/redux/features/cart/cartSlice";
 import { selectWishlistCount } from "@/redux/features/wishlist/wishListSlice";
 import { useAppSelector } from "@/redux/hooks";
 
-export default function AccountStats() {
+export default function AccountStats({count}: {count: number}) {
   const cartItemsCount = useAppSelector(selectCartTotalItems);
   const wishlistCount = useAppSelector(selectWishlistCount);
 
+  
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-      <Stat title="Orders" value="—" subtitle="Total placed" />
-        <Stat
+   <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <Stat
+        title="Orders"
+        value={count.toString()}
+        subtitle="Total placed"
+      />
+      <Stat
         title="Wishlist"
         value={wishlistCount.toString()}
         subtitle="Saved items"

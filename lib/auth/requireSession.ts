@@ -22,3 +22,17 @@ export async function requireSession(options?: {
 
   return session.user;
 }
+
+export async function requireUser() {
+  return requireSession({
+    roles: ["user"],
+    emailVerified: true,
+  });
+}
+
+export async function requireAdmin() {
+  return requireSession({
+    roles: ["admin"],
+    emailVerified: true,
+  })
+}

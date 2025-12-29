@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CartItem } from "@/types/product";
 import toast from "react-hot-toast";
-import { ArrowLeftIcon } from "lucide-react";
+
 import {
   removeCartItem,
   updateCartQuantity,
@@ -19,6 +19,7 @@ import {
   removeCartItemLocal,
   selectCartCount,
 } from "@/redux/features/cart/cartSlice";
+import ContinueShoppingLink from "../shared/ContinueShopping";
 
 interface CartClientProps {
   initialCart: CartItem[];
@@ -159,14 +160,7 @@ const CartClient = ({ initialCart }: CartClientProps) => {
   return (
     <div>
       <div className="space-y-3">
-        {/* Continue shopping link */}
-        <Link
-          href="/shop"
-          className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary transition group"
-        >
-          <ArrowLeftIcon className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          Continue shopping
-        </Link>
+        <ContinueShoppingLink />
 
         {/* Cart heading */}
         <h1 className="text-2xl font-semibold flex items-center mb-8 gap-3">

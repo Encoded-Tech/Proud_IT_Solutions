@@ -108,7 +108,7 @@ const HotDeals = ({hotDeals, title}: Props) => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-x-4 my-10">
+          <div className="grid md:grid-cols-2 gap-x-8 my-10">
             {hotDeals.map((item, index) => (
               <div key={index} className="px-2">
             <ProductCard key={item.id} product={item} label="Hot Deal" />

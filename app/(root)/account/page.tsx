@@ -3,6 +3,7 @@ import Link from "next/link";
 import AccountStats from "@/components/client/AccountStats";
 import { AuthUser, IUserAddressFrontend } from "@/redux/features/auth/userSlice";
 import { getCurrentUserAction } from "@/lib/server/fetchers/fetchUser";
+import { getMyOrderCount } from "@/lib/server/fetchers/fetchOrders";
 
 interface FieldCheck {
   label: string;
@@ -93,6 +94,8 @@ export default async function AccountOverviewPage() {
 
   const { completionPercent, missingFields } = getProfileCompletion(user);
 
+  const {count}  = await getMyOrderCount();
+
   
 
   return (
@@ -165,7 +168,7 @@ export default async function AccountOverviewPage() {
         </Link>
       </div>
 
-      <AccountStats />
+      <AccountStats count={count} />
 
       {/* QUICK ACTIONS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

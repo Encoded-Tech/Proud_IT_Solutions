@@ -74,7 +74,7 @@ const orderSchema = new Schema<IOrder>(
     paymentMethod: {
       type: String,
       enum: ["COD", "OnlineUpload"],
-      default: "COD",
+      required: true,
     },
 
     paymentProof: {
