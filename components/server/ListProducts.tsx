@@ -1,4 +1,5 @@
 import ShopGrid from "@/app/(root)/shop/shop-grid";
+import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
 import { fetchAllProducts } from "@/lib/server/fetchers/fetchProducts";
 
 export const revalidate = 60;
@@ -8,10 +9,15 @@ export default async function ListProducts({ page = 1, limit = 6 }: { page?: num
   const res = await fetchAllProducts(page, limit);
   const products = res.data || [];
 
+  const categoriesRes = await fetchCategories();
+const categories = categoriesRes.success && categoriesRes.data
+  ? categoriesRes.data.slice(0, 9) // take first 6 categories
+  : [];
+
 
   return (
     <div className="space-y-20">
-      <ShopGrid product={products} />
+      <ShopGrid products={products} categories={categories} />
       {/* pagination component using res.pagination */}
     </div>
   );
