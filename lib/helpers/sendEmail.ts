@@ -4,8 +4,10 @@ import { createMailer } from "@/config/nodemailer";
 
 // Reusable email sending function
 export async function sendEmail(opts: {
+  from?: string;
     to: string;
     subject: string;
+    replyTo?: string;
     html: string;
     text?: string;
   }) {
