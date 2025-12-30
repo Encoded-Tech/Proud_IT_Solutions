@@ -26,9 +26,17 @@ export async function registerAction(
     };
   }
 
+  const { email, emailVerificationExpiry } = data.data || {};
+
+  if (!email || !emailVerificationExpiry) {
+    return { error: "Invalid registration response" };
+  }
+
   
-redirect(
-  `/verify-email?email=${encodeURIComponent(data.data.user.newUser.email)}&expiresAt=${data.data.user.newUser.emailVerificationExpiry}`
-);
+  redirect(
+    `/verify-email?email=${encodeURIComponent(
+      email
+    )}&expiresAt=${emailVerificationExpiry}`
+  );
 
 }

@@ -52,55 +52,53 @@ export const authOptions: AuthOptions = {
     GoogleProvider({
       clientId: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
-      async profile(profile) {
-        // profile.sub is the Google unique id
-        await connectDB();
+     async profile(profile) {
+  await connectDB();
 
-        // Try to find a user with providerId
-        let user = await UserModel.findOne({ providerId: profile.sub });
+  let user = await UserModel.findOne({
+    provider: "google",
+    providerId: profile.sub,
+  });
 
-        // 🔹 If user exists but image is missing, update it
-        if (user && !user.image && profile.picture) {
-          user.image = profile.picture;
-          await user.save();
-        }
-        if (!user) {
-          user = await UserModel.findOne({ email: profile.email });
+  if (!user) {
+    // 🚨 PREVENT creating Google user if email exists
+    const emailExists = await UserModel.exists({
+      email: profile.email,
+    });
 
-          if (user) {
-            // Link Google providerId to existing account
-            user.providerId = profile.sub;
-            user.emailVerified = true;
+    if (emailExists) {
+      // Return a TEMP user; signIn() will block
+      return {
+        id: "temp",
+        name: profile.name,
+        email: profile.email,
+        role: "user",
+        emailVerified: true,
+        image: profile.picture,
+      };
+    }
 
-            if (!user.image && profile.picture) {
-              user.image = profile.picture;
-            }
-            await user.save();
-          }
-        }
+    user = await UserModel.create({
+      name: profile.name,
+      email: profile.email,
+      provider: "google",
+      providerId: profile.sub,
+      emailVerified: profile.email_verified ?? true,
+      role: "user",
+      image: profile.picture,
+    });
+  }
 
-        if (!user) {
-          // If user doesn't exist, create new one
-          user = await UserModel.create({
-            name: profile.name,
-            email: profile.email,
-            providerId: profile.sub, // save Google sub here
-            emailVerified: profile.email_verified || true,
-            role: "user",
-            image: profile.picture
-          });
-        }
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    emailVerified: Boolean(user.emailVerified),
+    image: user.image || profile.picture,
+  };
+}
 
-        // Always return MongoDB _id
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          emailVerified: Boolean(user.emailVerified),
-          image: user.image || profile.picture,
-        };
-      },
     }),
 
     /* ---------- Credentials ---------- */
@@ -138,6 +136,7 @@ export const authOptions: AuthOptions = {
         );
 
         if (!user) throw new Error("INVALID_CREDENTIALS");
+        if (user.provider === "google") throw new Error("USE_GOOGLE_LOGIN");
         if (!user.emailVerified) throw new Error("EMAIL_NOT_VERIFIED");
         if (user.hardLock) throw new Error("ACCOUNT_HARD_LOCKED");
 
@@ -229,6 +228,22 @@ export const authOptions: AuthOptions = {
 
   callbacks: {
 
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        const existingCredUser = await UserModel.findOne({
+          email: user.email,
+          provider: "credentials",
+        });
+
+        if (existingCredUser) {
+          // ❌ block Google login
+          return "/login?error=EMAIL_ALREADY_REGISTERED_WITH_CREDENTIALS";
+        }
+      }
+
+      return true;
+    },
+
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -262,6 +277,7 @@ export const authOptions: AuthOptions = {
 
       return session;
     }
+
 
   },
 };

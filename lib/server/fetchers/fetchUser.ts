@@ -32,7 +32,7 @@ export async function getCurrentUserAction(): Promise<AuthUser | null> {
 
   // If still null, fallback to credentials user (email)
   if (!user && session.user.email) {
-    user = await User.findOne({ email: session.user.email });
+    user = await User.findOne({ email: session.user.email }).select("+hashedPassword");;
   }
 
   if (!user) return null;

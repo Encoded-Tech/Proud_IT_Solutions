@@ -6,10 +6,14 @@
     name: string;
     email: string;
     phone?: string;
+    hashedPassword?: string;
+    provider?: "credentials" | "google";
+   providerId?: string;
     role: "user" | "admin";
     image?: string;
     emailVerified?: boolean;
     bio?: string;
+     hasPassword: boolean;
      address?: Partial<IUserAddressFrontend> | null;
      
   }

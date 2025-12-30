@@ -18,6 +18,8 @@ export function useAuthSync() {
           email: session.user.email!,
           role: session.user.role,
           image: session.user.image,
+          hasPassword: Boolean(session.user.hashedPassword),
+          
           emailVerified: session.user.emailVerified,
         })
       );

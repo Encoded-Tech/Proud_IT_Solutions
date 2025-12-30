@@ -10,7 +10,11 @@ export function serializeUser(user: IUser) {
     image: user.image ?? "",
     emailVerified: user.emailVerified ?? false,
     bio: user.bio ?? "",
+    provider: user.provider ?? undefined,
+    providerId: user.providerId ?? undefined,
+     hasPassword: Boolean(user.hashedPassword),
     address: user.address
+    
       ? {
           fullName: user.address.fullName ?? "",
           phone: user.address.phone ?? "",

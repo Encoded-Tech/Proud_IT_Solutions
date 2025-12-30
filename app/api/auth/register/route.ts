@@ -122,18 +122,9 @@ export const POST = withDB(async (req: NextRequest, context?) => {
   return NextResponse.json({
     success: true,
     message: `Thanks for registering, ${newUser.name}! Please check your email to verify your account.`,
-    data: {
-      user: {
-
-        //in production //
-        _id: newUser._id.toString(),
-          name: newUser.name,
+   data: {
           email: newUser.email,
-          image: newUser.image
-
-        //in development//
-        // newUser
-      }
+          emailVerificationExpiry: verifyTokenExpiry,
     }
   })
 

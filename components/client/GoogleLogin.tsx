@@ -1,21 +1,20 @@
 "use client";
-
+  import { useRef } from "react";
 import { useState, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { signIn, useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/redux/hooks";
 import { setUser, clearUser, markHydrated } from "@/redux/features/auth/userSlice";
 import { getCurrentUserAction } from "@/lib/server/fetchers/fetchUser";
 
 const GoogleSignIn = () => {
-
   const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
-
- const { status } = useSession();
-
+  const { status } = useSession();
+  const searchParams = useSearchParams();
 
   // Hydrate Redux if user is already logged in (after redirect)
   useEffect(() => {
@@ -33,12 +32,33 @@ const GoogleSignIn = () => {
     hydrateUser();
   }, [status, dispatch]);
 
+
+
+const toastFired = useRef(false);
+
+useEffect(() => {
+  if (toastFired.current) return;
+
+  const error = searchParams.get("error");
+  if (!error) return;
+
+  if (error === "EMAIL_ALREADY_REGISTERED_WITH_CREDENTIALS") {
+    toast.error(
+      "This email is already registered with Email & Password. Please login using credentials."
+    );
+  } else {
+    toast.error("Google login failed. Please try again.");
+  }
+
+  toastFired.current = true;
+  window.history.replaceState({}, "", window.location.pathname);
+}, [searchParams]);
+
+
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
-      // Redirect to Google OAuth
-      await signIn("google", { callbackUrl: "/" });
-      // No need to manually fetch user here; Redux will hydrate after redirect
+      await signIn("google", { callbackUrl: "/", });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Google login failed");
       setIsLoading(false);
