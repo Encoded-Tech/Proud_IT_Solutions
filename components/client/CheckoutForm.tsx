@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createOrderAction } from "@/lib/server/actions/order/orderActions";
+import { createOrderAction } from "@/lib/server/actions/public/order/orderActions";
 import { cartToCreateOrderSimplified } from "@/lib/server/mappers/commands/cartToCreateOrder";
 import { PaymentMethod } from "@/lib/server/fetchers/fetchOrders";
 import { AuthUser } from "@/redux/features/auth/userSlice";

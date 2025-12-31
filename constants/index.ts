@@ -28,5 +28,10 @@ export const SERVER_URL =
       name: "Contact",
       href: "/contact",
     },
+
+    {
+      name: "Build My PC",
+      href: "/build-my-pc",
+    }
     
   ]

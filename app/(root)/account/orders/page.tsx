@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import OrdersClient from "@/components/client/OrderTable";
 import ContinueShoppingLink from "@/components/shared/ContinueShopping";
-import { cancelOrderAction, deleteOrderAction } from "@/lib/server/actions/order/orderActions";
+import { cancelOrderAction, deleteOrderAction } from "@/lib/server/actions/public/order/orderActions";
 import { getMyOrders } from "@/lib/server/fetchers/fetchOrders";
 
 export default async function OrdersPage() {

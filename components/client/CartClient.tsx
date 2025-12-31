@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import {
   removeCartItem,
   updateCartQuantity,
-} from "@/lib/server/actions/cart/updateCart";
+} from "@/lib/server/actions/public/cart/updateCart";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import {
   selectCartItems,

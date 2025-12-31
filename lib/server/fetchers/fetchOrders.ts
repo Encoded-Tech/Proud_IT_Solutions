@@ -4,7 +4,7 @@ import { Order } from "@/models/orderModel";
 import { requireUser } from "@/lib/auth/requireSession";
 import { orderToOrderResponse } from "../mappers/queries/orderToOrderResponse";
 import { Types } from "mongoose";
-import { CheckoutDeliveryInput } from "../actions/order/orderActions";
+import { CheckoutDeliveryInput } from "../actions/public/order/orderActions";
 
 /* -------------------------------- TYPES -------------------------------- */
 

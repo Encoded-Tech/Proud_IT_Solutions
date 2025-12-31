@@ -7,7 +7,8 @@ import { authOptions } from "@/lib/auth/authOptions";
 
 import { IUserAddress } from "@/models/userModel";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
-import { serializeUser } from "../../mappers/mapUser";
+import { serializeUser } from "@/lib/server/mappers/mapUser";
+
 
 interface UpdateProfileResponse {
   success: boolean;

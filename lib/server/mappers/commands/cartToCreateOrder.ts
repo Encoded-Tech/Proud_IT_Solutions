@@ -1,4 +1,4 @@
-import { CreateOrderInput } from "../../actions/order/orderActions";
+import { CreateOrderInput } from "../../actions/public/order/orderActions";
 
 interface SimplifiedCartItem {
   product: { _id: string };

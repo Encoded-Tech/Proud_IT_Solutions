@@ -17,15 +17,17 @@ interface AdminProops {
   collapsed : boolean
 }
 
-type MenuName = "categories" | "products" | "posts";
+type MenuName = "categories" | "products" | "posts" | "buildUserPC";
+
 export default function AdminSidebar({ collapsed }: AdminProops) {
   const [openMenus, setOpenMenus] = useState<Record<MenuName, boolean>>({
     categories: false,
     products: false,
     posts: false,
+    buildUserPC: false,
   });
 
-  const toggleMenu = (name : MenuName) => {
+  const toggleMenu = (name: MenuName) => {
     setOpenMenus((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
@@ -210,6 +212,49 @@ export default function AdminSidebar({ collapsed }: AdminProops) {
                   className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
                 >
                   Add Post
+                </Link>
+              </li>
+            </ul>
+          )}
+        </li>
+
+        {/* Build My PC */}
+        <li>
+          <button
+            onClick={() => toggleMenu("buildUserPC")}
+            className={`flex w-full items-center p-2 rounded-lg hover:bg-gray-100 transition ${
+              collapsed ? "justify-center" : "gap-3"
+            }`}
+          >
+            <Package className="w-5 h-5 text-gray-600" />
+            {!collapsed && (
+              <>
+                <span className="text-gray-900">Build My PC</span>
+                {openMenus.buildUserPC ? (
+                  <ChevronDown className="ml-auto w-4 text-gray-400" />
+                ) : (
+                  <ChevronRight className="ml-auto w-4 text-gray-400" />
+                )}
+              </>
+            )}
+          </button>
+
+          {openMenus.buildUserPC && !collapsed && (
+            <ul className="mt-1 ml-8 space-y-1">
+              <li>
+                <Link
+                  href="/admin/parts-option/"
+                  className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                >
+                  Manage Parts
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/build-my-pc/parts-table"
+                  className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                >
+                  Parts Table
                 </Link>
               </li>
             </ul>

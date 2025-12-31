@@ -5,7 +5,7 @@ import userModel, { ICartItem } from "@/models/userModel";
 
 import mongoose from "mongoose";
 import { requireSession } from "@/lib/auth/requireSession";
-import { ICartItemPopulated, mapSingleCartItemToDTO } from "../../mappers/MapCart";
+import { ICartItemPopulated, mapSingleCartItemToDTO } from "../../../mappers/MapCart";
 import { CartItem } from "@/types/product";
 
 interface UpdateCartQtyParams {

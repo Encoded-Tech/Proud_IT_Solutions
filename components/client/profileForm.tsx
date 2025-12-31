@@ -3,11 +3,12 @@
 import { useState, useTransition } from "react";
 import Image from "next/image";
 
-import { updateProfileAction } from "@/lib/server/actions/user/userProfileAction";
+
 import { AuthUser, IUserAddressFrontend, setUser } from "@/redux/features/auth/userSlice";
 import toast from "react-hot-toast";
 import { useAppDispatch } from "@/redux/hooks";
 import { useRouter } from "next/navigation";
+import { updateProfileAction } from "@/lib/server/actions/public/user/userProfileAction";
 
 
  const NEPAL_PROVINCES = [

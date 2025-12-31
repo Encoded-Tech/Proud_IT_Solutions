@@ -17,7 +17,7 @@ import {
 import  { addToCartApi } from "./AddToCartButton";
 import { setCart } from "@/redux/features/cart/cartSlice";
 import toast from "react-hot-toast";
-import { removeWishlistAction } from "@/lib/server/actions/wishlist/addToWishlist";
+import { removeWishlistAction } from "@/lib/server/actions/public/wishlist/addToWishlist";
 import ContinueShoppingLink from "../shared/ContinueShopping";
 
 interface WishlistClientProps {

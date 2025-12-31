@@ -1,5 +1,3 @@
-// models/BuildRequest.ts
-
 import { Schema, model, models, Types, Document } from "mongoose";
 
 /** ENUMS */
@@ -17,12 +15,21 @@ export type BuildStatus =
   | "delivered"
   | "cancelled";
 
+export type PaymentStatus = "pending" | "paid" | "failed";
+
 /** PART SUBDOCUMENT */
 export interface IPart {
   name: string;
   brand?: string;
   model?: string;
   price?: number;
+
+  // compatibility metadata
+  socket?: string;
+  chipset?: string;
+  ramType?: "DDR4" | "DDR5";
+  wattage?: number;
+  lengthMM?: number;
 }
 
 /** STORAGE SUBDOCUMENT */
@@ -59,7 +66,9 @@ export interface IRecommendedParts {
 
 /** MAIN DOCUMENT INTERFACE */
 export interface IBuildRequest extends Document {
+  _id: Types.ObjectId;
   userId?: Types.ObjectId;
+
   name: string;
   phone: string;
   email?: string;
@@ -67,17 +76,15 @@ export interface IBuildRequest extends Document {
   budgetNPR: number;
   uses: UseCase[];
 
-  // Performance
   targetResolution?: string;
   targetFPS?: number;
 
-  // Preferences
   cpuPreference?: CPUBrand;
-  cpuModel?: string;        // e.g., "i7-13700K", "Ryzen 7 7800X"
+  cpuModel?: string;
   gpuPreference?: GPUBrand;
-  gpuModel?: string;        // e.g., "RTX 3060 12GB", "RX 6700 XT 12GB"
-  ramGB?: number;           // e.g., 16, 32
-  ramType?: string;         // DDR4, DDR5
+  gpuModel?: string;
+  ramGB?: number;
+  ramType?: string;
   osPreference?: OSBrand;
   rgbPreference?: boolean;
   smallFormFactor?: boolean;
@@ -89,6 +96,15 @@ export interface IBuildRequest extends Document {
 
   status?: BuildStatus;
 
+  /** 🔥 QUOTE & PAYMENT */
+  quoteId?: string;
+  paymentStatus?: PaymentStatus;
+  checkoutOrderId?: Types.ObjectId;
+
+  /** OPTIONAL ADVANCE PAYMENT */
+  advanceAmount?: number;
+  remainingAmount?: number;
+
   adminNotes?: string;
   priceEstimate?: number;
   finalPrice?: number;
@@ -98,37 +114,44 @@ export interface IBuildRequest extends Document {
   updatedAt?: Date;
 }
 
-/** Mongoose Part Schema */
+/** PART SCHEMA */
 const PartSchema = new Schema<IPart>(
   {
     name: { type: String, required: true },
-    brand: { type: String },
-    model: { type: String },
-    price: { type: Number },
+    brand: String,
+    model: String,
+    price: Number,
+
+    socket: String,
+    chipset: String,
+    ramType: { type: String, enum: ["DDR4", "DDR5"] },
+    wattage: Number,
+    lengthMM: Number,
   },
   { _id: false }
 );
 
-/** Mongoose BuildRequest Schema */
+/** BUILD REQUEST SCHEMA */
 const BuildRequestSchema = new Schema<IBuildRequest>(
   {
     userId: { type: Types.ObjectId, ref: "User" },
+
     name: { type: String, required: true },
     phone: { type: String, required: true },
-    email: { type: String },
+    email: String,
 
     budgetNPR: { type: Number, required: true },
     uses: [{ type: String, enum: ["gaming", "editing", "office"] }],
 
-    targetResolution: { type: String },
-    targetFPS: { type: Number },
+    targetResolution: String,
+    targetFPS: Number,
 
     cpuPreference: { type: String, enum: ["intel", "amd", "any"], default: "any" },
-    cpuModel: { type: String },
+    cpuModel: String,
     gpuPreference: { type: String, enum: ["nvidia", "amd", "any"], default: "any" },
-    gpuModel: { type: String },
-    ramGB: { type: Number },
-    ramType: { type: String },
+    gpuModel: String,
+    ramGB: Number,
+    ramType: String,
     osPreference: { type: String, enum: ["windows", "linux", "none"], default: "windows" },
     rgbPreference: { type: Boolean, default: false },
     smallFormFactor: { type: Boolean, default: false },
@@ -177,10 +200,22 @@ const BuildRequestSchema = new Schema<IBuildRequest>(
       default: "submitted",
     },
 
-    adminNotes: { type: String },
-    priceEstimate: { type: Number },
-    finalPrice: { type: Number },
-    deliveryETA: { type: String },
+    /** PAYMENT */
+    quoteId: String,
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "failed"],
+      default: "pending",
+    },
+    checkoutOrderId: { type: Types.ObjectId, ref: "Order" },
+
+    advanceAmount: Number,
+    remainingAmount: Number,
+
+    adminNotes: String,
+    priceEstimate: Number,
+    finalPrice: Number,
+    deliveryETA: String,
   },
   { timestamps: true }
 );

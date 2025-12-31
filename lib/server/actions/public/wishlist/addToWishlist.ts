@@ -3,7 +3,7 @@ import { connectDB } from "@/db";
 import User, { IWishlistItem } from "@/models/userModel";
 import { Product, ProductVariant } from "@/models";
 import mongoose from "mongoose";
-import { mapWishlistArray, WishlistItemDTO } from "../../mappers/MapWishlist";
+import { mapWishlistArray, WishlistItemDTO } from "../../../mappers/MapWishlist";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/authOptions";
 

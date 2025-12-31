@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 
 import { ContactFormData } from "@/lib/validations/Zod";
-import { submitContactForm } from "@/lib/server/actions/contact/contactAction";
+import { submitContactForm } from "@/lib/server/actions/public/contact/contactAction";
 import toast from "react-hot-toast";
 
 export default function ContactForm() {

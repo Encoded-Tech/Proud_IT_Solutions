@@ -11,18 +11,24 @@ export default function AccountStats({count}: {count: number}) {
   
 
   return (
-   <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+   <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
       <Stat
         title="Orders"
         value={count.toString()}
         subtitle="Total placed"
+      />
+        <Stat
+        title="Build Requests"
+        value={cartItemsCount.toString()}
+        subtitle="Total Requests"
       />
       <Stat
         title="Wishlist"
         value={wishlistCount.toString()}
         subtitle="Saved items"
       />
-      <Stat
+    
+            <Stat
         title="Cart Items"
         value={cartItemsCount.toString()}
         subtitle="Currently in cart"

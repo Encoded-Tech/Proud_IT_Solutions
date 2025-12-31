@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { AuthUser } from "@/redux/features/auth/userSlice";
-import { updatePasswordAction } from "@/lib/server/actions/user/updatePasswordAction";
+
 import { getCurrentUserAction } from "@/lib/server/fetchers/fetchUser";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { signOut } from "next-auth/react";
+import { updatePasswordAction } from "@/lib/server/actions/public/user/updatePasswordAction";
 
 export default function SecurityPage() {
   const [user, setUser] = useState<AuthUser | null>(null);

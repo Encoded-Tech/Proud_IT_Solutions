@@ -232,7 +232,7 @@ import { authOptions } from "@/lib/auth/authOptions";
 import mongoose from "mongoose";
 import { recalculateRating } from "@/lib/helpers/recalculateRating";
 import { ReviewType } from "@/types/product";
-import { mapReviewArray } from "../../mappers/mapReview";
+import { mapReviewArray } from "../../../mappers/mapReview";
 
 interface ReviewActionResponse {
   success: boolean;

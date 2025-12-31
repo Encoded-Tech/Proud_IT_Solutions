@@ -10,10 +10,6 @@ export default async function AccountLayout({
 }) {
   const session = await getServerSession(authOptions);
 
-  
-
-  const user = session?.user;
-
   if (!session?.user) {
     return <div className="p-10">Please login</div>;
   }
@@ -27,20 +23,45 @@ export default async function AccountLayout({
             lg:grid-cols-[260px_1fr]
           "
         >
-          {/* SIDEBAR */}
-          <aside className="bg-white rounded-xl shadow p-4 h-fit">
-            <h2 className="text-sm font-semibold text-gray-400 px-4 mb-4">
+        {/* SIDEBAR */}
+          <aside className="bg-white rounded-xl shadow p-6 h-fit">
+            {/* <h2 className="text-sm font-semibold text-gray-700 mb-6">
               {user.name}&apos;s Account
-            </h2>
+            </h2> */}
 
-            <nav className="space-y-1 text-sm">
-              <SidebarLink href="/account" label="Overview" />
-              <SidebarLink href="/account/edit-profile" label="Edit Profile" />
-              <SidebarLink href="/account/orders" label="Orders" />
-              <SidebarLink href="/cart" label="Cart" />
-              <SidebarLink href="/wishlist" label="Wishlist" />
-              <SidebarLink href="/account/security" label="Security" />
-            </nav>
+            {/* Section 1: Overview */}
+            <div className="mb-6">
+              <h3 className="text-xs font-medium text-gray-400 uppercase mb-2">
+                Account Overview
+              </h3>
+              <nav className="space-y-1 text-sm">
+                <SidebarLink href="/account" label="Overview" />
+                <SidebarLink href="/account/edit-profile" label="Edit Profile" />
+              </nav>
+            </div>
+
+            {/* Section 2: My Activities */}
+            <div className="mb-6">
+              <h3 className="text-xs font-medium text-gray-400 uppercase mb-2">
+                My Activities
+              </h3>
+              <nav className="space-y-1 text-sm">
+                <SidebarLink href="/account/orders" label="My Orders" />
+                <SidebarLink href="/account/build-request" label="My Build Request" />
+                <SidebarLink href="/cart" label="My Cart" />
+                <SidebarLink href="/wishlist" label="My Wishlist" />
+              </nav>
+            </div>
+
+            {/* Section 3: Security */}
+            <div>
+              <h3 className="text-xs font-medium text-gray-400 uppercase mb-2">
+                Security
+              </h3>
+              <nav className="space-y-1 text-sm">
+                <SidebarLink href="/account/security" label="Security Settings" />
+              </nav>
+            </div>
           </aside>
 
           {/* MAIN CONTENT */}

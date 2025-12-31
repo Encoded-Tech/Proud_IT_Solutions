@@ -9,7 +9,7 @@ import Link from "next/link";
 import { CategoryType, MediaType, productType, ReviewState, ReviewType } from "@/types/product";
 import ProductImages from "@/app/(root)/products/product-images";
 import AddToCartButton from "../client/AddToCartButton";
-import { addWishlistAction } from "@/lib/server/actions/wishlist/addToWishlist";
+import { addWishlistAction } from "@/lib/server/actions/public/wishlist/addToWishlist";
 import { setWishlist } from "@/redux/features/wishlist/wishListSlice";
 import { useAppDispatch } from "@/redux/hooks";
 import Review from "@/app/(root)/products/product-review";

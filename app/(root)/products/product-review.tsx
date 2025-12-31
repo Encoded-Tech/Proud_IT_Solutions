@@ -12,7 +12,7 @@ import { ReviewType } from "@/types/product";
 import {
   createReviewAction,
   updateReviewAction,
-} from "@/lib/server/actions/review/reviewActions";
+} from "@/lib/server/actions/public/review/reviewActions";
 import Image from "next/image";
 import { useAppSelector } from "@/redux/hooks";
 import { selectAuthHydrated, selectIsAuthenticated } from "@/redux/features/auth/userSlice";
