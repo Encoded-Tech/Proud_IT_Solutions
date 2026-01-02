@@ -21,7 +21,7 @@ export type PartType =
   | "thermalPaste"
   | "captureCard"
   | "rgbAccessory"
-  | "networking";
+  | "usbPort";
 
 export type RAMType = "DDR4" | "DDR5";
 export type StorageType = "ssd" | "nvme" | "hdd";

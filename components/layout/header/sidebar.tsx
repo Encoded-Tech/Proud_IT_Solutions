@@ -243,7 +243,7 @@ export default function AdminSidebar({ collapsed }: AdminProops) {
             <ul className="mt-1 ml-8 space-y-1">
               <li>
                 <Link
-                  href="/admin/parts-option/"
+                  href="/admin/build-user-pc/add-part"
                   className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
                 >
                   Manage Parts
@@ -251,7 +251,7 @@ export default function AdminSidebar({ collapsed }: AdminProops) {
               </li>
               <li>
                 <Link
-                  href="/admin/build-my-pc/parts-table"
+                  href="/admin/build-user-pc/parts-table"
                   className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
                 >
                   Parts Table
