@@ -32,6 +32,11 @@ export interface IOrder extends Document {
   totalSalesUpdated: boolean;
   createdAt: Date;
   updatedAt: Date;
+
+  // inside IOrder
+buildRequest?: Types.ObjectId | null;
+orderType: "product" | "build";
+
   deliveredAt?: Date;
   cancelledAt?: Date;
 }
@@ -63,6 +68,18 @@ const orderSchema = new Schema<IOrder>(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     orderItems: [orderItemSchema],
+    orderType: {
+    type: String,
+    enum: ["product", "build"],
+    default: "product", // 👈 backward compatible
+  },
+
+  buildRequest: {
+    type: Schema.Types.ObjectId,
+    ref: "BuildRequest",
+    default: null,
+  },
+
     totalPrice: { type: Number, required: true },
 
     paymentStatus: {

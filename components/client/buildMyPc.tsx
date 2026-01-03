@@ -136,25 +136,34 @@ export const PartsGrid: React.FC<PartsGridProps> = ({
 
 
 
-export const BuildSummaryBar: React.FC<{
+interface BuildSummaryBarProps {
   selectedParts: SelectedParts;
   categories: Category[];
+  totalPrice?: number;
+  isComplete?: boolean;
+  onSubmit?: () => void;
+  loading?: boolean;
+}
 
-}> = ({ selectedParts, categories }) => {
-    
-  // Compute total price
-  const totalPrice = categories.reduce((acc, cat) => {
+export const BuildSummaryBar: React.FC<BuildSummaryBarProps> = ({
+  selectedParts,
+  categories,
+  totalPrice,
+  isComplete,
+  onSubmit,
+  loading = false,
+}) => {
+  // Compute totalPrice if not passed
+  const computedTotal = totalPrice ?? categories.reduce((acc, cat) => {
     const part = selectedParts[cat.id];
     return acc + (part?.price || 0);
   }, 0);
 
-  // Check if all required components are selected
-  const isComplete = categories
-    .filter(c => c.required)
-    .every(c => selectedParts[c.id]);
+  // Compute isComplete if not passed
+  const complete = isComplete ?? categories.filter(c => c.required).every(c => selectedParts[c.id]);
 
   return (
-    <div className="mb-6 bg-white border-b border-gray-200 shadow-sm ">
+    <div className="mb-6 bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
         <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 sm:mb-4">
           Build Progress & Summary
@@ -170,16 +179,14 @@ export const BuildSummaryBar: React.FC<{
               <div
                 key={cat.id}
                 className={`relative rounded-lg border-2 transition-all duration-300 ${
-                  isSelected
-                    ? 'border-red-500 bg-red-50 shadow-sm'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                  isSelected ? "border-red-500 bg-red-50 shadow-sm" : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
               >
                 <div className="p-2 sm:p-3">
                   <div className="flex items-center justify-between mb-1 sm:mb-2">
                     <div
                       className={`p-1 sm:p-1.5 rounded transition-colors ${
-                        isSelected ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400'
+                        isSelected ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-400"
                       }`}
                     >
                       {cat.icon}
@@ -207,22 +214,22 @@ export const BuildSummaryBar: React.FC<{
         {/* Total Price & Submit Button */}
         <div className="flex flex-col sm:flex-row items-center justify-between bg-gray-50 p-4 rounded-lg border border-gray-200">
           <div className="text-lg font-bold text-gray-900 mb-2 sm:mb-0">
-            Total: Rs. {totalPrice.toLocaleString()}
+            Total: Rs. {computedTotal.toLocaleString()}
           </div>
           <button
-            
-            disabled={!isComplete}
+            disabled={!complete || loading || !onSubmit}
+            onClick={onSubmit}
             className={`px-6 py-3 rounded-lg font-semibold text-white transition-all duration-200 ${
-              isComplete
-                ? 'bg-red-500 hover:bg-red-600 shadow-md'
-                : 'bg-gray-300 cursor-not-allowed'
+              complete
+                ? "bg-red-500 hover:bg-red-600 shadow-md"
+                : "bg-gray-300 cursor-not-allowed"
             }`}
           >
-            Submit Build Request
+            {loading ? "Submitting..." : "Submit Build Request"}
           </button>
         </div>
 
-        {!isComplete && (
+        {!complete && (
           <div className="mt-2 text-xs text-red-600">
             Please select all required components to enable submission
           </div>

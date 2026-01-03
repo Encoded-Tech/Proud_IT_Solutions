@@ -1,224 +1,119 @@
-import { Schema, model, models, Types, Document } from "mongoose";
+import { Schema, model, models, Document, Types } from "mongoose";
+import { PartType } from "./partsOption";
 
-/** ENUMS */
-export type CPUBrand = "intel" | "amd" | "any";
-export type GPUBrand = "nvidia" | "amd" | "any";
-export type OSBrand = "windows" | "linux" | "none";
-export type UseCase = "gaming" | "editing" | "office";
-export type BuildStatus =
-  | "submitted"
-  | "reviewing"
-  | "quoted"
-  | "awaiting-payment"
-  | "building"
-  | "ready"
-  | "delivered"
-  | "cancelled";
 
-export type PaymentStatus = "pending" | "paid" | "failed";
-
-/** PART SUBDOCUMENT */
-export interface IPart {
-  name: string;
-  brand?: string;
-  model?: string;
-  price?: number;
-
-  // compatibility metadata
-  socket?: string;
-  chipset?: string;
-  ramType?: "DDR4" | "DDR5";
-  wattage?: number;
-  lengthMM?: number;
+/** BUILD PART SNAPSHOT */
+export interface IBuildPart {
+  part: Types.ObjectId;        // Ref PartOption
+  type: PartType;             // cpu, gpu, etc
+  name: string;               // snapshot
+  price: number;     
+  imageUrl?: string;
+  quantity: number;
 }
 
-/** STORAGE SUBDOCUMENT */
-export interface IStorage {
-  nvme?: boolean;
-  ssdGB?: number;
-  hddGB?: number;
-}
-
-/** PERIPHERALS SUBDOCUMENT */
-export interface IPeripherals {
-  monitor?: boolean;
-  keyboard?: boolean;
-  mouse?: boolean;
-  ups?: boolean;
-}
-
-/** RECOMMENDED PARTS SUBDOCUMENT */
-export interface IRecommendedParts {
-  cpu?: IPart;
-  motherboard?: IPart;
-  ram?: IPart;
-  gpu?: IPart;
-  storagePrimary?: IPart;
-  storageSecondary?: IPart;
-  psu?: IPart;
-  case?: IPart;
-  cooler?: IPart;
-  monitor?: IPart;
-  keyboard?: IPart;
-  mouse?: IPart;
-  ups?: IPart;
-}
-
-/** MAIN DOCUMENT INTERFACE */
+/** BUILD REQUEST INTERFACE */
 export interface IBuildRequest extends Document {
   _id: Types.ObjectId;
-  userId?: Types.ObjectId;
 
-  name: string;
-  phone: string;
-  email?: string;
+  user: Types.ObjectId;
 
-  budgetNPR: number;
-  uses: UseCase[];
+  parts: IBuildPart[];
 
-  targetResolution?: string;
-  targetFPS?: number;
+  /** Pricing snapshot */
+  subtotal: number;
+  tax: number;
+  grandTotal: number;
 
-  cpuPreference?: CPUBrand;
-  cpuModel?: string;
-  gpuPreference?: GPUBrand;
-  gpuModel?: string;
-  ramGB?: number;
-  ramType?: string;
-  osPreference?: OSBrand;
-  rgbPreference?: boolean;
-  smallFormFactor?: boolean;
+  /** Status */
+  status:
+    | "draft"
+    | "submitted"
+    | "reviewed"
+    | "approved"
+    | "rejected"
+    | "checked_out";
 
-  storage?: IStorage;
-  peripherals?: IPeripherals;
-
-  recommendedParts?: IRecommendedParts;
-
-  status?: BuildStatus;
-
-  /** 🔥 QUOTE & PAYMENT */
-  quoteId?: string;
-  paymentStatus?: PaymentStatus;
-  checkoutOrderId?: Types.ObjectId;
-
-  /** OPTIONAL ADVANCE PAYMENT */
-  advanceAmount?: number;
-  remainingAmount?: number;
-
+  /** Admin control */
   adminNotes?: string;
-  priceEstimate?: number;
-  finalPrice?: number;
-  deliveryETA?: string;
+  compatibilityPassed?: boolean;
+    compatibilityStatus: "pending" | "passed" | "failed";
 
-  createdAt?: Date;
-  updatedAt?: Date;
+  /** Checkout integration */
+
+  orderId?: Types.ObjectId;
+
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-/** PART SCHEMA */
-const PartSchema = new Schema<IPart>(
+/** PART SUBSCHEMA */
+const buildPartSchema = new Schema<IBuildPart>(
   {
+    part: {
+      type: Schema.Types.ObjectId,
+      ref: "PartOption",
+      required: true,
+    },
+    type: {
+      type: String,
+      required: true,
+    },
     name: { type: String, required: true },
-    brand: String,
-    model: String,
-    price: Number,
-
-    socket: String,
-    chipset: String,
-    ramType: { type: String, enum: ["DDR4", "DDR5"] },
-    wattage: Number,
-    lengthMM: Number,
+    price: { type: Number, required: true },
+    imageUrl: { type: String },
+    quantity: { type: Number, default: 1 },
   },
   { _id: false }
 );
 
-/** BUILD REQUEST SCHEMA */
-const BuildRequestSchema = new Schema<IBuildRequest>(
+/** MAIN SCHEMA */
+const buildRequestSchema = new Schema<IBuildRequest>(
   {
-    userId: { type: Types.ObjectId, ref: "User" },
-
-    name: { type: String, required: true },
-    phone: { type: String, required: true },
-    email: String,
-
-    budgetNPR: { type: Number, required: true },
-    uses: [{ type: String, enum: ["gaming", "editing", "office"] }],
-
-    targetResolution: String,
-    targetFPS: Number,
-
-    cpuPreference: { type: String, enum: ["intel", "amd", "any"], default: "any" },
-    cpuModel: String,
-    gpuPreference: { type: String, enum: ["nvidia", "amd", "any"], default: "any" },
-    gpuModel: String,
-    ramGB: Number,
-    ramType: String,
-    osPreference: { type: String, enum: ["windows", "linux", "none"], default: "windows" },
-    rgbPreference: { type: Boolean, default: false },
-    smallFormFactor: { type: Boolean, default: false },
-
-    storage: {
-      nvme: { type: Boolean, default: true },
-      ssdGB: { type: Number, default: 512 },
-      hddGB: { type: Number, default: 0 },
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
     },
 
-    peripherals: {
-      monitor: { type: Boolean, default: false },
-      keyboard: { type: Boolean, default: false },
-      mouse: { type: Boolean, default: false },
-      ups: { type: Boolean, default: false },
+    parts: {
+      type: [buildPartSchema],
+      default: [],
     },
 
-    recommendedParts: {
-      cpu: PartSchema,
-      motherboard: PartSchema,
-      ram: PartSchema,
-      gpu: PartSchema,
-      storagePrimary: PartSchema,
-      storageSecondary: PartSchema,
-      psu: PartSchema,
-      case: PartSchema,
-      cooler: PartSchema,
-      monitor: PartSchema,
-      keyboard: PartSchema,
-      mouse: PartSchema,
-      ups: PartSchema,
-    },
+    subtotal: { type: Number, required: true },
+
+    grandTotal: { type: Number, required: true },
 
     status: {
       type: String,
       enum: [
+        "draft",
         "submitted",
-        "reviewing",
-        "quoted",
-        "awaiting-payment",
-        "building",
-        "ready",
-        "delivered",
-        "cancelled",
+        "reviewed",
+        "approved",
+        "rejected",
+        "checked_out",
       ],
-      default: "submitted",
+      default: "draft",
     },
 
-    /** PAYMENT */
-    quoteId: String,
-    paymentStatus: {
+    adminNotes: { type: String },
+    compatibilityPassed: { type: Boolean, default: false },
+        compatibilityStatus: {
       type: String,
-      enum: ["pending", "paid", "failed"],
+      enum: ["pending", "passed", "failed"],
       default: "pending",
     },
-    checkoutOrderId: { type: Types.ObjectId, ref: "Order" },
 
-    advanceAmount: Number,
-    remainingAmount: Number,
 
-    adminNotes: String,
-    priceEstimate: Number,
-    finalPrice: Number,
-    deliveryETA: String,
+
   },
   { timestamps: true }
 );
 
+/** EXPORT */
 export const BuildRequest =
-  models.BuildRequest || model<IBuildRequest>("BuildRequest", BuildRequestSchema);
+  models.BuildRequest ||
+  model<IBuildRequest>("BuildRequest", buildRequestSchema);

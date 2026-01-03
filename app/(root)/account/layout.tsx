@@ -47,7 +47,7 @@ export default async function AccountLayout({
               </h3>
               <nav className="space-y-1 text-sm">
                 <SidebarLink href="/account/orders" label="My Orders" />
-                <SidebarLink href="/account/build-request" label="My Build Request" />
+                <SidebarLink href="/account/build-requests" label="My Build Request" />
                 <SidebarLink href="/cart" label="My Cart" />
                 <SidebarLink href="/wishlist" label="My Wishlist" />
               </nav>

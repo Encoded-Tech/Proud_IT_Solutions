@@ -1,149 +1,78 @@
+import { IBuildRequest } from "@/models/buildMyPcModel";
+import { Types, Document } from "mongoose";
 
-
-import { IBuildRequest, IPart } from "@/models/buildMyPcModel";
-import { Types } from "mongoose";
-
-/** Mongo ObjectId or already-string id */
-type IdLike = Types.ObjectId | string | undefined;
-
-/** Date coming from Mongoose or already serialized */
-type DateLike = Date | string | undefined;
-
-/** Safely normalize Mongo ObjectId → string */
-export const toStringId = (value: IdLike): string | undefined => {
-  if (!value) return undefined;
-  return typeof value === "string" ? value : value.toString();
-};
-
-/** Safely normalize Date → ISO string */
-export const toISOStringSafe = (value: DateLike): string | undefined => {
-  if (!value) return undefined;
-  return value instanceof Date ? value.toISOString() : value;
-};
-
-/** ---------- DTO ---------- */
-export interface BuildRequestDTO {
-  _id: string;
-  userId?: string;
-
+/** USER LITE TYPE */
+export interface UserLite {
+  id: string;
   name?: string;
-  phone?: string;
   email?: string;
+}
 
-  budgetNPR?: number;
-  uses?: string[];
+/** BUILD PART MAPPED TYPE */
+export interface IBuildPartMapped {
+  id: string;       // unique key for frontend (partId + type)
+  partId: string;   // original PartOption ObjectId as string
+  type: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
 
-  targetResolution?: string;
-  targetFPS?: number;
-
-  cpuPreference?: string;
-  cpuModel?: string;
-  gpuPreference?: string;
-  gpuModel?: string;
-  ramGB?: number;
-  ramType?: string;
-  osPreference?: string;
-  rgbPreference?: boolean;
-  smallFormFactor?: boolean;
-
-  storage?: {
-    nvme?: boolean;
-    ssdGB?: number;
-    hddGB?: number;
-  };
-
-  peripherals?: {
-    monitor?: boolean;
-    keyboard?: boolean;
-    mouse?: boolean;
-    ups?: boolean;
-  };
-
-  recommendedParts?: Record<string, IPart>;
-
-  status?: string;
-
-  /** 🔥 NEW */
-  quoteId?: string;
-  paymentStatus?: string;
-  checkoutOrderId?: string;
-
-  advanceAmount?: number;
-  remainingAmount?: number;
-
+/** FINAL BUILD REQUEST MAPPED TYPE */
+export interface IBuildRequestMapped {
+  id: string;
+  user: UserLite;
+  parts: IBuildPartMapped[];
+  subtotal: number;
+  grandTotal: number;
+  status: "draft" | "submitted" | "reviewed" | "approved" | "rejected" | "checked_out";
+  compatibilityPassed: boolean;
+  compatibilityStatus: "pending" | "passed" | "failed";
   adminNotes?: string;
-  priceEstimate?: number;
-  finalPrice?: number;
-  deliveryETA?: string;
-
-  createdAt?: string;
-  updatedAt?: string;
+  orderId?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-/** ---------- Single Mapper ---------- */
-export function mapBuildRequest(serverData: IBuildRequest): BuildRequestDTO {
+/** TYPE GUARD: check if user is populated */
+const isPopulatedUser = (
+  user: Types.ObjectId | { _id: Types.ObjectId; name: string; email: string }
+): user is { _id: Types.ObjectId; name: string; email: string } => {
+  return typeof user === "object" && "_id" in user && "name" in user && "email" in user;
+};
+
+/** MAP SINGLE BUILD REQUEST */
+export const mapBuildRequest = (doc: IBuildRequest & Document): IBuildRequestMapped => {
+  const user = doc.user;
+
+  const userMapped: UserLite = isPopulatedUser(user)
+    ? { id: user._id.toString(), name: user.name, email: user.email }
+    : { id: user instanceof Types.ObjectId ? user.toString() : "", name: undefined, email: undefined };
+
   return {
-    _id: toStringId(serverData._id)!,
-    userId: toStringId(serverData.userId),
-
-    name: serverData.name,
-    phone: serverData.phone,
-    email: serverData.email,
-
-    budgetNPR: serverData.budgetNPR,
-    uses: serverData.uses ?? [],
-
-    targetResolution: serverData.targetResolution,
-    targetFPS: serverData.targetFPS,
-
-    cpuPreference: serverData.cpuPreference,
-    cpuModel: serverData.cpuModel,
-    gpuPreference: serverData.gpuPreference,
-    gpuModel: serverData.gpuModel,
-    ramGB: serverData.ramGB,
-    ramType: serverData.ramType,
-    osPreference: serverData.osPreference,
-    rgbPreference: serverData.rgbPreference,
-    smallFormFactor: serverData.smallFormFactor,
-
-    storage: serverData.storage
-      ? { ...serverData.storage }
-      : undefined,
-
-    peripherals: serverData.peripherals
-      ? { ...serverData.peripherals }
-      : undefined,
-
-    recommendedParts: serverData.recommendedParts
-      ? Object.fromEntries(
-          Object.entries(serverData.recommendedParts).map(([k, v]) => [
-            k,
-            { ...(v as IPart) },
-          ])
-        )
-      : undefined,
-
-    status: serverData.status,
-
-    /** 🔥 PAYMENT & QUOTE */
-    quoteId: serverData.quoteId,
-    paymentStatus: serverData.paymentStatus,
-    checkoutOrderId: toStringId(serverData.checkoutOrderId),
-
-    advanceAmount: serverData.advanceAmount,
-    remainingAmount: serverData.remainingAmount,
-
-    adminNotes: serverData.adminNotes,
-    priceEstimate: serverData.priceEstimate,
-    finalPrice: serverData.finalPrice,
-    deliveryETA: serverData.deliveryETA,
-
-    createdAt: toISOStringSafe(serverData.createdAt),
-    updatedAt: toISOStringSafe(serverData.updatedAt),
+    id: doc._id.toString(),
+    user: userMapped,
+    parts: doc.parts.map((p) => ({
+      id: `${p.part.toString()}-${p.type}`,
+      partId: p.part.toString(),
+      type: p.type,
+      name: p.name,
+      price: p.price,
+      quantity: p.quantity,
+    })),
+    subtotal: doc.subtotal,
+    grandTotal: doc.grandTotal,
+    status: doc.status,
+    compatibilityPassed: doc.compatibilityPassed ?? false,
+    compatibilityStatus: doc.compatibilityStatus,
+    adminNotes: doc.adminNotes,
+    orderId: doc.orderId?.toString(),
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
   };
-}
+};
 
-
-/** ---------- Array Mapper ---------- */
-export const mapBuildRequestsArray = (data: IBuildRequest[]): BuildRequestDTO[] =>
-  data.map(mapBuildRequest);
+/** MAP MULTIPLE BUILD REQUESTS */
+export const mapBuildRequests = (docs: (IBuildRequest & Document)[]): IBuildRequestMapped[] => {
+  return docs.map(mapBuildRequest);
+};

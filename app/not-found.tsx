@@ -19,10 +19,6 @@ const NotFound = () => {
         />
       </div>
 
-
-
-     
-
       {/* Button */}
       <Link
         href="/"

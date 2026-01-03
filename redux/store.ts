@@ -5,7 +5,7 @@ import cartReducer from './features/cart/cartSlice'
 import userReducer from './features/auth/userSlice'
 import wishlistReducer from './features/wishlist/wishListSlice'
 import reviewReducer from './features/review/reviewSlice'
-import buildRequestsReducer from './features/build-my-pc/buildMyPcSlice'
+
 
 const persistConfig = {
   key: 'root',
@@ -23,7 +23,7 @@ export const makeStore = () =>
       auth: userReducer,
       wishlist: wishlistReducer,
       review: reviewReducer,
-      buildRequests: buildRequestsReducer,
+
     }, middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
         serializableCheck: {

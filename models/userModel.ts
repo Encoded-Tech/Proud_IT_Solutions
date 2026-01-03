@@ -96,6 +96,8 @@ export interface IUser extends Document {
   // Cart & Wishlist
   cart: ICartItem[];
   wishlist: IWishlistItem[];
+    buildRequests: Types.ObjectId[];
+  
 
   // Timestamps
   createdAt: Date;
@@ -264,6 +266,9 @@ const userSchema = new Schema<IUser>(
       enum: ["user", "admin"],
       default: "user",
     },
+
+    buildRequests: [{ type: Types.ObjectId, ref: "BuildRequest" }],
+
 
     lastLogin: {
       type: Date,

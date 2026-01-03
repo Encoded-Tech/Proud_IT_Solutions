@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { navitems } from "@/constants";
@@ -17,6 +17,7 @@ import {
 import { signOut } from "next-auth/react";
 import { selectWishlistCount } from "@/redux/features/wishlist/wishListSlice";
 import Image from "next/image";
+import { createPortal } from "react-dom";
 
 const BottomCategory = () => {
   const pathname = usePathname();
@@ -31,25 +32,55 @@ const BottomCategory = () => {
   const isAdmin = isLoggedIn && user?.role === "admin";
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Logout
   const handleLogout = () => {
     signOut({ callbackUrl: "/login" });
   };
 
+  // Close dropdown when clicking outside button + dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownOpen &&
+        buttonRef.current &&
+        dropdownRef.current &&
+        !buttonRef.current.contains(e.target as Node) &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownOpen]);
+
+  // Update dropdown position
+  useEffect(() => {
+    if (dropdownOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPos({ 
+        top: rect.bottom + window.scrollY + 4, 
+        left: rect.left + window.scrollX - 200 + rect.width // move left
+      });
+    }
+  }, [dropdownOpen]);
+
   return (
-    <div className="lg:bg-primary bg-blue-100 lg:p-4 p-2 text-white">
+    <div className="lg:bg-primary bg-blue-100 lg:p-4 p-2 text-white relative z-[50]">
       <div className="max-w-7xl mx-auto flex justify-between items-center gap-6">
+        
         {/* NAV ITEMS */}
         <div className="lg:flex hidden items-center font-medium gap-10">
           {navitems.map((item, index) => (
             <nav key={index}>
               <Link
                 href={item.href}
-                className={`${
-                  pathname === item.href
-                    ? "navbarhover active"
-                    : "navbarhover"
-                }`}
+                className={`${pathname === item.href ? "navbarhover active" : "navbarhover"}`}
               >
                 {item.name}
               </Link>
@@ -59,6 +90,7 @@ const BottomCategory = () => {
 
         {/* RIGHT ICONS */}
         <div className="lg:flex hidden gap-4 items-center relative">
+          
           {/* LOGIN */}
           {!isLoggedIn && (
             <Link href="/login" className="bg-white p-2 rounded-full text-black">
@@ -68,31 +100,32 @@ const BottomCategory = () => {
 
           {/* ADMIN DASHBOARD */}
           {isLoggedIn && isAdmin && (
-            <Link
-              href="/admin"
-              className="rounded-full w-10 h-10 border-2 border-white bg-white text-black flex items-center justify-center"
-              title="Admin Dashboard"
-            >
-              <Icon icon="mdi:view-dashboard" width="22" height="22" />
-            </Link>
-          )}
+            <>
+              <Link
+                href="/admin"
+                className="rounded-full w-10 h-10 border-2 border-white bg-white text-black flex items-center justify-center"
+                title="Admin Dashboard"
+              >
+                <Icon icon="mdi:view-dashboard" width="22" height="22" />
+              </Link>
 
-          {isLoggedIn && isAdmin && (
-  <button
-    onClick={handleLogout}
-    className="bg-white p-2 rounded-full text-black"
-    title="Logout"
-  >
-    <Icon icon="mdi:logout" width="22" height="22" />
-  </button>
-)}
+              <button
+                onClick={handleLogout}
+                className="bg-white p-2 rounded-full text-black"
+                title="Logout"
+              >
+                <Icon icon="mdi:logout" width="22" height="22" />
+              </button>
+            </>
+          )}
 
           {/* USER DROPDOWN */}
           {isLoggedIn && !isAdmin && (
-            <div className="relative">
+            <>
               <button
+                ref={buttonRef}
                 onClick={() => setDropdownOpen((prev) => !prev)}
-                className="rounded-full overflow-hidden w-10 h-10 border-2 border-white"
+                className="rounded-full overflow-hidden w-10 h-10 border-2 border-white relative z-[51]"
               >
                 <Image
                   width={100}
@@ -103,84 +136,85 @@ const BottomCategory = () => {
                 />
               </button>
 
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-3 w-56 bg-white text-black rounded-xl shadow-xl z-20 overflow-hidden">
-                  {/* USER INFO */}
-                  <div className="px-4 py-3 border-b">
-                    <p className="text-sm font-semibold truncate">
-                      {user?.name || "User"}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {user?.email}
-                    </p>
-                  </div>
+              {dropdownOpen &&
+                createPortal(
+                  <div
+                    ref={dropdownRef}
+                    className="absolute w-56 bg-white text-black rounded-xl shadow-xl z-[9999] overflow-hidden"
+                    style={{ top: dropdownPos.top, left: dropdownPos.left }}
+                  >
+                    {/* USER INFO */}
+                    <div className="px-4 py-3 border-b">
+                      <p className="text-sm font-semibold truncate">{user?.name || "User"}</p>
+                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                    </div>
 
-                  {/* LINKS */}
-                  <div className="py-2">
-                    <Link
-                      href="/account"
-                      className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <Icon icon="mdi:account-outline" width="18" />
-                      Account
-                    </Link>
+                    {/* LINKS */}
+                    <div className="py-2">
+                      <Link
+                        href="/account"
+                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <Icon icon="mdi:account-outline" width="18" />
+                        Account
+                      </Link>
 
-                    <Link
-                      href="/settings"
-                      className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
-                      onClick={() => setDropdownOpen(false)}
-                    >
-                      <Icon icon="mdi:cog-outline" width="18" />
-                      Settings
-                    </Link>
-                  </div>
+                      <Link
+                        href="/account/security"
+                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <Icon icon="mdi:cog-outline" width="18" />
+                        Security
+                      </Link>
+                    </div>
 
-                  {/* LOGOUT */}
-                  <div className="border-t">
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      <Icon icon="mdi:logout" width="18" />
-                      Logout
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+                    {/* LOGOUT */}
+                    <div className="border-t">
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <Icon icon="mdi:logout" width="18" />
+                        Logout
+                      </button>
+                    </div>
+                  </div>,
+                  document.body
+                )}
+            </>
           )}
 
-          {/* WISHLIST & CART (HIDDEN FOR ADMIN) */}
+          {/* WISHLIST & CART */}
           {!isAdmin && isLoggedIn && (
             <>
-              {/* WISHLIST */}
               <Link
                 href="/wishlist"
                 className="relative bg-white p-2 rounded-full text-black"
               >
                 <Icon icon="mdi-light:heart" width="22" height="22" />
-                <span className="absolute -right-4 -top-2 bg-white h-6 w-6 flex justify-center items-center rounded-full text-sm">
-                  {totalWishlist}
-                </span>
+                {totalWishlist > 0 && (
+                  <span className="absolute -right-2 -top-2 bg-white text-gray-900 h-5 w-5 flex justify-center items-center rounded-full text-xs font-semibold">
+                    {totalWishlist}
+                  </span>
+                )}
               </Link>
 
-              {/* CART */}
               <Link
                 href="/cart"
                 className="relative bg-white p-2 rounded-full text-black"
               >
                 <Icon icon="ion:cart-outline" width="22" height="22" />
-                <span className="absolute -right-4 -top-2 bg-white h-6 w-6 flex justify-center items-center rounded-full text-sm">
-                  {totalItems}
-                </span>
+                {totalItems > 0 && (
+                  <span className="absolute -right-2 -top-2  bg-white text-gray-900 h-5 w-5 flex justify-center items-center rounded-full text-xs font-semibold">
+                    {totalItems}
+                  </span>
+                )}
               </Link>
 
-              {/* TOTAL */}
               <div>
-                <h2 className="font-medium">
-                  Rs {totalAmount.toFixed(2)}
-                </h2>
+                <h2 className="font-medium">Rs {totalAmount.toFixed(2)}</h2>
               </div>
             </>
           )}

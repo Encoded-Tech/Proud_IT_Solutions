@@ -1,211 +1,234 @@
+ // your actual PartOption model
 "use server";
 
+
+
+import { Types } from "mongoose";
 import { requireUser } from "@/lib/auth/requireSession";
 import { connectDB } from "@/db";
-import { BuildRequest, CPUBrand, GPUBrand, OSBrand, UseCase } from "@/models/buildMyPcModel";
-import { mapBuildRequest } from "../../../mappers/MapBuildMyPc";
+import { BuildRequest, IBuildRequest, IBuildPart } from "@/models/buildMyPcModel";
+import { IBuildRequestMapped, mapBuildRequest } from "@/lib/server/mappers/MapBuildMyPc";
+import { PartOption } from "@/models/partsOption";
 
 
-
-export interface BuildMyPcInput {
-  id?: string;
-  name?: string;
-  phone?: string;
-  email?: string;
-  budgetNPR?: number;
-  uses?: UseCase[];
-  targetResolution?: string;
-  targetFPS?: number;
-  cpuPreference?: CPUBrand;
-  cpuModel?: string;
-  gpuPreference?: GPUBrand;
-  gpuModel?: string;
-  ramGB?: number;
-  ramType?: string;
-  osPreference?: OSBrand;
-  rgbPreference?: boolean;
-  smallFormFactor?: boolean;
-  storage?: {
-    nvme?: boolean;
-    ssdGB?: number;
-    hddGB?: number;
-  };
-  peripherals?: {
-    monitor?: boolean;
-    keyboard?: boolean;
-    mouse?: boolean;
-    ups?: boolean;
-  };
+/** INPUT TYPES */
+export interface BuildPartInput {
+  partId: string;
+  type: string;
+  name: string;
+  price: number;
+  imageUrl?: string;
+  quantity?: number;
 }
 
-
-interface SubmitBuildMyPcResult {
-  success: boolean;
-  message: string;
-  data?: ReturnType<typeof mapBuildRequest>;
+export interface SubmitBuildRequestInput {
+  parts: BuildPartInput[];
+  subtotal: number;
+  grandTotal: number;
+  adminNotes?: string;
 }
 
-export async function submitBuildMyPc(
-  input: Omit<BuildMyPcInput, "id"> & { uses: UseCase[] }
-): Promise<SubmitBuildMyPcResult> {
-  try {
-    const user = await requireUser();
-  await connectDB();
+export interface UpdateBuildRequestInput {
+  id: string;
+  parts?: BuildPartInput[];
+  subtotal?: number;
+  grandTotal?: number;
+  status?: "draft" | "submitted" | "reviewed" | "approved" | "rejected" | "checked_out";
+  adminNotes?: string;
+  compatibilityPassed?: boolean;
+  compatibilityStatus?: "pending" | "passed" | "failed";
+}
 
-  if (!input.budgetNPR || input.budgetNPR <= 0) {
-    return { success: false, message: "Invalid budget amount" };
+interface CompatibilityResult {
+  passed: boolean;
+  status: "passed" | "failed";
+  errors: string[];
+}
+
+export const checkRealWorldCompatibility = async (
+  parts: BuildPartInput[]
+): Promise<CompatibilityResult> => {
+  const errors: string[] = [];
+
+  // Fetch full part details from DB (socket, RAM type, PSU wattage, etc.)
+  const partIds = parts.map((p) => p.partId);
+  const dbParts = await PartOption.find({ _id: { $in: partIds } }).lean();
+
+  const cpu = dbParts.find((p) => p.type === "cpu");
+  const motherboard = dbParts.find((p) => p.type === "motherboard");
+  const gpu = dbParts.find((p) => p.type === "gpu");
+  const ram = dbParts.find((p) => p.type === "ram");
+  const psu = dbParts.find((p) => p.type === "psu");
+  const casePart = dbParts.find((p) => p.type === "case");
+  const storage = dbParts.filter((p) => ["nvme", "ssd", "hdd"].includes(p.type));
+
+  // ------------------ CPU ↔ Motherboard ------------------
+  if (cpu && motherboard && cpu.socket !== motherboard.socket) {
+    errors.push(`CPU socket (${cpu.socket}) is incompatible with motherboard socket (${motherboard.socket})`);
   }
 
-  if (!input.uses || input.uses.length === 0) {
-    return { success: false, message: "At least one use case is required" };
+  // ------------------ RAM ↔ Motherboard ------------------
+  if (ram && motherboard && ram.ramType !== motherboard.ramType) {
+    errors.push(`RAM type (${ram.ramType}) is incompatible with motherboard (${motherboard.ramType})`);
   }
 
-  const buildRequest = await BuildRequest.create({
-    userId: user.id,
-    status: "submitted", // 🔥 explicit
-    ...input,
-  });
+  // ------------------ PSU Wattage ------------------
+  if (psu && cpu && gpu) {
+    const estimatedPower = (cpu.tdp || 65) + (gpu.tdp || 150) + 50; // +50W for rest
+    if (psu.wattage < estimatedPower) {
+      errors.push(`PSU wattage (${psu.wattage}W) is insufficient for CPU+GPU estimated power (${estimatedPower}W)`);
+    }
+  }
+
+  // ------------------ Case ↔ Motherboard Form Factor ------------------
+  if (casePart && motherboard && casePart.formFactor !== motherboard.formFactor) {
+    errors.push(`Case (${casePart.formFactor}) is incompatible with motherboard (${motherboard.formFactor})`);
+  }
+
+  // ------------------ NVMe Storage ------------------
+  if (motherboard && storage.some((s) => s.type === "nvme") && !motherboard.nvmeSlots) {
+    errors.push(`Motherboard does not support NVMe but build includes NVMe drive`);
+  }
+
+  // ------------------ Duplicate Components ------------------
+  const componentCounts: Record<string, number> = {};
+  for (const p of parts) {
+    componentCounts[p.type] = (componentCounts[p.type] || 0) + 1;
+  }
+  for (const [type, count] of Object.entries(componentCounts)) {
+    if (["cpu", "gpu"].includes(type) && count > 1) {
+      errors.push(`Multiple ${type.toUpperCase()} detected (${count}), only one allowed`);
+    }
+  }
 
   return {
-    success: true,
-    message: "Build request submitted successfully",
-    data: mapBuildRequest(buildRequest),
+    passed: errors.length === 0,
+    status: errors.length === 0 ? "passed" : "failed",
+    errors,
   };
-  } catch (error) {
-    console.error("submitBuildMyPc error:", error);
-    return {
-      success: false,
-      message: "Failed to submit build request",
-    };
-    
-  }
-}
-
-type UpdatableField = keyof Omit<BuildMyPcInput, "id">;
+};
 
 
-
-export async function updateBuildMyPc(
-  input: Required<Pick<BuildMyPcInput, "id">> &
-    Partial<Omit<BuildMyPcInput, "id">>
-) {
+/** ----------------------------- */
+/** SUBMIT BUILD REQUEST */
+export const submitBuildRequest = async (
+  input: SubmitBuildRequestInput
+): Promise<{ success: boolean; message: string; data?: IBuildRequestMapped }> => {
   try {
     const user = await requireUser();
     await connectDB();
 
-    const { id, ...data } = input;
+    if (!input.parts || input.parts.length === 0) {
+      return { success: false, message: "At least one part is required" };
+    }
+
+    // Calculate compatibility
+    const { passed, status } = await checkRealWorldCompatibility(input.parts);
+
+    const buildRequest = await BuildRequest.create({
+      user: new Types.ObjectId(user.id),
+      parts: input.parts.map((p) => ({
+        part: new Types.ObjectId(p.partId),
+        type: p.type,
+        name: p.name,
+        price: p.price,
+        imageUrl: p.imageUrl,
+        quantity: p.quantity ?? 1,
+      })) as IBuildPart[],
+      subtotal: input.subtotal,
+      grandTotal: input.grandTotal,
+      adminNotes: input.adminNotes,
+      status: "submitted",
+      compatibilityPassed: passed,
+      compatibilityStatus: status,
+    });
+
+    return { success: true, message: "Build request submitted", data: mapBuildRequest(buildRequest) };
+  } catch (error) {
+    console.error("submitBuildRequest error:", error);
+    return { success: false, message: "Failed to submit build request" };
+  }
+};
+
+/** ----------------------------- */
+/** UPDATE BUILD REQUEST */
+export const updateBuildRequest = async (
+  input: UpdateBuildRequestInput
+): Promise<{ success: boolean; message: string; data?: IBuildRequestMapped }> => {
+  try {
+    const user = await requireUser();
+    await connectDB();
 
     const buildRequest = await BuildRequest.findOne({
-      _id: id,
-      userId: user.id,
+      _id: input.id,
+      user: new Types.ObjectId(user.id),
     });
 
     if (!buildRequest) {
-      return {
-        success: false,
-        message: "No build request found for this user",
-      };
+      return { success: false, message: "Build request not found" };
     }
 
-    /** 🔥 LOCK AFTER QUOTE */
-    if (
-      ["quoted", "awaiting-payment", "building", "ready", "delivered"].includes(
-        buildRequest.status!
-      )
-    ) {
-      return {
-        success: false,
-        message: "This build can no longer be edited",
-      };
+    const updateData: Partial<IBuildRequest> = {};
+
+    if (input.parts) {
+      updateData.parts = input.parts.map((p) => ({
+        part: new Types.ObjectId(p.partId),
+        type: p.type,
+        name: p.name,
+        price: p.price,
+        imageUrl: p.imageUrl,
+        quantity: p.quantity ?? 1,
+      })) as IBuildPart[];
+
+      // Recalculate compatibility
+      const { passed, status } = await checkRealWorldCompatibility(input.parts);
+      updateData.compatibilityPassed = passed;
+      updateData.compatibilityStatus = status;
     }
 
-    const allowedFields: UpdatableField[] = [
-      "name",
-      "phone",
-      "email",
-      "budgetNPR",
-      "uses",
-      "targetResolution",
-      "targetFPS",
-      "cpuPreference",
-      "cpuModel",
-      "gpuPreference",
-      "gpuModel",
-      "ramGB",
-      "ramType",
-      "osPreference",
-      "rgbPreference",
-      "smallFormFactor",
-      "storage",
-      "peripherals",
-    ];
+  
+    if (input.subtotal !== undefined) updateData.subtotal = input.subtotal;
+    if (input.grandTotal !== undefined) updateData.grandTotal = input.grandTotal;
+    if (input.status) updateData.status = input.status;
+    if (input.adminNotes !== undefined) updateData.adminNotes = input.adminNotes;
+    if (input.compatibilityPassed !== undefined) updateData.compatibilityPassed = input.compatibilityPassed;
+    if (input.compatibilityStatus) updateData.compatibilityStatus = input.compatibilityStatus;
 
-    allowedFields.forEach((key) => {
-      if (data[key] !== undefined) {
-        buildRequest.set(key, data[key]);
-      }
-    });
+    Object.assign(buildRequest, updateData);
 
     await buildRequest.save();
 
-    return {
-      success: true,
-      message: "Build request updated successfully",
-      data: mapBuildRequest(buildRequest),
-    };
+    return { success: true, message: "Build request updated", data: mapBuildRequest(buildRequest) };
   } catch (error) {
-    console.error("updateBuildMyPc error:", error);
-    return {
-      success: false,
-      message: "Failed to update build request",
-    };
+    console.error("updateBuildRequest error:", error);
+    return { success: false, message: "Failed to update build request" };
   }
-}
+};
 
-
-
-export async function deleteBuildMyPc(id: string) {
+/** ----------------------------- */
+/** DELETE BUILD REQUEST */
+export const deleteBuildRequest = async (
+  id: string
+): Promise<{ success: boolean; message: string; data?: { id: string } }> => {
   try {
     const user = await requireUser();
-  await connectDB();
+    await connectDB();
 
-  const buildRequest = await BuildRequest.findOne({
-    _id: id,
-    userId: user.id,
-  });
+   const buildRequest = await BuildRequest.findOne({
+  _id: new Types.ObjectId(id), // make sure ID is ObjectId
+  user: user.id, // if user is already stored as ObjectId, just pass it
+});
+    if (!buildRequest) {
+      return { success: false, message: "Build request not found" };
+    }
 
-  if (!buildRequest) {
-    return {
-      success: false,
-      message: `No build request found for this user`,
-    };
-  }
+    await buildRequest.deleteOne();
 
-  /** 🔥 DO NOT DELETE AFTER PAYMENT */
-  if (
-    ["awaiting-payment", "building", "ready", "delivered"].includes(
-      buildRequest.status!
-    )
-  ) {
-    return {
-      success: false,
-      message: "This build request can no longer be deleted",
-    };
-  }
-
-  await buildRequest.deleteOne();
-
-  return {
-    success: true,
-    message: "Build request deleted successfully",
-    data: { id },
-  };
+    return { success: true, message: "Build request deleted", data: { id } };
   } catch (error) {
-    console.error("deleteBuildMyPc error:", error);
-    return {
-      success: false,
-      message: "Failed to delete build request",
-    };
-    
+    console.error("deleteBuildRequest error:", error);
+    return { success: false, message: "Failed to delete build request" };
   }
-}
+};
+
+
