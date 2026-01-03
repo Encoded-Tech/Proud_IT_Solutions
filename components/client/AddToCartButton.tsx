@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { useState } from "react";
 
 import { setCart } from "@/redux/features/cart/cartSlice";
-import { selectAuthHydrated, selectIsAuthenticated } from "@/redux/features/auth/userSlice";
+import { selectAuthHydrated, selectIsAuthenticated, selectUser } from "@/redux/features/auth/userSlice";
 
 interface AddToCartButtonProps {
   productId: string;
@@ -45,11 +45,19 @@ const AddToCartButton = ({ productId, variant = "page", quantity = 1, children }
   const router = useRouter();
   const isLoggedIn = useAppSelector(selectIsAuthenticated);
   const authHydrated = useAppSelector(selectAuthHydrated);
+  const user = useAppSelector(selectUser);
+
+  const isAdmin = isLoggedIn && user?.role === "admin";
 
 
   const [loading, setLoading] = useState(false);
 
   const handleAddToCart = async () => {
+
+    if (isAdmin) {
+      toast.error("You are admin don't buy your own product");
+      return;
+    }
 
     if (!authHydrated) {
       toast.loading("Checking login...");
@@ -63,7 +71,7 @@ const AddToCartButton = ({ productId, variant = "page", quantity = 1, children }
 
     setLoading(true);
     try {
-      // Call your server action directly
+   
       const result = await addToCartApi({ productId, quantity });
       console.log(result);
 

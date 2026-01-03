@@ -5,12 +5,18 @@ import React, { useState } from "react";
 import { ContactFormData } from "@/lib/validations/Zod";
 import { submitContactForm } from "@/lib/server/actions/public/contact/contactAction";
 import toast from "react-hot-toast";
+import { useAppSelector } from "@/redux/hooks";
+import { selectIsAuthenticated, selectUser } from "@/redux/features/auth/userSlice";
 
 export default function ContactForm() {
   const [formData, setFormData] = useState<Partial<ContactFormData>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const user = useAppSelector(selectUser);
+  const isLoggedIn = useAppSelector(selectIsAuthenticated);
+  const isAdmin = isLoggedIn && user?.role === "admin";
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -26,7 +32,13 @@ export default function ContactForm() {
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+
     e.preventDefault();
+    if (isAdmin) {
+      toast.error("You are admin don't submit contact form");
+      return;
+    }
+
     setLoading(true);
     setErrors({});
     setSuccessMessage(null);

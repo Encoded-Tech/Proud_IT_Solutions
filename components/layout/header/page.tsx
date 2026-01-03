@@ -5,9 +5,14 @@ import BottomCategory from "./bottom-category";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
 import MobileSlider from "./mobile-slider";
+import { useSession } from "next-auth/react";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
+
+  const { status } = useSession();
+const isLoggedIn = status === "authenticated";
+
 
   return (
     <div className="bg-white relative">
@@ -71,12 +76,15 @@ const Header = () => {
           ))}
         </div>
 
-        <Link
-          href="/login"
-          className="lg:hidden block bg-white p-2 rounded-full text-black "
-        >
-          <Icon icon="et:profile-male" width="22" height="22" />{" "}
-        </Link>
+        {status !== "loading" && !isLoggedIn && (
+  <Link
+    href="/login"
+    className="lg:hidden block bg-white p-2 rounded-full text-black"
+  >
+    <Icon icon="et:profile-male" width="22" height="22" />
+  </Link>
+)}
+
       </nav>
 
       <div className="sticky h-fit top-20">
@@ -87,7 +95,7 @@ const Header = () => {
       <div
         className={`${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:hidden bg-white z-[11] h-screen  overflow-y-scroll w-52 p-2 fixed top-0 left-0 ease-in-out duration-500`}
+        } lg:hidden bg-white z-[11] h-screen  overflow-y-scroll w-full p-2 fixed top-0 left-0 ease-in-out duration-500`}
       >
         <div className="flex-1 overflow-y-scroll ">
           <MobileSlider setIsOpen={setIsOpen} />

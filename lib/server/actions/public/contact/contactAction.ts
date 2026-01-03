@@ -5,6 +5,7 @@ import Contact from "@/models/contactModel";
 import { sendEmail } from "@/lib/helpers/sendEmail";
 import { contactSchema, ContactFormData } from "@/lib/validations/Zod";
 import { SEND_TO } from "@/config/env";
+import { requireUser } from "@/lib/auth/requireSession";
 
 /* ----------------------- SERVER ACTION ----------------------- */
 
@@ -17,6 +18,8 @@ export async function submitContactForm(
   errors?: z.ZodFormattedError<ContactFormData>;
 }> {
   try {
+
+    await requireUser();
     // 1️⃣ Validate incoming data
     const parseResult = contactSchema.safeParse(formData);
     if (!parseResult.success) {

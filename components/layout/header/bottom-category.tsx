@@ -1,23 +1,34 @@
 "use client";
+
 import React, { useState } from "react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { navitems } from "@/constants";
 import { usePathname } from "next/navigation";
 import { useAppSelector } from "@/redux/hooks";
-import { selectCartTotalAmount, selectCartTotalItems } from "@/redux/features/cart/cartSlice";
-import { selectIsAuthenticated, selectUser } from "@/redux/features/auth/userSlice";
+import {
+  selectCartTotalAmount,
+  selectCartTotalItems,
+} from "@/redux/features/cart/cartSlice";
+import {
+  selectIsAuthenticated,
+  selectUser,
+} from "@/redux/features/auth/userSlice";
 import { signOut } from "next-auth/react";
 import { selectWishlistCount } from "@/redux/features/wishlist/wishListSlice";
 import Image from "next/image";
 
 const BottomCategory = () => {
   const pathname = usePathname();
+
   const totalItems = useAppSelector(selectCartTotalItems);
   const totalAmount = useAppSelector(selectCartTotalAmount);
   const totalWishlist = useAppSelector(selectWishlistCount);
+
   const isLoggedIn = useAppSelector(selectIsAuthenticated);
-  const user = useAppSelector(selectUser); // make sure your user slice has user info including image
+  const user = useAppSelector(selectUser);
+
+  const isAdmin = isLoggedIn && user?.role === "admin";
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -34,7 +45,11 @@ const BottomCategory = () => {
             <nav key={index}>
               <Link
                 href={item.href}
-                className={`${pathname === item.href ? "navbarhover active" : "navbarhover"}`}
+                className={`${
+                  pathname === item.href
+                    ? "navbarhover active"
+                    : "navbarhover"
+                }`}
               >
                 {item.name}
               </Link>
@@ -44,66 +59,131 @@ const BottomCategory = () => {
 
         {/* RIGHT ICONS */}
         <div className="lg:flex hidden gap-4 items-center relative">
-          {isLoggedIn ? (
+          {/* LOGIN */}
+          {!isLoggedIn && (
+            <Link href="/login" className="bg-white p-2 rounded-full text-black">
+              <Icon icon="et:profile-male" width="22" height="22" />
+            </Link>
+          )}
+
+          {/* ADMIN DASHBOARD */}
+          {isLoggedIn && isAdmin && (
+            <Link
+              href="/admin"
+              className="rounded-full w-10 h-10 border-2 border-white bg-white text-black flex items-center justify-center"
+              title="Admin Dashboard"
+            >
+              <Icon icon="mdi:view-dashboard" width="22" height="22" />
+            </Link>
+          )}
+
+          {isLoggedIn && isAdmin && (
+  <button
+    onClick={handleLogout}
+    className="bg-white p-2 rounded-full text-black"
+    title="Logout"
+  >
+    <Icon icon="mdi:logout" width="22" height="22" />
+  </button>
+)}
+
+          {/* USER DROPDOWN */}
+          {isLoggedIn && !isAdmin && (
             <div className="relative">
-              {/* USER IMAGE */}
               <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
+                onClick={() => setDropdownOpen((prev) => !prev)}
                 className="rounded-full overflow-hidden w-10 h-10 border-2 border-white"
               >
                 <Image
-                width={100}
-                height={100}
+                  width={100}
+                  height={100}
                   src={user?.image || "/default-user.png"}
                   alt="User"
                   className="w-full h-full object-cover"
                 />
               </button>
 
-              {/* DROPDOWN */}
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white text-black rounded-md shadow-lg z-10">
-                  <Link
-                    href="/account"
-                    className="block px-4 py-2 hover:bg-gray-100"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    Account
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                  >
-                    Logout
-                  </button>
+                <div className="absolute right-0 mt-3 w-56 bg-white text-black rounded-xl shadow-xl z-20 overflow-hidden">
+                  {/* USER INFO */}
+                  <div className="px-4 py-3 border-b">
+                    <p className="text-sm font-semibold truncate">
+                      {user?.name || "User"}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {user?.email}
+                    </p>
+                  </div>
+
+                  {/* LINKS */}
+                  <div className="py-2">
+                    <Link
+                      href="/account"
+                      className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <Icon icon="mdi:account-outline" width="18" />
+                      Account
+                    </Link>
+
+                    <Link
+                      href="/settings"
+                      className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <Icon icon="mdi:cog-outline" width="18" />
+                      Settings
+                    </Link>
+                  </div>
+
+                  {/* LOGOUT */}
+                  <div className="border-t">
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <Icon icon="mdi:logout" width="18" />
+                      Logout
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-          ) : (
-            <Link href="/login" className="bg-white p-2 rounded-full text-black">
-              <Icon icon="et:profile-male" width="22" height="22" />
-            </Link>
           )}
 
-          {/* WISHLIST */}
-          <Link href="/wishlist" className="relative bg-white p-2 rounded-full text-black">
-            <Icon icon="mdi-light:heart" width="22" height="22" />
-            <span className="absolute -right-4 -top-2 bg-white h-6 w-6 flex justify-center items-center rounded-full text-sm">
-              {totalWishlist}
-            </span>
-          </Link>
+          {/* WISHLIST & CART (HIDDEN FOR ADMIN) */}
+          {!isAdmin && isLoggedIn && (
+            <>
+              {/* WISHLIST */}
+              <Link
+                href="/wishlist"
+                className="relative bg-white p-2 rounded-full text-black"
+              >
+                <Icon icon="mdi-light:heart" width="22" height="22" />
+                <span className="absolute -right-4 -top-2 bg-white h-6 w-6 flex justify-center items-center rounded-full text-sm">
+                  {totalWishlist}
+                </span>
+              </Link>
 
-          {/* CART */}
-          <Link href="/cart" className="relative bg-white p-2 rounded-full text-black">
-            <Icon icon="ion:cart-outline" width="22" height="22" />
-            <span className="absolute -right-4 -top-2 bg-white h-6 w-6 flex justify-center items-center rounded-full text-sm">
-              {totalItems}
-            </span>
-          </Link>
+              {/* CART */}
+              <Link
+                href="/cart"
+                className="relative bg-white p-2 rounded-full text-black"
+              >
+                <Icon icon="ion:cart-outline" width="22" height="22" />
+                <span className="absolute -right-4 -top-2 bg-white h-6 w-6 flex justify-center items-center rounded-full text-sm">
+                  {totalItems}
+                </span>
+              </Link>
 
-          <div>
-            <h2 className="font-medium">Rs {totalAmount.toFixed(2)}</h2>
-          </div>
+              {/* TOTAL */}
+              <div>
+                <h2 className="font-medium">
+                  Rs {totalAmount.toFixed(2)}
+                </h2>
+              </div>
+            </>
+          )}
         </div>
 
         {/* MOBILE SEARCH */}

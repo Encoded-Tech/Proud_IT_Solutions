@@ -1,7 +1,10 @@
 "use client";
+import { selectIsAuthenticated, selectUser } from "@/redux/features/auth/userSlice";
+import { useAppSelector } from "@/redux/hooks";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 interface BuyNowButtonProps {
   productId: string;
@@ -17,7 +20,17 @@ export default function BuyNowButton({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
+  
+  const isLoggedIn = useAppSelector(selectIsAuthenticated);
+  const user = useAppSelector(selectUser);
+  const isAdmin = isLoggedIn && user?.role === "admin";
+
   const handleBuyNow = () => {
+
+    if (isAdmin) {
+      toast.error("You are admin don't buy your own product");
+      return;
+    }
     setLoading(true);
     const params = new URLSearchParams({
       source: "buy_now",

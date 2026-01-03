@@ -240,6 +240,7 @@ export const authOptions: AuthOptions = {
           return "/login?error=EMAIL_ALREADY_REGISTERED_WITH_CREDENTIALS";
         }
       }
+      
 
       return true;
     },

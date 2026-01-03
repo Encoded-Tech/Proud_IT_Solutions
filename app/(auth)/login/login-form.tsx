@@ -73,7 +73,7 @@ export default function LoginForm() {
 
       if (result.success) {
         toast.success(result.message || "Login successful");
-        router.replace("/"); // redirect after login
+        router.replace(result.redirectTo || "/");
       } else {
         toast.error(result.error || "Login failed");
       }
