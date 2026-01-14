@@ -14,6 +14,7 @@ export interface IBuildPartMapped {
   partId: string;   // original PartOption ObjectId as string
   type: string;
   name: string;
+  imageUrl?: string;
   price: number;
   quantity: number;
 }
@@ -58,6 +59,7 @@ export const mapBuildRequest = (doc: IBuildRequest & Document): IBuildRequestMap
       type: p.type,
       name: p.name,
       price: p.price,
+      imageUrl: p.imageUrl,
       quantity: p.quantity,
     })),
     subtotal: doc.subtotal,

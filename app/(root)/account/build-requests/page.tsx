@@ -21,7 +21,7 @@ export default async function BuildRequestsPage() {
 
       {/* Client component */}
       <BuildRequestsClient
-        buildRequests={data} // pass fetched server data
+        buildRequests={data} 
         
         itemsPerPage={1}
       />

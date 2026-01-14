@@ -7,8 +7,7 @@ import { mapBuildRequest, mapBuildRequests } from "../mappers/MapBuildMyPc";
 import { Types, isValidObjectId } from "mongoose";
 import { IBuildRequestMapped } from "../mappers/MapBuildMyPc";
 
-/** ----------------------------- */
-/** GET SINGLE BUILD REQUEST BY ID */
+
 export const fetchBuildRequestById = async (
   id: string
 ): Promise<{ success: boolean; message: string; data: IBuildRequestMapped | null }> => {
@@ -70,3 +69,12 @@ export const fetchBuildRequests = async (): Promise<{
     };
   }
 };
+
+
+export async function getMyBuildCount() {
+  const user = await requireUser();
+  const buildCount  = await BuildRequest.countDocuments({ user: user.id });
+  return {
+     buildCount,
+  };
+}

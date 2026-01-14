@@ -36,7 +36,8 @@ export interface CheckoutCartItem {
   variantId?: string | null;
   variantName?: string | null;
 }
-type CheckoutSource = "cart" | "buy_now";
+type CheckoutSource = "cart" | "buy_now" | "build";
+
 
 
 interface CheckoutFormProps {
@@ -44,6 +45,7 @@ interface CheckoutFormProps {
   cartItems: CheckoutCartItem[];
   deliveryInfo: CheckoutDeliveryInfo;
   paymentMethod?: PaymentMethod;
+    buildId?: string;
   source: CheckoutSource;
 }
 
@@ -55,6 +57,7 @@ export default function CheckoutForm({
   deliveryInfo: initialDeliveryInfo,
   paymentMethod: initialPaymentMethod,
   source,
+  buildId,
 }: CheckoutFormProps) {
   const [openSection, setOpenSection] = useState<1 | 2 | 3>(1);
   const router = useRouter();
@@ -128,7 +131,9 @@ export default function CheckoutForm({
         })),
         deliveryInfo,
         paymentMethod: paymentMethod as PaymentMethod,
-        source
+        source,
+          buildId,
+   
       });
 
       const res = await createOrderAction(payload);

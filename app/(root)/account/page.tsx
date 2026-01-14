@@ -4,6 +4,7 @@ import AccountStats from "@/components/client/AccountStats";
 import { AuthUser, IUserAddressFrontend } from "@/redux/features/auth/userSlice";
 import { getCurrentUserAction } from "@/lib/server/fetchers/fetchUser";
 import { getMyOrderCount } from "@/lib/server/fetchers/fetchOrders";
+import { getMyBuildCount } from "@/lib/server/fetchers/fetchBuildRequest";
 
 interface FieldCheck {
   label: string;
@@ -82,7 +83,9 @@ export default async function AccountOverviewPage() {
   if (!user) return <p>Unauthorized</p>;
 
   const { completionPercent, missingFields } = getProfileCompletion(user);
-  const { count } = await getMyOrderCount();
+  const { orderCount } = await getMyOrderCount();
+  const { buildCount } = await getMyBuildCount();
+
 
   return (
     <div className="space-y-10">
@@ -169,7 +172,7 @@ export default async function AccountOverviewPage() {
         </Link>
       </div>
 
-      <AccountStats count={count} />
+      <AccountStats orderCount={orderCount} buildCount={buildCount} />
 
       {/* QUICK ACTIONS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -11,6 +11,7 @@ interface MapCheckoutArgsSimplified {
   deliveryInfo: CreateOrderInput["deliveryInfo"];
   paymentMethod: CreateOrderInput["paymentMethod"];
   source: CreateOrderInput["source"];
+ buildId?: string; 
 }
 
 export function cartToCreateOrderSimplified({
@@ -18,6 +19,7 @@ export function cartToCreateOrderSimplified({
   deliveryInfo,
   paymentMethod,
   source,
+  buildId,
 }: MapCheckoutArgsSimplified): CreateOrderInput {
   return {
     items: cartItems.map((item) => ({
@@ -28,5 +30,6 @@ export function cartToCreateOrderSimplified({
     deliveryInfo,
     paymentMethod,
     source,
+    buildId,
   };
 }

@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { IBuildRequestMapped } from "@/lib/server/mappers/MapBuildMyPc";
 import Pagination from "@/components/shared/Pagination";
 import { deleteBuildRequest } from "@/lib/server/actions/public/build-my-pc/buildMyPcactions";
+import Link from "next/link";
 
 /* ================= TYPES ================= */
 interface BuildRequestsClientProps {
@@ -199,7 +200,7 @@ export default function BuildRequestsClient({
       {/* TABLE */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full ">
             {/* HEADER */}
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
               <tr>
@@ -253,8 +254,9 @@ export default function BuildRequestsClient({
                       {/* BUILD ID */}
                       <td className="px-6 py-5 align-top">
                         <div className="flex items-center gap-2">
-                          <span className="inline-block px-3 py-1.5 bg-gray-100 text-gray-800 rounded-lg font-mono text-xs font-semibold">
-                            #{req.id.slice(-8).toUpperCase()}
+                          <span className="inline-block px-3 cursor-pointer py-1.5 bg-gray-100 text-gray-800 rounded-lg font-mono text-xs font-semibold">
+                          <Link href={`/account/build-requests/${req.id}` } >
+                            #{req.id.slice(-8).toUpperCase()}</Link>
                           </span>
                         </div>
                       </td>
@@ -276,8 +278,8 @@ export default function BuildRequestsClient({
                       </td>
 
                       {/* STATUS */}
-                      <td className="px-6 py-5 text-center align-top">
-                        <div className="relative inline-block">
+                      <td className="px-6 py-5 text-center  align-top">
+                        <div className="relative  inline-block">
                           <span
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border} shadow-sm cursor-help transition-all`}
                             onMouseEnter={() => setHoveredStatus(req.id)}
@@ -287,7 +289,7 @@ export default function BuildRequestsClient({
                             {statusConfig.label}
                           </span>
                           {hoveredStatus === req.id && (
-                            <div className="absolute z-10 top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg whitespace-nowrap">
+                            <div className="absolute  z-10 top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg whitespace-nowrap">
                               {statusConfig.tooltip}
                               <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45" />
                             </div>
@@ -327,7 +329,7 @@ export default function BuildRequestsClient({
                         <button
                           disabled={isLoading}
                           onClick={() => setConfirmDelete({ open: true, id: req.id })}
-                          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 hover:shadow-md rounded-lg border border-red-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="inline-flex cursor-pointer items-center gap-2 px-4 py-2 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 hover:shadow-md rounded-lg border border-red-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isLoading ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />

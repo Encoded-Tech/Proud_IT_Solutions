@@ -6,6 +6,7 @@ import { orderToOrderResponse } from "../mappers/queries/orderToOrderResponse";
 import { Types } from "mongoose";
 import { CheckoutDeliveryInput } from "../actions/public/order/orderActions";
 
+
 /* -------------------------------- TYPES -------------------------------- */
 
 export type PaymentStatus = "pending" | "submitted" | "paid" | "failed";
@@ -179,10 +180,12 @@ export async function getMySingleOrder(orderId: string): Promise<GetMySingleOrde
 
 export async function getMyOrderCount() {
   const user = await requireUser();
-  const count = await Order.countDocuments({ user: user.id });
+  const orderCount = await Order.countDocuments({ user: user.id });
 
   return {
 
-    count,
+    orderCount,
   };
 }
+
+
