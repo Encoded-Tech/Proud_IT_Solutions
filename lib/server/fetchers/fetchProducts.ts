@@ -8,9 +8,10 @@ import { productType } from "@/types/product";
 export interface PaginationMeta {
   page: number;
   limit: number;
-  total?: number;
-  totalPages?: number;
+  total: number;
+  totalPages: number; // required
 }
+
 
 export interface PaginatedProductResponse<T> {
   success: boolean;
@@ -229,12 +230,12 @@ export async function fetchAllProducts(
       success: true,
       message: "Products fetched successfully",
       data: products.map(mapProductToFrontend),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+    pagination: {
+  page,
+  limit,
+  total: total ?? 0,  
+  totalPages: Math.ceil((total ?? 0) / limit),
+}
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unexpected server error";

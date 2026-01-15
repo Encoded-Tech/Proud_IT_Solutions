@@ -13,6 +13,7 @@ interface AddToCartButtonProps {
   variant?: "card" | "page"; // new prop for style variant
   quantity?: number; // allow custom quantity if needed
   children?: React.ReactNode;
+  productSlug?: string;
 }
 
 export async function addToCartApi({
@@ -40,7 +41,7 @@ export async function addToCartApi({
 }
 
 
-const AddToCartButton = ({ productId, variant = "page", quantity = 1, children }: AddToCartButtonProps) => {
+const AddToCartButton = ({ productId, productSlug, variant = "page", quantity = 1, children }: AddToCartButtonProps) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const isLoggedIn = useAppSelector(selectIsAuthenticated);
@@ -63,11 +64,17 @@ const AddToCartButton = ({ productId, variant = "page", quantity = 1, children }
       toast.loading("Checking login...");
       return;
     }
-    if (!isLoggedIn) {
-      toast.error("Please login first!");
-      router.push("/login");
-      return;
+     if (!isLoggedIn) {
+    toast.error("Please login first to add to cart");
+
+    // Redirect logic
+    if (productSlug) {
+      router.push(`/login?redirect=/products/${productSlug}`);
+    } else {
+      router.push("/login"); // fallback if no slug
     }
+    return;
+  }
 
     setLoading(true);
     try {
@@ -97,7 +104,8 @@ const AddToCartButton = ({ productId, variant = "page", quantity = 1, children }
 const variantStyles =
   variant === "card"
     ? "w-full mt-4 border border-lighttext  rounded-md inset-shadow-xs text-xs px-2 py-2 md:px-4 md:py-2 md:text-sm flex items-center justify-center hover:bg-primary/90 hover:text-white hover:border-none cursor-pointer ease-in-out duration-100"
-    : "w-full py-2 px-4 rounded-md bg-primary text-white text-sm md:py-3 md:px-4 hover:bg-primary/90";
+   : "w-auto uppercase px-4 py-2 md:px-5 md:py-2.5 rounded-md bg-primary text-white text-sm hover:bg-primary/90 flex items-center gap-2";
+
 
   return (
     <button

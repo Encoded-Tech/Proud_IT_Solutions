@@ -4,8 +4,7 @@ import User, { IWishlistItem } from "@/models/userModel";
 import { Product, ProductVariant } from "@/models";
 import mongoose from "mongoose";
 import { mapWishlistArray, WishlistItemDTO } from "../../../mappers/MapWishlist";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/authOptions";
+import { requireUser } from "@/lib/auth/requireSession";
 
 interface WishlistActionParams {
   productId?: string;
@@ -29,8 +28,7 @@ export async function addWishlistAction({
     if (!productId && !variantId) {
       throw new Error("productId or variantId is required");
     }
-  const session = await getServerSession(authOptions);
-    if (!session?.user?.email) return { wishlist: [] };
+  let user = await requireUser();
 
     // Resolve product document
     let productDoc: InstanceType<typeof Product> | null;
@@ -56,7 +54,7 @@ export async function addWishlistAction({
     }
 
     // Fetch user with wishlist populated
-    const user = await User.findById(session.user.id)
+     user = await User.findById(user.id)
       .populate<{ wishlist: IWishlistItem[] }>({
         path: "wishlist.product",
         select: "name slug images price",
@@ -132,10 +130,9 @@ export async function removeWishlistAction({
       throw new Error("Invalid productId");
     }
 
-     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) return { wishlist: [] };
+let user = await requireUser();
 
-    const user = await User.findById(session.user.id)
+     user = await User.findById(user.id)
       .populate<{ wishlist: IWishlistItem[] }>({
         path: "wishlist.product",
         select: "name slug images price",

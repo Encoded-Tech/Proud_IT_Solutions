@@ -36,7 +36,7 @@ export default function Review({
   onReviewsChange, // 🔹
 }: ReviewProps) {
   const dispatch = useDispatch();
- const router = useRouter();
+  const router = useRouter();
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
@@ -47,8 +47,8 @@ export default function Review({
   const [reviewsState, setReviewsState] = useState<ReviewType[]>(initialReviews);
   const [avgRatingState, setAvgRatingState] = useState<number>(avgRating);
 
-   const isLoggedIn = useAppSelector(selectIsAuthenticated);
-    const authHydrated = useAppSelector(selectAuthHydrated);
+  const isLoggedIn = useAppSelector(selectIsAuthenticated);
+  const authHydrated = useAppSelector(selectAuthHydrated);
 
   // 🔹 Initialize redux state
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function Review({
 
   // 🔹 handleReviewUpdate
   const handleReviewUpdate = (newReviews: ReviewType[], newAvgRating: number) => {
-   
+
 
     setReviewsState(newReviews);       // update local state
     setAvgRatingState(newAvgRating);   // update avg rating
@@ -102,7 +102,7 @@ export default function Review({
     }
     if (!isLoggedIn) {
       toast.error("Please login first!");
-      router.push("/login");
+      router.push(`/login?redirect=/products/${productSlug}`);
       return;
     }
     if (!rating || !comment.trim()) {
@@ -142,19 +142,19 @@ export default function Review({
 
 
 
-  
+
 
 
   return (
     <>
       {/* Header */}
-      <div className="mb-10 ">
+      <section id="reviews" className="mb-10 ">
         <h2 className="text-2xl font-semibold text-gray-900">Customer Reviews</h2>
         <p className="text-gray-600 mt-1">
           {reviewsState.length} review{reviewsState.length !== 1 ? "s" : ""}, average rating{" "}
           <span className="font-medium text-yellow-500">⭐ {avgRatingState.toFixed(1)}</span>
         </p>
-      </div>
+      </section>
 
       <section className="grid md:grid-cols-[400px_1fr] gap-8 items-start">
         {/* LEFT: Review Form */}
@@ -174,11 +174,10 @@ export default function Review({
                 className="transition-transform hover:scale-110"
               >
                 <Star
-                  className={`h-7 w-7 ${
-                    i < rating
+                  className={`h-7 w-7 ${i < rating
                       ? "fill-yellow-500 text-yellow-500"
                       : "text-gray-300 hover:text-yellow-500"
-                  }`}
+                    }`}
                 />
               </button>
             ))}
@@ -206,8 +205,8 @@ export default function Review({
                   ? "Updating..."
                   : "Submitting..."
                 : editingId
-                ? "Update Review"
-                : "Submit Review"}
+                  ? "Update Review"
+                  : "Submit Review"}
             </button>
           </div>
         </div>
@@ -215,22 +214,22 @@ export default function Review({
         {/* RIGHT: Reviews List */}
         <div className="flex flex-col space-y-4">
           {otherReviews.length === 0 ? (
-            
+
             <p className="text-center text-gray-400">No reviews yet</p>
           ) : (
             <div className="space-y-4">
               {reviewsState.map((review) => (
-                
-                
+
+
                 <div
                   key={review.id}
                   className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-all space-y-2"
                 >
-                   {/* User avatar */}
+                  {/* User avatar */}
                   <div className="flex-shrink-0">
                     <Image
-                    width={1000}
-                    height={1000}
+                      width={1000}
+                      height={1000}
                       src={review.user.image || "/images/default-avatar.png"}
                       alt={review.user.name}
                       className="h-10 w-10 rounded-full object-cover border border-gray-200"
@@ -242,11 +241,10 @@ export default function Review({
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
-                          className={`h-4 w-4 ${
-                            i < review.rating
+                          className={`h-4 w-4 ${i < review.rating
                               ? "fill-primary fill-yellow-500 text-yellow-500"
                               : "text-gray-300"
-                          }`}
+                            }`}
                         />
                       ))}
                     </div>

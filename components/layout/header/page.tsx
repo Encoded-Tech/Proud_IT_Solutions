@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";
 import MobileSlider from "./mobile-slider";
 import { useSession } from "next-auth/react";
+import SearchBar from "@/components/client/searchBar";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -39,25 +40,10 @@ const isLoggedIn = status === "authenticated";
         </Link>
 
         {/* search input field */}
-        <form className="lg:flex hidden relative lg:p-1  border border-zinc-200 bg-white  rounded-full  text-base lg:text-sm lg:w-[700px] w-full  focus:border-blue-500 outline-none z-[5]">
-          <input
-            className="flex-1 pl-4 outline-none"
-            type="text"
-            placeholder="Search"
-            required
-          />
-          <button
-            type="submit"
-            className=" p-2 text-white rounded-full bg-primary cursor-pointer"
-          >
-            <Icon
-              icon="ri:search-line"
-              width="24"
-              height="24"
-              className="hover:scale-125 ease-in-out duration-300"
-            />
-          </button>
-        </form>
+       <div className="lg:flex hidden w-full lg:w-[700px]">
+  <SearchBar />
+</div>
+
 
         <div className="lg:flex hidden items-center xl:gap-8 gap-4">
           {info.map((item, index) => (

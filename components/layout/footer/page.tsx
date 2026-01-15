@@ -14,7 +14,7 @@ export default function Footer() {
             <div className="flex items-center mb-4">
               <figure>
                 <Image
-                  src="/logo/mainlogo.png"
+                  src="/logo/logomain.png"
                   alt="logo"
                   width={1000}
                   height={1000}

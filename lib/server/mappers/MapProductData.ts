@@ -26,6 +26,7 @@ export function mapProductToFrontend(product: IProduct): productType {
   const category = isPopulatedCategory(product.category)
     ? product.category
     : null;
+
   return {
     id: product._id.toString(),
     name: product.name,
@@ -38,16 +39,19 @@ export function mapProductToFrontend(product: IProduct): productType {
     offeredPrice: product.offeredPrice || product.price,
     isOfferedPriceActive: product.isOfferedPriceActive || false,
     discountPercent: product.discountPercent || 0,
+    totalSales: product.totalSales || 0,
 
     // Mongoose does not have these → return null or default
-    offerStartDate: null,
-    offerEndDate: null,
+    offerStartDate: product.offerStartDate || null,
+    offerEndDate: product.offerEndDate || null,
+
     userId: "",             
   categoryId: product.category?._id?.toString() || "",
   
-    isFeatured: false,
+  
     seoMetaId: "",
-    brandId: "",
+  
+     brandName: product.brandName,
 
     // Large structures not in Mongoose model
     media: [],
@@ -65,11 +69,7 @@ export function mapProductToFrontend(product: IProduct): productType {
       createdAt: "",
       updatedAt: ""
     },
-    brand: {
-      id: "",
-      name: "",
-      image: ""
-    },
+   
 
     reviews: product.reviews?.map(r => ({
       id: r._id.toString(),
@@ -93,12 +93,6 @@ export function mapProductToFrontend(product: IProduct): productType {
       productCount: 0,
       isActive: category?.isActive ?? true,
       createdAt: category?.createdAt?.toISOString() ?? ""
-    },
-
-    user: {
-      id: "",
-      name: "",
-      email: ""
     },
 
     avgRating: product.avgRating,

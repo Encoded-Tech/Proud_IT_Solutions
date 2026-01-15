@@ -11,9 +11,11 @@ import ProductImages from "@/app/(root)/products/product-images";
 import AddToCartButton from "../client/AddToCartButton";
 import { addWishlistAction } from "@/lib/server/actions/public/wishlist/addToWishlist";
 import { setWishlist } from "@/redux/features/wishlist/wishListSlice";
-import { useAppDispatch } from "@/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import Review from "@/app/(root)/products/product-review";
 import { useState } from "react";
+import { selectIsAuthenticated } from "@/redux/features/auth/userSlice";
+import { useRouter } from "next/navigation";
 
 type Tag = { id?: string; name?: string };
 
@@ -21,15 +23,20 @@ export default function ProductPageClient({
   product,
   category,
   reviewData,
+
 }: {
   product: productType;
   category: CategoryType | null;
   reviewData: ReviewState;
+
 }) {
   const [quantity, setQuantity] = useState(1);
-   const [reviewsState, setReviewsState] = useState<ReviewType[]>(reviewData.reviews ?? []);
+  const [loading, setLoading] = useState(false);
+  const isLoggedIn = useAppSelector(selectIsAuthenticated);
+  const [reviewsState, setReviewsState] = useState<ReviewType[]>(reviewData.reviews ?? []);
   const [avgRatingState, setAvgRatingState] = useState<number>(reviewData.avgRating ?? 0);
   const dispatch = useAppDispatch();
+  const router = useRouter();
 
   if (!product) return <div className="text-center mt-20">Product not found</div>;
 
@@ -38,7 +45,7 @@ export default function ProductPageClient({
     price,
     description,
     stock,
-    brand,
+    brandName,
     id,
     tags,
     isActive,
@@ -58,10 +65,21 @@ export default function ProductPageClient({
   const availableStock = stock;
 
 
- 
+
+
+
 
   // ------------------ WISHLIST ------------------
   const handleAddToWishlist = async () => {
+
+    if (!isLoggedIn) {
+      toast.error("Please login first to add to wishlist");
+      router.push(`/login?redirect=/products/${product.slug}`);
+      return;
+    }
+    if (loading) return;
+    setLoading(true);
+
     try {
       const res = await addWishlistAction({ productId: id });
       if (!res.success) return toast.error(res.message || "Failed to add to wishlist");
@@ -69,6 +87,8 @@ export default function ProductPageClient({
       dispatch(setWishlist(res.wishlist));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unexpected server error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -123,9 +143,9 @@ export default function ProductPageClient({
             <p className="font-medium text-lighttext text-sm">({reviewsState.length}) reviews</p>
           </div>
 
-          {brand?.name && (
+          {brandName && (
             <p className="font-medium text-sm text-lighttext">
-              Brand: <span className="text-primarymain">{brand.name}</span>
+              Brand: <span className="text-primarymain">{brandName}</span>
             </p>
           )}
 
@@ -174,7 +194,7 @@ export default function ProductPageClient({
               </div>
 
               <div className="flex items-center gap-2">
-                <AddToCartButton productId={id} variant="page" quantity={quantity} />
+                <AddToCartButton productId={id} productSlug={product.slug} variant="page" quantity={quantity} />
                 <button
                   onClick={handleAddToWishlist}
                   className="flex items-center gap-2 hover:scale-110 transition"

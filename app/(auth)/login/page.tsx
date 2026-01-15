@@ -11,11 +11,11 @@ const LoginPage = async () => {
           <div className="w-full max-w-md space-y-8">
             <Link href="/">
               <Image
-                src="/logo/mainlogo.png"
+                src="/logo/logomain.png"
                 alt="logo"
                 width={1000}
                 height={1000}
-                className="object-contain w-20 mx-auto mb-4"
+                className="object-contain w-24 mx-auto mb-4"
               />
             </Link>
 

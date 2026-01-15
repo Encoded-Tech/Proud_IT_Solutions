@@ -39,7 +39,7 @@ export default function AdminSidebar({ collapsed }: AdminProops) {
   {collapsed && (
    <Link href="/">
    <Image
-     src="/logo/mainlogo.png"
+     src="/logo/logomain.png"
      alt="logo"
      width={1000}
      height={1000}
@@ -53,7 +53,7 @@ export default function AdminSidebar({ collapsed }: AdminProops) {
     <div className="flex items-center gap-2">
       <Link href="/">
           <Image
-            src="/logo/mainlogo.png"
+            src="/logo/logomain.png"
             alt="logo"
             width={1000}
             height={1000}

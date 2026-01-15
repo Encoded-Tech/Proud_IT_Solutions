@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { loginAction, LoginState } from "@/lib/server/actions/auth/login";
 
 import GoogleSignIn from "@/components/client/GoogleLogin";
@@ -12,6 +12,9 @@ import GoogleSignIn from "@/components/client/GoogleLogin";
 
 export default function LoginForm() {
   const router = useRouter();
+
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "/";
 
 
 
@@ -70,11 +73,12 @@ export default function LoginForm() {
 
     try {
       const result: LoginState = await loginAction(new FormData(e.currentTarget));
-
       if (result.success) {
         toast.success(result.message || "Login successful");
-        router.replace(result.redirectTo || "/");
-      } else {
+      const finalRedirect = result.redirectTo || redirect;
+  router.replace(finalRedirect);
+      }
+      else {
         toast.error(result.error || "Login failed");
       }
     } catch {
@@ -165,9 +169,9 @@ export default function LoginForm() {
 
       {/* Google login */}
       <div className="mt-4">
-       {/* Google login */}
-<GoogleSignIn
-/>
+        {/* Google login */}
+        <GoogleSignIn
+        />
 
       </div>
     </div>

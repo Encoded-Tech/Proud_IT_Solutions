@@ -1,9 +1,18 @@
-import React from 'react'
+// app/admin/categories/page.tsx
+import AdminCategoryTable from "@/components/admin/AdminCategoryTable";
+import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
 
-export default function Categories() {
+
+export const revalidate = 60;
+
+export default async function AdminCategoriesPage() {
+  const res = await fetchCategories();
+  const categories = res.data ?? [];
+
   return (
-    <div>
-      categories
+    <div className="p-6">
+
+      <AdminCategoryTable categories={categories} />
     </div>
-  )
+  );
 }

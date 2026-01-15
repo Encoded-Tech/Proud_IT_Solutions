@@ -10,6 +10,8 @@ import { fetchPartOptions } from "@/lib/server/actions/admin/BuildMyPc/partsActi
 import toast from "react-hot-toast";
 import { BuildPartInput, submitBuildRequest } from "@/lib/server/actions/public/build-my-pc/buildMyPcactions";
 import { useRouter } from "next/navigation";
+import { useAppSelector } from "@/redux/hooks";
+import { selectIsAuthenticated } from "@/redux/features/auth/userSlice";
 
 // ---------------- TYPES ----------------
 
@@ -106,8 +108,14 @@ export default function BuildClient({ parts: initialParts }: BuildClientProps) {
   const isComplete = categories.filter(c => c.required).every(c => selected[c.id]);
 
   const currentParts = grouped[activeCategory] || [];
+  const isLoggedIn = useAppSelector(selectIsAuthenticated);
 
   const handleSubmit = async () => {
+    if (!isLoggedIn) {
+      toast.error("Please login first");
+      router.push("/login?redirect=/build-my-pc");
+      return;
+    }
     if (!isComplete) return toast.error("Please select all required components");
     setLoadingSubmit(true);
 

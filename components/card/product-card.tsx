@@ -9,10 +9,10 @@ import BuyNowButton from "../client/buyNowButton";
 
 interface ProductCardProps {
   product?: productType;
-  label?: string; 
-   avgRating?: number;
+  label?: string;
+  avgRating?: number;
   totalReviews?: number;
-  
+
 }
 
 const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
@@ -29,13 +29,13 @@ const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
 
   const availableStock = stock;
 
-   const  resolvedAvgRating = avgRating ?? product?.avgRating ?? 0;
+  const resolvedAvgRating = avgRating ?? product?.avgRating ?? 0;
 
   return (
     <main>
       <div className=" md:p-3 p-2 rounded-md shadow-sm  flex flex-col gap-2">
         <Link href={`/products/${slug}`} className="group relative">
-            {label && (
+          {label && (
             <span className="absolute top-3 left-3 z-2 bg-primary text-white border-none rounded-md text-xs px-3 py-1 font-medium">
               {label}
             </span>
@@ -65,21 +65,34 @@ const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
             {name}
           </h2>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-[2px]">
+            {/* Filled stars */}
             {[...Array(Math.floor(resolvedAvgRating))].map((_, i) => (
               <Icon
-                key={i}
+                key={`full-${i}`}
                 icon="ic:round-star"
-                className="fill-yellow-500 text-yellow-500 md:text-xl text-sm"
+                className="text-yellow-500 md:text-xl text-sm"
               />
             ))}
+
+            {/* Half star */}
             {resolvedAvgRating % 1 !== 0 && (
               <Icon
                 icon="ic:round-star-half"
-                className="fill-yellow-500 text-yellow-500 text-xl"
+                className="text-yellow-500 md:text-xl text-sm"
               />
             )}
+
+            {/* Empty stars */}
+            {[...Array(5 - Math.ceil(resolvedAvgRating))].map((_, i) => (
+              <Icon
+                key={`empty-${i}`}
+                icon="ic:round-star-outline"
+                className="text-gray-300 md:text-xl text-sm"
+              />
+            ))}
           </div>
+
         </div>
 
         {(offeredPrice < 1 || !isOfferedPriceActive) && (
@@ -114,7 +127,7 @@ const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
         )}
       </div>
 
-{/* 
+      {/* 
       <button className="mt-4 border border-lighttext rounded-md  inset-shdaow-xs md:px-6 px-4 text-sm py-2  hover:bg-primary/90 hover:text-white hover:border-none cursor-pointer ease-in-out duration-100  w-full flex items-center gap-2 justify-center"
       
   onClick={() => {
@@ -126,14 +139,14 @@ const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
   Add to Cart
 </button> */}
 
-{product?.id && (
-  <>
-   <div className="flex gap-2">
-     <AddToCartButton productId={product.id} variant="card" />
-    <BuyNowButton productId={product.id} />
-   </div>
-  </>
-)}
+      {product?.id && (
+        <>
+          <div className="flex gap-2">
+            <AddToCartButton productId={product.id} variant="card" />
+            <BuyNowButton productId={product.id} />
+          </div>
+        </>
+      )}
 
     </main>
   );

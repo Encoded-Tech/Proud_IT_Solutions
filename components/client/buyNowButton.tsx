@@ -31,6 +31,12 @@ export default function BuyNowButton({
       toast.error("You are admin don't buy your own product");
       return;
     }
+
+    if(!isLoggedIn) {
+      toast.error("Please login first to make a purchase");
+      router.push("/login");
+      return;
+    }
     setLoading(true);
     const params = new URLSearchParams({
       source: "buy_now",

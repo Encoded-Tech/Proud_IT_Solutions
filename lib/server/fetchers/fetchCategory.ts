@@ -23,7 +23,7 @@ export interface ApiSingleCategoryResponse {
 export async function fetchCategories(): Promise<ApiCategoryResponse> {
   try {
     // 1) Fetch categories from DB
-     const categories: ICategory[] = await Category.find().lean<ICategory[]>();
+     const categories: ICategory[] = await Category.find().lean<ICategory[]>().sort({createdAt : -1});
 
     // 2) Fetch product counts grouped by category
     const counts = await Product.aggregate([

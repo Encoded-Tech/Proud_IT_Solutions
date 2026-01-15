@@ -39,7 +39,7 @@ export default async function ListSingleProduct({ slug }: { slug: string }) {
 
   return (
     <div className="space-y-20">
-      <ProductPageClient category={category} product={product}  reviewData={reviewDataWithUser} />
+      <ProductPageClient  category={category} product={product}  reviewData={reviewDataWithUser} />
    
         <HomeProducts
         showBestSellers={false}

@@ -38,76 +38,174 @@ export const GET = withDB(async () => {
 export const POST = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
+    try {
+      const formData = await req.formData();
 
-    const formData = await req.formData();
-    const name = formData.get("name") as string;
-    const price = formData.get("price") as string;
-    const stock = parseInt(formData.get("stock") as string, 10) || 0;
-    const description = formData.get("description") as string;
-    const category = formData.get("category") as string;
-    const images = formData.getAll("images") as File[];
-    const variants = formData.get("variants") as string | null;
-    const isActiveRaw = formData.get("isActive");
-    const isActive =
-      isActiveRaw === null ? undefined : isActiveRaw === "true";
+      /* -------------------------------------------------------------------------- */
+      /*                               BASIC FIELDS                                  */
+      /* -------------------------------------------------------------------------- */
 
-      const tagsRaw = formData.get("tags") as string | null; 
-// expecting JSON string like '[{"name":"tag1"},{"name":"tag2"}]'
+      const name = formData.get("name") as string;
+      const priceRaw = formData.get("price") as string;
+      const priceNumber = Number(priceRaw);
 
+      const stock = parseInt(formData.get("stock") as string, 10) || 0;
+      const description = formData.get("description") as string;
+      const category = formData.get("category") as string;
 
-const tags = tagsRaw
-  ? (JSON.parse(tagsRaw) as { id?: string; name: string }[]).map(tag => ({
-      id: tag.id || new Types.ObjectId().toString(),
-      name: tag.name,
-    }))
-  : [];
+      const images = formData.getAll("images") as File[];
 
-    const requiredFields = { name, price, category, stock, };
-    const missingFields = checkRequiredFields(requiredFields);
-    if (missingFields) return missingFields;
+      const variantsRaw = formData.get("variants") as string | null;
+      const variants = variantsRaw ? JSON.parse(variantsRaw) : [];
 
-    const priceNumber = parseFloat(price);
-    if (isNaN(priceNumber)) return NextResponse.json(
-      { success: false, message: "price must be a number" },
-      { status: 400 }
-    );
+      const isActiveRaw = formData.get("isActive");
+      const isActive = isActiveRaw === null ? true : isActiveRaw === "true";
 
-    const slug = name.toLowerCase().replace(/\s+/g, "-");
-    const existingProduct = await Product.findOne({ $or: [{ name }, { slug }] });
-    if (existingProduct) {
+      /* -------------------------------------------------------------------------- */
+      /*                                   TAGS                                     */
+      /* -------------------------------------------------------------------------- */
+
+      // expecting '[{"name":"tag1"},{"name":"tag2"}]'
+      const tagsRaw = formData.get("tags") as string | null;
+      const tags = tagsRaw
+        ? (JSON.parse(tagsRaw) as { id?: string; name: string }[]).map(tag => ({
+            id: tag.id || new Types.ObjectId().toString(),
+            name: tag.name,
+          }))
+        : [];
+
+      /* -------------------------------------------------------------------------- */
+      /*                                   BRAND                                    */
+      /* -------------------------------------------------------------------------- */
+
+      // Simple embedded brand (NO separate Brand schema)
+      const brandName = (formData.get("brandName") as string) || "";
+
+      /* -------------------------------------------------------------------------- */
+      /*                                   OFFERS                                   */
+      /* -------------------------------------------------------------------------- */
+
+      const discountPercentRaw = formData.get("discountPercent");
+      const discountPercent = discountPercentRaw
+        ? Number(discountPercentRaw)
+        : 0;
+
+      const offerStartDateRaw = formData.get("offerStartDate") as string | null;
+      const offerEndDateRaw = formData.get("offerEndDate") as string | null;
+
+      const offerStartDate = offerStartDateRaw
+        ? new Date(offerStartDateRaw)
+        : null;
+
+      const offerEndDate = offerEndDateRaw
+        ? new Date(offerEndDateRaw)
+        : null;
+
+      let offeredPrice = 0;
+      let isOfferedPriceActive = false;
+
+      if (discountPercent > 0) {
+        offeredPrice = Math.round(
+          priceNumber - (priceNumber * discountPercent) / 100
+        );
+        isOfferedPriceActive = true;
+      }
+
+      /* -------------------------------------------------------------------------- */
+      /*                              VALIDATIONS                                   */
+      /* -------------------------------------------------------------------------- */
+
+     const missingFields = checkRequiredFields({
+        name,
+        price:
+        category,
+        stock,
+        brandName
+      });
+
+      if (missingFields) return missingFields;
+
+      /* -------------------------------------------------------------------------- */
+      /*                                   SLUG                                     */
+      /* -------------------------------------------------------------------------- */
+
+      const slug = name.toLowerCase().replace(/\s+/g, "-");
+      const existingProduct = await Product.findOne({
+        $or: [{ name }, { slug }],
+      });
+
+      if (existingProduct) {
+        return NextResponse.json(
+          { success: false, message: `Product '${name}' already exists` },
+          { status: 409 }
+        );
+      }
+
+      /* -------------------------------------------------------------------------- */
+      /*                              IMAGE UPLOAD                                  */
+      /* -------------------------------------------------------------------------- */
+
+      const imageUrls: string[] = [];
+      for (const img of images) {
+        if (img && img.size > 0) {
+          const url = await uploadToCloudinary(img);
+          imageUrls.push(url);
+        }
+      }
+
+      /* -------------------------------------------------------------------------- */
+      /*                              CREATE PRODUCT                                */
+      /* -------------------------------------------------------------------------- */
+
+      const product = await Product.create({
+        name,
+        slug,
+        description,
+        price: priceNumber,
+        stock,
+        reservedStock: 0,
+
+        category,
+        images: imageUrls,
+        variants,
+
+        tags,
+
+        brandName,
+       
+
+        discountPercent,
+        offeredPrice,
+        isOfferedPriceActive,
+        offerStartDate,
+        offerEndDate,
+
+        avgRating: 0,
+        totalReviews: 0,
+        totalSales: 0,
+
+        isActive,
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: "Product created successfully",
+        data: product,
+      });
+    } catch (err) {
+      console.error("Create Product Error:", err);
       return NextResponse.json(
-        { success: false, message: `Product with name '${name}' already exists` },
-        { status: 409 }
+        {
+          success: false,
+          message: "Failed to create product",
+          error: err instanceof Error ? err.message : null,
+        },
+        { status: 500 }
       );
     }
-    const imageUrl: string[] = [];
-
-    for (const img of images) {
-      if (img && img.size > 0) {
-        const url = await uploadToCloudinary(img);
-        imageUrl.push(url);
-      }
-    }
-
-    const createProduct = await Product.create({
-      name,
-      description,
-      price: priceNumber,
-      stock,
-      category,
-      tags,
-      images: imageUrl,
-      variants: variants ? JSON.parse(variants) : [],
-      isActive
-    });
-    return NextResponse.json({
-      success: true,
-      message: "Product created successfully",
-      data: createProduct,
-    });
   }, { resourceName: "product" }),
   { roles: ["admin"] }
-)
+);
 
 
 

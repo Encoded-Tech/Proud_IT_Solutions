@@ -9,24 +9,26 @@ export interface productType {
   offeredPrice: number;
   discountPercent: number;
   isOfferedPriceActive: boolean;
-  offerStartDate: Date | null;
-  offerEndDate: Date | null;
+  offerStartDate?: Date | null;
+  offerEndDate?: Date | null;
   isActive: boolean;
-  userId: string;
+  userId?: string;
   categoryId: string;
   createdAt: string; 
   updatedAt: string;
-  isFeatured: boolean;
-  seoMetaId: string;
-  brandId: string;
+  totalSales?: number;
+
+  seoMetaId?: string;
+
   media: MediaType[];
   tags: TagType[];
-  seoMeta: SeoMetaType;
-  brand: BrandType;
+  seoMeta?: SeoMetaType;
+brandName: string;
   reviews: ReviewType[];
   category: CategoryType;
-  user: UserType;
+
   avgRating: number;
+  variants?: string[] | null;
 }
 
 export interface MediaType {
@@ -52,11 +54,6 @@ export interface SeoMetaType {
   updatedAt: string;
 }
 
-export interface BrandType {
-  id: string;
-  name: string;
-  image: string;
-}
 
 export interface ReviewType {
   id: string;

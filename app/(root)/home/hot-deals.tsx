@@ -19,7 +19,7 @@ const HotDeals = ({hotDeals, title}: Props) => {
   const settings = {
     infinite: true,
     speed: 800,
-    slidesToShow: 3,
+    slidesToShow: 2,
     slidesToScroll: 1,
     autoplay: true,
     autoplaySpeed: 2000,
@@ -29,7 +29,7 @@ const HotDeals = ({hotDeals, title}: Props) => {
       {
         breakpoint: 1200,
         settings: {
-          slidesToShow: 3,
+          slidesToShow: 2,
           slidesToScroll: 1,
           infinite: true,
           dots: true,
@@ -80,7 +80,7 @@ const HotDeals = ({hotDeals, title}: Props) => {
       </video>
       <div className="col-span-2">
         <PageHeader title={title} />
-        {hotDeals.length > 3 ? (
+        {hotDeals.length > 2 ? (
           <div className="relative">
             <Slider {...settings} ref={sliderRef} className="my-10">
               {hotDeals.map((item, index) => (
