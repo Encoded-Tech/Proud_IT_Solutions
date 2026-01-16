@@ -1,14 +1,14 @@
 import ProductTable from "@/components/admin/AdminProductTable";
+import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
 import { fetchAllProducts } from "@/lib/server/fetchers/fetchProducts";
 
-interface ProductPageProps {
-  searchParams?: { page?: string };
-}
-
-export default async function ProductPage(props: ProductPageProps) {
-  // Await searchParams before using
-  const searchParams = await props.searchParams;
-  const page = Number(searchParams?.page ?? 1);
+export default async function ProductPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ page?: string }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const page = Number(resolvedSearchParams?.page ?? 1);
   const limit = 6;
 
   const res = await fetchAllProducts(page, limit);
@@ -17,9 +17,16 @@ export default async function ProductPage(props: ProductPageProps) {
     return <div className="p-6 text-red-600">Failed to load products</div>;
   }
 
+  const resCategories = await fetchCategories();
+  const categories = resCategories.data || [];
+
   return (
     <div className="p-6">
-      <ProductTable products={res.data} pagination={res.pagination} />
+      <ProductTable
+        products={res.data}
+        categories={categories}
+        pagination={res.pagination}
+      />
     </div>
   );
 }

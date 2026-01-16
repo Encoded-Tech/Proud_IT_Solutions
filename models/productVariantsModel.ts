@@ -14,6 +14,8 @@ export interface IProductVariant extends Document {
   sku: string;
   images?: string[];
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const variantSchema = new Schema<IProductVariant>(

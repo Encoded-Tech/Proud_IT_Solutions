@@ -5,7 +5,7 @@ import React, { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CategoryType } from "@/types/product";
 
-import { Pencil, Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, Search, Edit } from "lucide-react";
 import toast from "react-hot-toast";
 import { deleteCategory, updateCategory } from "@/lib/server/actions/admin/category/categoryAction";
 import EditCategoryForm from "@/app/admin/category/add-category/edit-form";
@@ -81,15 +81,18 @@ const [editTarget, setEditTarget] = useState<CategoryType | null>(null);
             </p>
           </div>
 
-          <input
+       <div className="relative">
+           <input
             placeholder="Search category by name..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="border rounded-lg px-4 py-2 w-full sm:w-64"
+           className="border px-12 py-4 rounded-lg text-lg w-80 focus:outline-none"
           />
+            <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+       </div>
         </div>
 
         {/* Table */}
@@ -150,31 +153,40 @@ const [editTarget, setEditTarget] = useState<CategoryType | null>(null);
                     </td>
 
                     {/* Date */}
-                    <td className="px-6 py-4 text-right text-sm">
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </td>
+                   <td className="px-6 py-4 text-right text-sm">
+  <div>{new Date(item.createdAt).toLocaleDateString()}</div>
+  <div className="text-xs text-gray-500">
+    {new Date(item.createdAt).toLocaleTimeString()}
+  </div>
+</td>
 
                     {/* Actions */}
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex justify-center gap-2">
-                        {/* EDIT */}
-                       <button
+                     <td className="px-6 py-8 text-center flex justify-center gap-2">
+                
+                       
+                       <div className="flex items-center">
+
+                        <button
   onClick={() => setEditTarget(item)}
-  className="p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+     className="p-2 rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
 >
-  <Pencil className="w-4 h-4" />
+    <Edit  className="w-4 h-4" />
 </button>
 
 
                         {/* DELETE */}
                         <button
                           onClick={() => setDeleteTarget(item)}
-                          className="p-2 rounded-lg text-red-600 hover:bg-red-50"
+                            className="p-2 rounded bg-red-50 text-red-700 hover:bg-red-100"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                      </div>
+                       </div>
+                      
                     </td>
+
+
+                   
                   </tr>
                 ))
               )}

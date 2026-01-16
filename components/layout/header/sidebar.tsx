@@ -32,7 +32,7 @@ export default function AdminSidebar({ collapsed }: AdminProops) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto py-4 flex flex-col">
+    <div className="flex-1 fixed overflow-y-auto py-4 flex flex-col">
 
 <div className="px-4  pb-4 flex items-center gap-2">
   {/* Show small logo when collapsed */}

@@ -2,6 +2,9 @@
 
 import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
 import { AddProductForm } from "./addproductForm";
+import { ArrowLeft } from "lucide-react";
+
+import Link from "next/link";
 
 
 // import { useState, useRef } from "react";
@@ -313,8 +316,22 @@ export default async function AddProductPage() {
   const categories = res.data || [];
 
 
+
   return (
      <div className=" bg-gray-50 py-10 px-4">
+      
+            <div className=" max-w-6xl mx-auto ">
+              <Link href="/admin/product">   <button
+         
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Back to Products</span>
+          </button></Link>
+        
+          
+         
+        </div>
       <AddProductForm categories={categories} />
     </div>
 

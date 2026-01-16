@@ -141,3 +141,34 @@ export interface CartItem {
   remainingStock: number;
   selectedOptions?: Record<string, string>;
 }
+
+
+
+//variants
+
+
+// Frontend-safe Product Variant types
+
+export interface ProductVariantSpecs {
+  cpu: string;
+  ram: string;
+  storage: string;
+  color?: string;
+}
+
+export interface ProductVariantType {
+  id: string;
+  productId: string;
+
+  specs: ProductVariantSpecs;
+
+  price: number;
+  stock: number;
+  sku: string;
+
+  images: string[];
+  isActive: boolean;
+
+  createdAt: string;
+  updatedAt: string;
+}

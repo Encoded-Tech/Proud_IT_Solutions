@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: RootLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="h-screen flex bg-gray-50 text-gray-800">
+    <div className=" flex bg-gray-50 text-gray-800">
        <Toaster position="top-right" richColors />
 
       {/* SIDEBAR LEFT (Desktop) */}
