@@ -17,12 +17,13 @@ interface AdminProops {
   collapsed : boolean
 }
 
-type MenuName = "categories" | "products" | "posts" | "buildUserPC";
+type MenuName = "categories" | "products" | "variants" |"posts" | "buildUserPC";
 
 export default function AdminSidebar({ collapsed }: AdminProops) {
   const [openMenus, setOpenMenus] = useState<Record<MenuName, boolean>>({
     categories: false,
     products: false,
+    variants: false,
     posts: false,
     buildUserPC: false,
   });
@@ -169,6 +170,47 @@ export default function AdminSidebar({ collapsed }: AdminProops) {
                   className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
                 >
                   Add Product
+                </Link>
+              </li>
+            </ul>
+          )}
+        </li>
+        <li>
+          <button
+            onClick={() => toggleMenu("variants")}
+            className={`flex w-full items-center p-2 rounded-lg hover:bg-gray-100 transition ${
+              collapsed ? "justify-center" : "gap-3"
+            }`}
+          >
+            <Package className="w-5 h-5 text-gray-600" />
+            {!collapsed && (
+              <>
+                <span className="text-gray-900">Product Variants</span>
+                {openMenus.variants ? (
+                  <ChevronDown className="ml-auto w-4 text-gray-400" />
+                ) : (
+                  <ChevronRight className="ml-auto w-4 text-gray-400" />
+                )}
+              </>
+            )}
+          </button>
+
+          {openMenus.variants && !collapsed && (
+            <ul className="mt-1 ml-8 space-y-1">
+              <li>
+                <Link
+                  href="/admin/variants"
+                  className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                >
+                  All Variants
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/variants/add-variant"
+                  className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                >
+                  Add Variants
                 </Link>
               </li>
             </ul>

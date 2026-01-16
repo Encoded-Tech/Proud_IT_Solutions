@@ -144,9 +144,6 @@ export interface CartItem {
 
 
 
-//variants
-
-
 // Frontend-safe Product Variant types
 
 export interface ProductVariantSpecs {
@@ -163,7 +160,14 @@ export interface ProductVariantType {
   specs: ProductVariantSpecs;
 
   price: number;
+  discountPercent: number;
+  offeredPrice: number;
+  isOfferActive: boolean;
+  offerStartDate: string | null;
+  offerEndDate: string | null;
+
   stock: number;
+  reservedStock: number;
   sku: string;
 
   images: string[];

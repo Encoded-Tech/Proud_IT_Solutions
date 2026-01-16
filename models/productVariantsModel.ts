@@ -3,6 +3,7 @@ import { Schema, Document, model, models, Types } from "mongoose";
 export interface IProductVariant extends Document {
     _id: Types.ObjectId;
   product: Types.ObjectId;
+
   specs: {
     cpu: string;
     ram: string;
@@ -10,6 +11,12 @@ export interface IProductVariant extends Document {
     color?: string;
   };
   price: number;
+  discountPercent?: number;
+  offeredPrice?: number;
+  isOfferActive?: boolean;
+  offerStartDate?: Date;
+  offerEndDate?: Date;
+  reservedStock: number;
   stock: number;
   sku: string;
   images?: string[];
@@ -21,16 +28,32 @@ export interface IProductVariant extends Document {
 const variantSchema = new Schema<IProductVariant>(
   {
     product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+
+
+    sku: { type: String, unique: true },
+
     specs: {
       cpu: { type: String, required: true },
       ram: { type: String, required: true },
       storage: { type: String, required: true },
       color: String,
     },
+
     price: { type: Number, required: true },
+
+
+    discountPercent: { type: Number, default: 0 },
+    offeredPrice: { type: Number, default: 0 },
+    isOfferActive: { type: Boolean, default: false },
+    offerStartDate: Date,
+    offerEndDate: Date,
+
     stock: { type: Number, default: 0 },
-    sku: { type: String, unique: true },
-    images: [{ type: String }],
+    reservedStock: { type: Number, default: 0 },
+
+    images: [String],
+
+
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }

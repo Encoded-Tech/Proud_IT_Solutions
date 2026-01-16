@@ -1,7 +1,6 @@
 import { IProductVariant } from "@/models/productVariantsModel";
 import { ProductVariantType } from "@/types/product";
 
-
 export function mapProductVariantToFrontend(
   variant: IProductVariant
 ): ProductVariantType {
@@ -17,7 +16,14 @@ export function mapProductVariantToFrontend(
     },
 
     price: variant.price,
+    discountPercent: variant.discountPercent ?? 0,
+    offeredPrice: variant.offeredPrice ?? 0,
+    isOfferActive: variant.isOfferActive ?? false,
+    offerStartDate: variant.offerStartDate?.toISOString() ?? null,
+    offerEndDate: variant.offerEndDate?.toISOString() ?? null,
+
     stock: variant.stock,
+    reservedStock: variant.reservedStock ?? 0,
     sku: variant.sku,
 
     images: variant.images ?? [],
@@ -27,7 +33,6 @@ export function mapProductVariantToFrontend(
     updatedAt: variant.updatedAt.toISOString(),
   };
 }
-
 
 export function mapProductVariantsToFrontend(
   variants: IProductVariant[]

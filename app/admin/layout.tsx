@@ -92,7 +92,7 @@ export default function AdminLayout({ children }: RootLayoutProps) {
         </header>
 
         {/* PAGE CONTENT */}
-        <main className="p-6 overflow-y-auto">{children}</main>
+        <main>{children}</main>
       </div>
     </div>
   );

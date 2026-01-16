@@ -397,9 +397,9 @@
 
 "use server";
 
-import { Types } from "mongoose";
+import { FilterQuery, Types } from "mongoose";
 import { connectDB } from "@/db";
-import { Product } from "@/models/productModel";
+import { IProduct, Product } from "@/models/productModel";
 import { requireAdmin } from "@/lib/auth/requireSession";
 
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
@@ -660,3 +660,57 @@ export const deleteProductAction = async ({ productId }: DeleteProductInput): Pr
     return { success: false, message: "Failed to delete product", error: err instanceof Error ? err.message : undefined };
   }
 };
+
+
+
+export interface ApiAllProductsResponse {
+  success: boolean;
+  message: string;
+  data: productType[] | null;
+  error?: string | null;
+}
+
+export async function fetchAllProductsNoPagination(
+  filters?: FilterQuery<IProduct>
+): Promise<ApiAllProductsResponse> {
+  try {
+    await connectDB();
+
+    const filter: FilterQuery<IProduct> = {
+      isActive: true,
+      ...filters,
+    };
+
+    const products = await Product.find(filter)
+      .sort({ createdAt: -1 }) // newest first
+      .populate({
+        path: "category",
+        select: "categoryName slug categoryImage isActive createdAt",
+      })
+      .populate({
+        path: "variants",
+        match: { isActive: true },
+        select: "price stock specs images isActive",
+      })
+      .lean<IProduct[]>();
+
+    return {
+      success: true,
+      message: "All products fetched successfully",
+      data: products.map(mapProductToFrontend),
+    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unexpected server error";
+
+    console.error("Fetch All Products (No Pagination) Error:", errorMessage);
+
+    return {
+      success: false,
+      message: "Failed to fetch products",
+      data: null,
+      error: errorMessage,
+    };
+  }
+}
+
