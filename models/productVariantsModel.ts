@@ -1,8 +1,12 @@
 import { Schema, Document, model, models, Types } from "mongoose";
 
+import { IProduct } from "@/models/productModel";
+
+
 export interface IProductVariant extends Document {
-    _id: Types.ObjectId;
-  product: Types.ObjectId;
+  _id: Types.ObjectId;
+
+  product: Types.ObjectId | IProduct; 
 
   specs: {
     cpu: string;
@@ -10,17 +14,20 @@ export interface IProductVariant extends Document {
     storage: string;
     color?: string;
   };
+
   price: number;
   discountPercent?: number;
   offeredPrice?: number;
   isOfferActive?: boolean;
   offerStartDate?: Date;
   offerEndDate?: Date;
-  reservedStock: number;
+
   stock: number;
+  reservedStock: number;
   sku: string;
   images?: string[];
   isActive: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,7 +37,8 @@ const variantSchema = new Schema<IProductVariant>(
     product: { type: Schema.Types.ObjectId, ref: "Product", required: true },
 
 
-    sku: { type: String, unique: true },
+ sku: { type: String, unique: true},
+
 
     specs: {
       cpu: { type: String, required: true },
@@ -61,27 +69,34 @@ const variantSchema = new Schema<IProductVariant>(
 
 // 🔹 Auto-generate SKU before saving
 variantSchema.pre("save", async function (next) {
-  if (!this.sku) {
-    // Fetch the product to get product code or name
-    const Product = models.Product;
-    const product = await Product.findById(this.product);
 
-    if (!product) return next(new Error("Product not found"));
 
-    // Create a short product code (use slug or first letters)
-    const productCode = product.slug.toUpperCase(); // e.g., NITROV15
+  const Product = models.Product;
+  const product = await Product.findById(this.product);
+  if (!product) return next(new Error("Product not found"));
 
-    // Build SKU from specs
-    const cpu = this.specs.cpu.replace(/\s+/g, "").toUpperCase();
-    const ram = this.specs.ram.replace(/\s+/g, "").toUpperCase();
-    const storage = this.specs.storage.replace(/\s+/g, "").toUpperCase();
-    const color = this.specs.color ? this.specs.color.replace(/\s+/g, "").toUpperCase() : "";
+  const productCode = product.slug.toUpperCase();
 
-    // Combine into SKU
-    this.sku = [productCode, cpu, ram, storage, color].filter(Boolean).join("-");
-  }
+  const newSku = [
+    productCode,
+    this.specs.cpu,
+    this.specs.ram,
+    this.specs.storage,
+    this.specs.color,
+  ]
+    .filter(Boolean)
+    .map(v => v.replace(/\s+/g, "").toUpperCase())
+    .join("-");
+
+
+
+  this.sku = newSku;
   next();
 });
+
+
+
+
 
 export const ProductVariant =
   models.ProductVariant || model<IProductVariant>("ProductVariant", variantSchema);

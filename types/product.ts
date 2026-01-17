@@ -156,7 +156,7 @@ export interface ProductVariantSpecs {
 export interface ProductVariantType {
   id: string;
   productId: string;
-
+  productName: string;
   specs: ProductVariantSpecs;
 
   price: number;

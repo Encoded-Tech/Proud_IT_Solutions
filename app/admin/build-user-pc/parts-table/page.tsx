@@ -1,15 +1,19 @@
 
-import { fetchPartOptions } from "@/lib/server/actions/admin/BuildMyPc/partsAction";
-import PartsTable from "../../parts-option/partsOptionTable";
+import PartsTable from "@/components/admin/partsOptionTable";
+import { fetchPartOptions, fetchPartTypes } from "@/lib/server/actions/admin/BuildMyPc/partsAction";
+
 
 export default async function PartsTablePage() {
   const res = await fetchPartOptions(false); 
   const parts = res.success ? res.data : [];
 
+  const resType = await fetchPartTypes(false);
+  const partTypes = resType.success ? resType.data : [];
+
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Parts Table</h1>
-      <PartsTable initialParts={parts} />
+
+      <PartsTable initialParts={parts} partTypes={partTypes} />
     </div>
   );
 }

@@ -112,35 +112,49 @@ export async function updateProductVariantAction(formData: FormData) {
   await connectDB();
 
   const variantId = formData.get("variantId") as string;
-  if (!Types.ObjectId.isValid(variantId))
+  if (!Types.ObjectId.isValid(variantId)) {
     return { success: false, message: "Invalid variant ID" };
+  }
 
   const variant = await ProductVariant.findById(variantId);
-  if (!variant) return { success: false, message: "Variant not found" };
+  if (!variant) {
+    return { success: false, message: "Variant not found" };
+  }
 
   const uploadedImageUrls: string[] = [];
-  try {
-    const cpu = formData.get("cpu") as string | null;
-    const ram = formData.get("ram") as string | null;
-    const storage = formData.get("storage") as string | null;
-    const color = formData.get("color") as string | null;
 
-    const price = formData.get("price") ? Number(formData.get("price")) : undefined;
-    const stock = formData.get("stock") ? Number(formData.get("stock")) : undefined;
-   
-    const isActive = formData.get("isActive") !== null ? formData.get("isActive") === "true" : undefined;
+  try {
+    /* =======================
+       BASIC FIELDS
+    ======================= */
+    const cpu = formData.get("cpu");
+    const ram = formData.get("ram");
+    const storage = formData.get("storage");
+    const color = formData.get("color");
+
+    const price = formData.get("price");
+    const stock = formData.get("stock");
+
+    const isActive =
+      formData.get("isActive") !== null
+        ? formData.get("isActive") === "true"
+        : undefined;
 
     const discountPercent = formData.get("discountPercent")
       ? Number(formData.get("discountPercent"))
       : 0;
+
     const offerStartDate = formData.get("offerStartDate")
       ? new Date(formData.get("offerStartDate")!.toString())
       : undefined;
+
     const offerEndDate = formData.get("offerEndDate")
       ? new Date(formData.get("offerEndDate")!.toString())
       : undefined;
 
-    const removeImages = formData.getAll("removeImages") as string[];
+    /* =======================
+       IMAGE UPLOAD
+    ======================= */
     const newImages = formData.getAll("images") as File[];
 
     for (const img of newImages) {
@@ -150,26 +164,39 @@ export async function updateProductVariantAction(formData: FormData) {
       }
     }
 
-    for (const url of removeImages) {
-      if (variant.images.includes(url)) await deleteFromCloudinary(url);
-    }
+    /* =======================
+       UPDATE SPECS (🔥 IMPORTANT)
+       Always assign → ensures SKU regen
+    ======================= */
+    variant.specs = {
+      cpu: cpu !== null ? cpu.toString().trim() : variant.specs.cpu,
+      ram: ram !== null ? ram.toString().trim() : variant.specs.ram,
+      storage:
+        storage !== null
+          ? storage.toString().trim()
+          : variant.specs.storage,
+      color:
+        color !== null
+          ? color.toString().trim() || undefined
+          : variant.specs.color,
+    };
 
-    if (cpu) variant.specs.cpu = cpu;
-    if (ram) variant.specs.ram = ram;
-    if (storage) variant.specs.storage = storage;
-    if (color) variant.specs.color = color;
-
-    if (price !== undefined) variant.price = price;
-    if (stock !== undefined) variant.stock = stock;
-
+    if (price !== null) variant.price = Number(price);
+    if (stock !== null) variant.stock = Number(stock);
     if (isActive !== undefined) variant.isActive = isActive;
+
     variant.discountPercent = discountPercent;
     variant.offerStartDate = offerStartDate;
     variant.offerEndDate = offerEndDate;
 
-    // ✅ Auto-calculate offeredPrice & isOfferActive
+    /* =======================
+       OFFER CALCULATION
+    ======================= */
     if (discountPercent > 0 && variant.price > 0) {
-      variant.offeredPrice = Math.round((variant.price * (100 - discountPercent)) / 100);
+      variant.offeredPrice = Math.round(
+        (variant.price * (100 - discountPercent)) / 100
+      );
+
       const now = new Date();
       variant.isOfferActive =
         (!offerStartDate || now >= offerStartDate) &&
@@ -179,10 +206,24 @@ export async function updateProductVariantAction(formData: FormData) {
       variant.isOfferActive = false;
     }
 
-    variant.images = variant.images
-      .filter((image: string) => !removeImages.includes(image))
-      .concat(uploadedImageUrls);
+    /* =======================
+       IMAGE REPLACEMENT
+    ======================= */
+    if (uploadedImageUrls.length > 0) {
+      for (const oldUrl of variant.images || []) {
+        try {
+          await deleteFromCloudinary(oldUrl);
+        } catch (err) {
+          console.error("Failed to delete old image:", err);
+        }
+      }
 
+      variant.images = uploadedImageUrls;
+    }
+
+    /* =======================
+       SAVE → SKU REGENERATES HERE
+    ======================= */
     await variant.save();
 
     return {
@@ -192,12 +233,17 @@ export async function updateProductVariantAction(formData: FormData) {
     };
   } catch (err) {
     console.error("Update Variant Error:", err);
+
     for (const url of uploadedImageUrls) {
-      try { await deleteFromCloudinary(url); } catch {}
+      try {
+        await deleteFromCloudinary(url);
+      } catch {}
     }
+
     return { success: false, message: "Failed to update variant" };
   }
 }
+
 
 
 /* =====================================================
@@ -221,6 +267,57 @@ export async function getProductVariants(productId: string) {
   };
 }
 
+
+
 /* =====================================================
-   UPDATE VARIANT
+    GET ALL VARIANTS
 ===================================================== */
+
+
+
+export async function getAllProductVariants() {
+  await requireAdmin();
+  await connectDB();
+
+  const variants = await ProductVariant
+    .find()
+    .populate("product", "name")
+    .sort({ createdAt: -1 });
+
+  return {
+    success: true,
+    data: variants.map(mapProductVariantToFrontend),
+  };
+}
+
+
+export async function deleteProductVariantAction(variantId: string) {
+  await requireAdmin();
+  await connectDB();
+
+  if (!Types.ObjectId.isValid(variantId)) {
+    return { success: false, message: "Invalid variant ID" };
+  }
+
+  const variant = await ProductVariant.findById(variantId);
+  if (!variant) return { success: false, message: "Variant not found" };
+
+  try {
+    await Product.findByIdAndUpdate(variant.product, {
+      $pull: { variants: variant._id },
+    });
+
+    for (const url of variant.images) {
+      try {
+        await deleteFromCloudinary(url);
+      } catch {}
+    }
+
+    await variant.deleteOne();
+
+    return { success: true, message: "Variant deleted successfully" };
+  } catch (err) {
+    console.error("Delete Variant Error:", err);
+    return { success: false, message: "Failed to delete variant" };
+  }
+}

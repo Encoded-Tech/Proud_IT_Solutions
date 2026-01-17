@@ -4,7 +4,7 @@ import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { connectDB } from "@/db";
 import { requireAdmin } from "@/lib/auth/requireSession";
 import { mapPartOption, mapPartOptionsArray } from "@/lib/server/mappers/MapPartsOption";
-import { IPartOption, PartOption } from "@/models/partsOption";
+import { IPartOption, PartOption, PartType } from "@/models/partsOption";
 import { Types } from "mongoose";
 
 
@@ -156,26 +156,7 @@ export async function deletePartOption(id: string) {
   }
 }
 
-/** ---------- FETCH ALL ---------- */
-// export async function fetchPartOptions(activeOnly = true) {
-//   try {
-//     await connectDB();
-//     const query = activeOnly ? { isActive: true } : {};
-//     const parts = await PartOption.find(query).sort({ name: 1 }).lean<IPartOption[]>();
 
-//     return {
-//       success: true,
-//       message: "Part options fetched successfully",
-//       data: mapPartOptionsArray(parts),
-//     };
-//   } catch (error) {
-//     console.error("fetchPartOptions error:", error);
-//     return { success: false, message: "Failed to fetch part options", data: [] };
-//   }
-// }
-
-
-// lib/server/fetchParts.ts
 
 
 export async function fetchPartOptions(activeOnly = true) {
@@ -193,3 +174,20 @@ export async function fetchPartOptions(activeOnly = true) {
  return { success: false, message: "Failed to fetch part options", data: [] };
   }
 }
+
+
+
+export async function fetchPartTypes(activeOnly = true): Promise<{ success: boolean; data: PartType[]; message?: string }> {
+  try {
+    await connectDB();
+
+    const query = activeOnly ? { isActive: true } : {};
+    const types = await PartOption.distinct("type", query);
+
+    return { success: true, data: types as PartType[] };
+  } catch (err) {
+    console.error("fetchPartTypes error:", err);
+    return { success: false, data: [], message: "Failed to fetch part types" };
+  }
+}
+

@@ -22,7 +22,7 @@ export default function AdminLayout({ children }: RootLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className=" flex bg-gray-50 text-gray-800">
+    <div className=" min-h-screen flex bg-gray-50 text-gray-800">
        <Toaster position="top-right" richColors />
 
       {/* SIDEBAR LEFT (Desktop) */}
@@ -92,7 +92,7 @@ export default function AdminLayout({ children }: RootLayoutProps) {
         </header>
 
         {/* PAGE CONTENT */}
-        <main>{children}</main>
+        <main><div className="py-8">{children}</div></main>
       </div>
     </div>
   );

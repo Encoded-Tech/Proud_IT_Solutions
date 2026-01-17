@@ -10,7 +10,6 @@ import {
   Upload,
   Cpu,
   DollarSign,
-  ArrowLeft,
   Package,
   Calendar,
   Tag,
@@ -61,6 +60,7 @@ export function VariantForm({ products, variant }: VariantFormProps) {
   const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [buttonState, setButtonState] = useState<"idle" | "loading" | "success">("idle");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const { register, handleSubmit, control, reset, setValue, watch } =
     useForm<VariantFormData>({
@@ -123,6 +123,34 @@ export function VariantForm({ products, variant }: VariantFormProps) {
     setImagePreview(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      handleImageSelect(files);
+    }
+  };
+
   const setOfferDates = (startOption: "today" | "tomorrow", daysFromStart: number) => {
     const today = new Date();
     let start: Date;
@@ -178,8 +206,13 @@ export function VariantForm({ products, variant }: VariantFormProps) {
         reset();
         setImages([]);
         setImagePreview([]);
+
         router.push("/admin/variants");
-      }, 800);
+        if (variant) {
+          window.location.reload()
+        }
+      }, 600);
+
     } catch (error) {
       console.error(error);
       toast.error("Something went wrong");
@@ -190,17 +223,7 @@ export function VariantForm({ products, variant }: VariantFormProps) {
   const selectedProduct = products.find(p => p.id === watchedProductId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 py-8 px-4">
-      <div className="max-w-6xl mx-auto mb-6">
-        <button
-          onClick={() => router.push("/admin/variants")}
-          className="flex items-center gap-2 text-gray-600 hover:text-red-600 transition-colors group"
-        >
-          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-          <span className="font-medium">Back to Variants</span>
-        </button>
-      </div>
-
+  
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-3xl shadow-2xl border border-gray-200 overflow-hidden">
           <div className="relative bg-gradient-to-r from-red-600 via-red-700 to-red-800 px-8 py-10">
@@ -220,62 +243,94 @@ export function VariantForm({ products, variant }: VariantFormProps) {
           </div>
 
           <div className="p-10 space-y-10">
-            <div className="space-y-3">
-              <Label htmlFor="productId" className="text-lg font-semibold flex items-center gap-2">
-                <Package className="w-5 h-5 text-red-600" />
-                Select Product *
-              </Label>
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => !variant && setIsDropdownOpen(!isDropdownOpen)}
-                  disabled={!!variant}
-                  className={`w-full h-14 border-2 rounded-xl px-5 text-left flex items-center justify-between transition-all ${
-                    isDropdownOpen
-                      ? "border-red-500 ring-4 ring-red-100"
-                      : "border-gray-300 hover:border-red-400"
-                  } ${variant ? "bg-gray-100 cursor-not-allowed" : "bg-white cursor-pointer"}`}
-                >
-                  <span className={selectedProduct ? "text-gray-900 font-medium" : "text-gray-400"}>
-                    {selectedProduct ? selectedProduct.name : "Select a product"}
-                  </span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-400 transition-transform ${
-                      isDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
+         <div className="space-y-6 bg-gradient-to-br from-rose-50 to-red-50 p-8 rounded-2xl border border-rose-200">
+  {/* Section Header */}
+  <div className="flex items-center gap-3 pb-4 border-b-2 border-rose-300">
+    <Package className="w-6 h-6 text-red-600" />
+    <h3 className="text-2xl font-bold text-gray-800">
+      Product Selection
+    </h3>
+  </div>
 
-                {isDropdownOpen && !variant && (
-                  <div className="absolute z-50 w-full mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-2xl overflow-hidden">
-                    <div className="max-h-80 overflow-y-auto">
-                      {products.length === 0 ? (
-                        <div className="px-5 py-8 text-center text-gray-500">
-                          No products available
-                        </div>
-                      ) : (
-                        products.map((product) => (
-                          <button
-                            key={product.id}
-                            type="button"
-                            onClick={() => {
-                              setValue("productId", product.id);
-                              setIsDropdownOpen(false);
-                            }}
-                            className={`w-full px-5 py-4 text-left hover:bg-red-50 transition-colors border-b border-gray-100 last:border-b-0 ${
-                              watchedProductId === product.id ? "bg-red-50 font-semibold text-red-700" : ""
-                            }`}
-                          >
-                            {product.name}
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
+  {/* Product Select */}
+  <div className="space-y-3">
+    <Label
+      htmlFor="productId"
+      className="text-sm font-semibold text-gray-700 flex items-center gap-2"
+    >
+      Select Product <span className="text-red-500">*</span>
+    </Label>
+
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => !variant && setIsDropdownOpen(!isDropdownOpen)}
+        disabled={!!variant}
+        className={`w-full h-14 rounded-xl px-5 text-left flex items-center justify-between transition-all border-2 ${
+          isDropdownOpen
+            ? "border-red-500 ring-4 ring-red-100"
+            : "border-rose-300 hover:border-red-400"
+        } ${
+          variant
+            ? "bg-gray-100 cursor-not-allowed"
+            : "bg-white cursor-pointer"
+        }`}
+      >
+        <span
+          className={`truncate ${
+            selectedProduct
+              ? "text-gray-900 font-medium"
+              : "text-gray-400"
+          }`}
+        >
+          {selectedProduct ? selectedProduct.name : "Select a product"}
+        </span>
+
+        <ChevronDown
+          className={`w-5 h-5 text-gray-400 transition-transform ${
+            isDropdownOpen ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {isDropdownOpen && !variant && (
+        <div className="absolute z-50 w-full mt-2 bg-white border-2 border-rose-200 rounded-xl shadow-2xl overflow-hidden">
+          <div className="max-h-80 overflow-y-auto">
+            {products.length === 0 ? (
+              <div className="px-5 py-8 text-center text-gray-500">
+                No products available
               </div>
-              <input type="hidden" {...register("productId", { required: true })} />
-            </div>
+            ) : (
+              products.map((product) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => {
+                    setValue("productId", product.id);
+                    setIsDropdownOpen(false);
+                  }}
+                  className={`w-full px-5 py-4 text-left transition-colors border-b border-gray-100 last:border-b-0 hover:bg-red-50 ${
+                    watchedProductId === product.id
+                      ? "bg-red-50 font-semibold text-red-700"
+                      : "text-gray-700"
+                  }`}
+                >
+                  {product.name}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+
+    <input
+      type="hidden"
+      {...register("productId", { required: true })}
+    />
+  </div>
+</div>
+
 
             <div className="space-y-6 bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-2xl border border-blue-200">
               <div className="flex items-center gap-3 pb-4 border-b-2 border-blue-300">
@@ -284,7 +339,7 @@ export function VariantForm({ products, variant }: VariantFormProps) {
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">CPU *</Label>
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">CPU  <span className="text-red-500">*</span></Label>
                   <Input
                     {...register("cpu", { required: true })}
                     placeholder="Intel i7-12700H"
@@ -292,7 +347,7 @@ export function VariantForm({ products, variant }: VariantFormProps) {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">RAM *</Label>
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">RAM  <span className="text-red-500">*</span></Label>
                   <Input
                     {...register("ram", { required: true })}
                     placeholder="16GB DDR5"
@@ -300,7 +355,7 @@ export function VariantForm({ products, variant }: VariantFormProps) {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">Storage *</Label>
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">Storage  <span className="text-red-500">*</span></Label>
                   <Input
                     {...register("storage", { required: true })}
                     placeholder="512GB NVMe SSD"
@@ -326,7 +381,7 @@ export function VariantForm({ products, variant }: VariantFormProps) {
 
               <div className="grid md:grid-cols-3 gap-6">
                 <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">Base Price (NPR) *</Label>
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">Base Price (NPR)  <span className="text-red-500">*</span></Label>
                   <Input
                     type="number"
                     {...register("price", { required: true, valueAsNumber: true })}
@@ -335,7 +390,7 @@ export function VariantForm({ products, variant }: VariantFormProps) {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">Stock Quantity *</Label>
+                  <Label className="text-sm font-semibold text-gray-700 mb-2 block">Stock Quantity <span className="text-red-500">*</span></Label>
                   <Input
                     type="number"
                     {...register("stock", { required: true, valueAsNumber: true })}
@@ -366,7 +421,7 @@ export function VariantForm({ products, variant }: VariantFormProps) {
                     </div>
                     <div className="ml-auto bg-white bg-opacity-20 px-4 py-2 rounded-lg">
                       <p className="text-black text-sm">Client Saves</p>
-                      <p className="text-white text-xl font-bold">
+                      <p className="text-black text-xl font-bold">
                         NPR {(watchedPrice - offeredPrice).toLocaleString()}
                       </p>
                     </div>
@@ -521,12 +576,24 @@ export function VariantForm({ products, variant }: VariantFormProps) {
               </div>
 
               <div
+                className={`border-4 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all group ${
+                  isDragging 
+                    ? 'border-violet-600 bg-violet-200 scale-105' 
+                    : 'border-violet-300 hover:border-violet-500 hover:bg-violet-100'
+                }`}
                 onClick={() => fileInputRef.current?.click()}
-                className="border-4 border-dashed border-violet-300 rounded-2xl p-12 text-center cursor-pointer hover:border-violet-500 hover:bg-violet-100 transition-all group"
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
               >
-                <Upload className="w-16 h-16 mx-auto mb-4 text-violet-400 group-hover:text-violet-600 transition-colors" />
-                <p className="text-xl font-semibold text-gray-700 mb-2">Click to upload variant images</p>
-                <p className="text-sm text-gray-500">PNG, JPG, WEBP up to 10MB each</p>
+                <Upload className={`w-16 h-16 mx-auto mb-4 transition-colors ${
+                  isDragging ? 'text-violet-600 animate-bounce' : 'text-violet-400 group-hover:text-violet-600'
+                }`} />
+                <p className="text-xl font-semibold text-gray-700 mb-2">
+                  {isDragging ? 'Drop images here!' : 'Click to upload or drag & drop'}
+                </p>
+                <p className="text-sm text-gray-500">PNG, JPG up to 5MB each</p>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -554,7 +621,6 @@ export function VariantForm({ products, variant }: VariantFormProps) {
                       >
                         <X size={16} />
                       </button>
-                     
                     </div>
                   ))}
                 </div>
@@ -587,7 +653,15 @@ export function VariantForm({ products, variant }: VariantFormProps) {
             <div className="flex gap-4 pt-6">
               <Button
                 type="button"
-                onClick={() => router.push("/admin/variants")}
+                onClick={() => {
+                  router.push("/admin/variants");
+
+                  if (variant) {
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 100);
+                  }
+                }}
                 className="flex-1 h-14 text-lg font-semibold bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl transition-all"
               >
                 Cancel
@@ -611,6 +685,6 @@ export function VariantForm({ products, variant }: VariantFormProps) {
           </div>
         </div>
       </div>
-    </div>
+  
   );
 }

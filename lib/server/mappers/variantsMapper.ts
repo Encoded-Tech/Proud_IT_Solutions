@@ -4,9 +4,23 @@ import { ProductVariantType } from "@/types/product";
 export function mapProductVariantToFrontend(
   variant: IProductVariant
 ): ProductVariantType {
+
+  const product =
+    variant.product !== null &&
+    typeof variant.product === "object" &&
+    "name" in variant.product
+      ? variant.product
+      : null;
+
   return {
     id: variant._id.toString(),
-    productId: variant.product.toString(),
+
+    productId:
+      product
+        ? product._id.toString()
+        : variant.product?.toString() ?? "",
+
+    productName: product?.name ?? "Deleted product",
 
     specs: {
       cpu: variant.specs.cpu,
@@ -33,6 +47,7 @@ export function mapProductVariantToFrontend(
     updatedAt: variant.updatedAt.toISOString(),
   };
 }
+
 
 export function mapProductVariantsToFrontend(
   variants: IProductVariant[]
