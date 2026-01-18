@@ -3,6 +3,7 @@ import { fetchBestSellers, fetchHotDeals, fetchNewArrivals } from "@/lib/server/
 import BestSellers from "../products/best-seller";
 import Sale from "../products/sale";
 import HotDeals from "@/app/(root)/home/hot-deals";
+import { getAllMedia } from "@/lib/server/actions/admin/media/mediaActions";
 
 export const revalidate = 60;
 
@@ -16,6 +17,7 @@ export default async function HomeProducts({
   showBestSellers = true,
   showHotDeals = true,
   showNewArrivals = true,
+  
 }: HomeProductsProps) {
   // fetch all 3 categories in parallel
 
@@ -25,6 +27,11 @@ export default async function HomeProducts({
     fetchNewArrivals()
   ]);
 
+
+  const media = await getAllMedia();
+
+  const mediaItems = media.data || [];
+
   const bestSellers = bestRes.data || [];
   const hotDeals = hotRes.data || [];
   const newArrivals = newRes.data || [];
@@ -32,9 +39,9 @@ export default async function HomeProducts({
   return (
     <div className="space-y-20">
    
-      {showBestSellers && <BestSellers bestSellers={bestSellers} title="Our Best Sellers" />}
+      {showBestSellers && <BestSellers media = {mediaItems} bestSellers={bestSellers} title="Best Sellers" />}
          {showNewArrivals && <Sale newArrivals={newArrivals} title="New Arrivals" />}
-      {showHotDeals && <HotDeals hotDeals={hotDeals} title="Hot Deals" />}
+      {showHotDeals && <HotDeals media = {mediaItems} hotDeals={hotDeals} title="Hot Deals" />}
    
     </div>
   );

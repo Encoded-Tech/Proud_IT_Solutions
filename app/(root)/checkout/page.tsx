@@ -58,7 +58,7 @@ export default async function CheckoutPage({
         productName: product.name,
         price: variant?.price ?? product.price,
         variantId: variant?._id.toString() ?? null,
-        variantName: variant?.sku ?? null,
+      
         quantity: 1,
         image: product.images?.[0],
       },
@@ -74,7 +74,7 @@ export default async function CheckoutPage({
       productName: item.product.name,
       price: item.variant?.price ?? item.product.price,
       variantId: item.variant?._id?.toString() ?? null,
-      variantName: item.variant?.sku ?? null,
+ 
       quantity: item.quantity,
       image: item.product.images?.[0],
     }));

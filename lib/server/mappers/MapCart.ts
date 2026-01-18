@@ -20,12 +20,7 @@ export interface ICartItemPopulated {
   variant?: IProductVariant | null; // populated variant
 }
 
-function formatSpecs(specs?: Record<string, string>) {
-  if (!specs) return "";
-  return Object.entries(specs)
-    .map(([key, value]) => `${key}: ${value}`)
-    .join(", ");
-}
+
 // Single item mapper
 export function mapSingleCartItemToDTO(item: ICartItemPopulated): CartItem {
   const { product, variant } = item;
@@ -44,11 +39,11 @@ export function mapSingleCartItemToDTO(item: ICartItemPopulated): CartItem {
     },
     variant: variant
       ? {
-          _id: variant._id.toString(),
+          id: variant._id.toString(),
           price: variant.price,
           stock: variant.stock,
-          specs: formatSpecs(variant.specs), // string
-          sku: variant.sku,
+          specs: variant.specs, // string
+          isActive: variant.isActive ?? true,
           images: Array.isArray(variant.images) ? variant.images : [], // string[]
         }
       : null,

@@ -10,25 +10,29 @@ import { selectAuthHydrated, selectIsAuthenticated, selectUser } from "@/redux/f
 
 interface AddToCartButtonProps {
   productId: string;
+  variantId?: string;
   variant?: "card" | "page"; // new prop for style variant
   quantity?: number; // allow custom quantity if needed
   children?: React.ReactNode;
   productSlug?: string;
+  
 }
 
 export async function addToCartApi({
   productId,
   quantity = 1,
+  variantId,
 
 }: {
   productId: string;
   quantity?: number;
+  variantId?: string;
 }) {
   const res = await fetch("/api/users/cart", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include", // 
-    body: JSON.stringify({ productId, quantity }),
+    body: JSON.stringify({ productId, variantId, quantity,  }),
   });
 
   const data = await res.json();
@@ -41,7 +45,7 @@ export async function addToCartApi({
 }
 
 
-const AddToCartButton = ({ productId, productSlug, variant = "page", quantity = 1, children }: AddToCartButtonProps) => {
+const AddToCartButton = ({ productId, variantId,  productSlug, variant = "page", quantity = 1, children }: AddToCartButtonProps) => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const isLoggedIn = useAppSelector(selectIsAuthenticated);
@@ -79,7 +83,7 @@ const AddToCartButton = ({ productId, productSlug, variant = "page", quantity = 
     setLoading(true);
     try {
    
-      const result = await addToCartApi({ productId, quantity });
+      const result = await addToCartApi({ productId, quantity, variantId });
       console.log(result);
 
       if (result.success) {

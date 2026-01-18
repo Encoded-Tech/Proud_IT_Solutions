@@ -5,19 +5,25 @@ import HomeProducts from "./ListHomeProducts";
 import { getReviewsAction } from "@/lib/server/fetchers/fetchReview";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/authOptions";
+import { getProductVariants } from "@/lib/server/actions/admin/variants/variantsActions";
 
 
 export const revalidate = 60;
 
 export default async function ListSingleProduct({ slug }: { slug: string }) {
   const res = await fetchProductBySlug(slug);
-  
+
 
   if (!res.success || !res.data) {
     return <div>Product not found</div>;
   }
 
   const product = res.data || {};
+
+  const productId = product.id;
+  const variantRes = await getProductVariants(productId);
+  const variants = variantRes.success ? variantRes.data : [];
+
 
    const category = product.category;
 
@@ -39,7 +45,7 @@ export default async function ListSingleProduct({ slug }: { slug: string }) {
 
   return (
     <div className="space-y-20">
-      <ProductPageClient  category={category} product={product}  reviewData={reviewDataWithUser} />
+      <ProductPageClient  category={category} product={product} variants={variants} reviewData={reviewDataWithUser} />
    
         <HomeProducts
         showBestSellers={false}

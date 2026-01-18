@@ -10,9 +10,7 @@ export default async function ListProducts({ page = 1, limit = 6 }: { page?: num
   const products = res.data || [];
 
   const categoriesRes = await fetchCategories();
-const categories = categoriesRes.success && categoriesRes.data
-  ? categoriesRes.data.slice(0, 9) // take first 6 categories
-  : [];
+const categories = categoriesRes.data || [];
 
 
   return (

@@ -324,6 +324,7 @@ export default function ProductTable({
   );
 }
 
+
 // Mapper
 export function mapProductTypeToFormProduct(p: productType): Product {
   return {

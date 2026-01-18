@@ -35,6 +35,7 @@ import {
 } from "@/lib/server/actions/admin/product/productActions";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { VariantType } from "@/types/product";
 
 // Types
 interface Category {
@@ -53,7 +54,7 @@ export interface Product {
     categoryName: string;
   };
   images?: string[] | null;
-  variants?: string[] | null;
+  variants?: VariantType[] | null;
   tags: Array<{ id: string; name: string }>;
   brandName: string;
   discountPercent: number;
@@ -74,7 +75,7 @@ interface ProductFormData {
   description: string;
   category: string;
   images: File[];
-  variants: string[];
+  variants: VariantType[];
   tags: string[];
   brandName: string;
   discountPercent: number;

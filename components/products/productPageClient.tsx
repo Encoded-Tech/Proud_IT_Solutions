@@ -1,42 +1,45 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 
 import toast from "react-hot-toast";
 import Link from "next/link";
 
-import { CategoryType, MediaType, productType, ReviewState, ReviewType } from "@/types/product";
+import { CategoryType, MediaType, productType, ProductVariantType, ReviewState, ReviewType } from "@/types/product";
 import ProductImages from "@/app/(root)/products/product-images";
 import AddToCartButton from "../client/AddToCartButton";
 import { addWishlistAction } from "@/lib/server/actions/public/wishlist/addToWishlist";
 import { setWishlist } from "@/redux/features/wishlist/wishListSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import Review from "@/app/(root)/products/product-review";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { selectIsAuthenticated } from "@/redux/features/auth/userSlice";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 type Tag = { id?: string; name?: string };
 
 export default function ProductPageClient({
   product,
   category,
+  variants,
   reviewData,
-
 }: {
   product: productType;
+  variants: ProductVariantType[];
   category: CategoryType | null;
   reviewData: ReviewState;
-
 }) {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariantType | null>(null);
   const isLoggedIn = useAppSelector(selectIsAuthenticated);
   const [reviewsState, setReviewsState] = useState<ReviewType[]>(reviewData.reviews ?? []);
   const [avgRatingState, setAvgRatingState] = useState<number>(reviewData.avgRating ?? 0);
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   if (!product) return <div className="text-center mt-20">Product not found</div>;
 
@@ -53,25 +56,51 @@ export default function ProductPageClient({
     isOfferedPriceActive,
   } = product;
 
-  const featureImage = product.images?.[0] || "";
+  // Use variant data if selected, otherwise use product data
+  const activePrice = selectedVariant?.price ?? price;
+  const activeOfferedPrice = selectedVariant?.offeredPrice ?? offeredPrice;
+  const activeIsOfferActive = selectedVariant?.isOfferActive ?? isOfferedPriceActive;
+  const activeStock = selectedVariant?.stock ?? stock;
+  const activeImages = selectedVariant?.images?.length ? selectedVariant.images : product.images;
+
+  const featureImage = activeImages?.[0] || "";
   const media: MediaType[] =
-    product.images?.slice(1).map((img, idx) => ({
+    activeImages?.slice(1).map((img, idx) => ({
       id: `img-${idx}`,
       productId: product.id,
       mediaType: "IMAGE",
       mediaUrl: img,
     })) || [];
 
-  const availableStock = stock;
+  const availableStock = activeStock;
 
+  // Handle variant selection
+  const handleVariantSelect = (variant: ProductVariantType) => {
+    setSelectedVariant(variant);
+    setQuantity(1);
+  };
 
+  // Clear variant selection
+  const clearVariantSelection = () => {
+    setSelectedVariant(null);
+    setQuantity(1);
+  };
 
+  // Carousel scroll functions
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -220, behavior: "smooth" });
+    }
+  };
 
-
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 220, behavior: "smooth" });
+    }
+  };
 
   // ------------------ WISHLIST ------------------
   const handleAddToWishlist = async () => {
-
     if (!isLoggedIn) {
       toast.error("Please login first to add to wishlist");
       router.push(`/login?redirect=/products/${product.slug}`);
@@ -151,6 +180,13 @@ export default function ProductPageClient({
 
           <h2 className="font-semibold md:text-xl text-lg border-b pb-2">{name}</h2>
 
+          {/* SKU - Show when variant selected */}
+          {selectedVariant && selectedVariant.sku && (
+            <p className="text-sm text-lighttext">
+              SKU: <span className="font-medium text-gray-700">{selectedVariant.sku}</span>
+            </p>
+          )}
+
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {tags.map((tag: Tag, idx: number) => (
@@ -164,24 +200,200 @@ export default function ProductPageClient({
             </div>
           )}
 
-          {/* Pricing */}
-          {(!isOfferedPriceActive || offeredPrice < 1) && (
-            <div className="flex items-center gap-2">
-              <p className="text-primarymain font-semibold text-3xl">Rs. {price}</p>
-            </div>
-          )}
-          {isOfferedPriceActive && offeredPrice > 0 && (
-            <div className="flex items-center md:gap-4 gap-2">
-              <p className="text-primarymain font-semibold text-3xl">Rs. {offeredPrice}</p>
-              <del className="text-lighttext font-medium text-xl">Rs. {price}</del>
-              <span className="text-green-600 font-semibold text-lg ml-2">
-                {Math.round(((price - offeredPrice) / price) * 100)}% Off
-              </span>
+          {/* VARIANTS CAROUSEL */}
+          {variants && variants.length > 0 && (
+            <div className="space-y-4 border-t border-b py-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-medium text-base text-lighttext">Select Configuration</h3>
+                {selectedVariant && (
+                  <button
+                    onClick={clearVariantSelection}
+                    className="text-xs text-primary underline"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              <div className="relative group">
+                {/* Left Arrow */}
+                {/* Left Arrow */}
+{variants.length > 2 && (
+  <button
+    onClick={scrollLeft}
+    className="
+      absolute left-0 top-0 h-full w-6
+      flex items-center justify-center
+      bg-gradient-to-r from-white via-white/90 to-transparent
+      opacity-0 group-hover:opacity-100
+      transition
+      z-20
+      pointer-events-auto
+    "
+  >
+    <ChevronLeft className="w-6 h-6 text-gray-800" />
+  </button>
+)}
+
+
+
+                {/* Carousel Container */}
+                <div
+                  ref={scrollContainerRef}
+                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory py-2 px-1"
+                  style={{
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                    WebkitOverflowScrolling: "touch"
+                  }}
+                >
+                  <style jsx>{`
+                    div::-webkit-scrollbar {
+                      display: none;
+                    }
+                  `}</style>
+
+                  {variants.map((variant) => {
+                    const isSelected = selectedVariant?.id === variant.id;
+                    const isOutOfStock = variant.stock < 1;
+
+                    return (
+                      <div
+                        key={variant.id}
+                        className="flex-shrink-0 snap-start w-[200px]"
+                      >
+                        <button
+                          onClick={() => !isOutOfStock && handleVariantSelect(variant)}
+                          disabled={isOutOfStock}
+                          className={`relative flex flex-col bg-white rounded-xl border p-3 shadow-sm hover:shadow-md transition-all duration-200 w-full ${
+                            isSelected ? "border-primarymain" : "border-gray-200"
+                          } ${isOutOfStock ? "opacity-50 cursor-not-allowed" : ""}`}
+                        >
+                          {/* Selected Icon */}
+                          {isSelected && (
+                            <div className="absolute top-2 right-2">
+                              <Icon icon="mdi:check-circle" className="text-primarymain text-xl" />
+                            </div>
+                          )}
+
+                          {/* Out of Stock */}
+                          {isOutOfStock && (
+                            <div className="absolute top-2 right-2">
+                              <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
+                                Out of Stock
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Variant Image */}
+                          {variant.images?.[0] && (
+                            <Image
+                            width={100}
+                            height={100}
+                              src={variant.images[0]}
+                              alt={variant.sku || variant.id}
+                              className="w-full h-32 object-contain rounded-md mb-3"
+                            />
+                          )}
+
+                          {/* Specs */}
+                          {variant.specs && (
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {Object.entries(variant.specs).map(([key, value]) => (
+                                <span
+                                  key={key}
+                                  className="text-xs px-2 py-0.5 rounded bg-zinc-100 text-lighttext font-medium"
+                                >
+                                  {key}: {value as string}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Price & Discount */}
+                          <div className="flex flex-col gap-1">
+                            {variant.isOfferActive && variant.offeredPrice > 0 ? (
+                              <>
+                                <span className="text-base font-semibold text-primarymain">
+                                  Rs. {variant.offeredPrice}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  <del className="text-xs text-lighttext">Rs. {variant.price}</del>
+                                  <span className="text-xs text-green-600 font-medium">
+                                    {variant.discountPercent}% OFF
+                                  </span>
+                                </div>
+                              </>
+                            ) : (
+                              <span className="text-base font-semibold text-lighttext">
+                                Rs. {variant.price}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Low Stock Warning */}
+                          {!isOutOfStock && variant.stock < 10 && (
+                            <p className="text-xs text-orange-600 font-medium mt-1">
+                              Only {variant.stock} left
+                            </p>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Right Arrow */}
+{variants.length > 2 && (
+  <button
+    onClick={scrollRight}
+    className="
+      absolute right-0 top-0 h-full w-6
+      flex items-center justify-center
+      bg-gradient-to-l from-white via-white/90 to-transparent
+      opacity-0 group-hover:opacity-100
+      transition
+      z-20
+      pointer-events-auto
+    "
+  >
+    <ChevronRight className="w-6 h-6 text-gray-800" />
+  </button>
+)}
+
+
+              </div>
+
+              {!selectedVariant && (
+                <p className="text-xs text-lighttext italic mt-2">
+                  Please select a configuration to continue
+                </p>
+              )}
             </div>
           )}
 
+          {/* Pricing */}
+          {(!variants || variants.length === 0 || selectedVariant) && (
+            <>
+              {(!activeIsOfferActive || activeOfferedPrice < 1) && (
+                <div className="flex items-center gap-2">
+                  <p className="text-primarymain font-semibold text-3xl">Rs. {activePrice}</p>
+                </div>
+              )}
+              {activeIsOfferActive && activeOfferedPrice > 0 && (
+                <div className="flex items-center md:gap-4 gap-2">
+                  <p className="text-primarymain font-semibold text-3xl">Rs. {activeOfferedPrice}</p>
+                  <del className="text-lighttext font-medium text-xl">Rs. {activePrice}</del>
+                  <span className="text-green-600 font-semibold text-lg ml-2">
+                    {Math.round(((activePrice - activeOfferedPrice) / activePrice) * 100)}% Off
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+
           {/* Stock / Quantity */}
-          {availableStock > 0 && (
+          {availableStock > 0 && (!variants || variants.length === 0 || selectedVariant) && (
             <section className="space-y-6">
               <div className="flex items-center gap-6 w-fit bg-zinc-100 rounded-full py-1 px-4">
                 <button onClick={decreaseQuantity} className="cursor-pointer">
@@ -194,7 +406,13 @@ export default function ProductPageClient({
               </div>
 
               <div className="flex items-center gap-2">
-                <AddToCartButton productId={id} productSlug={product.slug} variant="page" quantity={quantity} />
+                <AddToCartButton
+                  productId={product.id}
+                  variantId={selectedVariant?.id ?? ""}
+                  productSlug={product.slug}
+                  variant="page"
+                  quantity={quantity}
+                />
                 <button
                   onClick={handleAddToWishlist}
                   className="flex items-center gap-2 hover:scale-110 transition"

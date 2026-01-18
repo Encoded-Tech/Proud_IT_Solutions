@@ -201,7 +201,20 @@ const CartClient = ({ initialCart }: CartClientProps) => {
                 />
                 <div className="flex-1 flex flex-col gap-1">
                   <h3 className="font-medium">{product.name}</h3>
-                  {variant && <p className="text-sm text-gray-500">{variant.specs}</p>}
+                 {variant?.specs ? (
+  <div className="text-sm text-gray-500 space-y-0.5">
+    <p>CPU: {variant.specs.cpu}</p>
+    <p>RAM: {variant.specs.ram}</p>
+    <p>Storage: {variant.specs.storage}</p>
+    {variant.specs.color && <p>Color: {variant.specs.color}</p>}
+  </div>
+) : (
+  <p className="text-xs text-gray-400 italic">
+    Variant details not available
+  </p>
+)}
+
+
 
                   {/* Stock info */}
                   <p

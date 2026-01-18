@@ -250,7 +250,7 @@ export default function AdminSidebar({ collapsed }: AdminProops) {
               </li>
               <li>
                 <Link
-                  href="/admin/posts/add"
+                  href="/admin/posts/add-posts"
                   className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
                 >
                   Add Post

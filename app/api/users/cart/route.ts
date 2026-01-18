@@ -19,81 +19,81 @@ import { CartItem } from "@/types/product";
 
 
 
-interface LeanCartItem {
-  _id: string;
-  product: {
-    _id: string;
-    name: string;
-    slug: string;
-    price: number;
-    stock: number;
-    images: string[];
-  };
-  variant?: {
-    _id: string;
-    specs: string;
-    price: number;
-    stock: number;
-    images: string[];
-    sku: string;
-  };
-  quantity: number;
-  addedAt: Date;
-  updatedAt: Date;
-}
+// interface LeanCartItem {
+//   _id: string;
+//   product: {
+//     _id: string;
+//     name: string;
+//     slug: string;
+//     price: number;
+//     stock: number;
+//     images: string[];
+//   };
+//   variant?: {
+//     _id: string;
+//     specs: string;
+//     price: number;
+//     stock: number;
+//     images: string[];
+//     sku: string;
+//   };
+//   quantity: number;
+//   addedAt: Date;
+//   updatedAt: Date;
+// }
 
 
 
 // user-get-cart api/users/cart
-export const GET = withAuth(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  withDB(async (req: NextRequest, context?) => {
-const userId = await getAuthUserId(req);
+// export const GET = withAuth(
+//   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//   withDB(async (req: NextRequest, context?) => {
+// const userId = await getAuthUserId(req);
 
 
-    const user = await userModel
-  .findById(userId)
-  .populate({
-    path: "cart.product",
-    select: "name slug images price stock",
-  })
-  .populate({
-    path: "cart.variant",
-    select: "specs price stock images sku",
-  })
-  .lean<{ cart: LeanCartItem[] }>();
+//     const user = await userModel
+//   .findById(userId)
+//   .populate({
+//     path: "cart.product",
+//     select: "name slug images price stock",
+//   })
+//   .populate({
+//     path: "cart.variant",
+//     select: "specs price stock images sku",
+//   })
+//   .lean<{ cart: LeanCartItem[] }>();
 
-if (!user) {
-  return NextResponse.json(
-    { success: false, message: "User not found" },
-    { status: 404 }
-  );
-}
+// if (!user) {
+//   return NextResponse.json(
+//     { success: false, message: "User not found" },
+//     { status: 404 }
+//   );
+// }
 
-const cartWithRemaining: ReadonlyArray<CartItem> = user.cart.map((item) => {
-  const stock = item.variant
-    ? item.variant.stock
-    : item.product.stock;
+// const cartWithRemaining: ReadonlyArray<CartItem> = user.cart.map((item) => {
+//   const stock = item.variant
+//     ? item.variant.stock
+//     : item.product.stock;
 
-  return {
-    _id: item._id,
-    product: item.product,
-    variant: item.variant ?? null,
-    quantity: item.quantity,
-    addedAt: item.addedAt.toISOString(),
-    updatedAt: item.updatedAt.toISOString(),
-    remainingStock: Math.max(stock - item.quantity, 0),
-  };
+//   return {
+//     _id: item._id,
+//     product: item.product,
+//     variant: item.variant ?? null,
+//     quantity: item.quantity,
+//     addedAt: item.addedAt.toISOString(),
+//     updatedAt: item.updatedAt.toISOString(),
+//     remainingStock: Math.max(stock - item.quantity, 0),
+//   };
 
-    });
-    return NextResponse.json({
-      success: true,
-      message: "Cart fetched successfully",
-      data: cartWithRemaining,
-    });
-  }, { resourceName: "cart" }),
-  { roles: ["user"] }
-)
+//     });
+//     return NextResponse.json({
+//       success: true,
+//       message: "Cart fetched successfully",
+//       data: cartWithRemaining,
+//     });
+//   }, { resourceName: "cart" }),
+//   { roles: ["user"] }
+// )
 
 // user-add-to-cart api/users/cart
 export const POST = withAuth(

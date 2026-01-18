@@ -28,7 +28,7 @@ brandName: string;
   category: CategoryType;
 
   avgRating: number;
-  variants?: string[] | null;
+  variants?: VariantType[] | null;
 }
 
 export interface MediaType {
@@ -63,6 +63,24 @@ export interface ReviewType {
   createdAt: string;
   updatedAt?: string;
 }
+
+export interface VariantType {
+  _id?: string;
+  id: string;
+  price: number;
+  stock: number;
+  
+  specs: {
+    cpu: string;
+    ram: string;
+    storage: string;
+    color?: string;
+  };
+  images: string[];
+  isActive: boolean;
+}
+
+
 
 
 export interface ReviewState {
@@ -134,7 +152,7 @@ export interface CartVariant {
 export interface CartItem {
   _id: string;
   product: CartProduct;
-  variant: CartVariant | null;
+  variant: VariantType | null;
   quantity: number;
   addedAt: string;
   updatedAt: string;
@@ -176,3 +194,6 @@ export interface ProductVariantType {
   createdAt: string;
   updatedAt: string;
 }
+
+
+

@@ -1,5 +1,3 @@
-// app/admin/page.tsx
-
 import AdminDashboard from "@/components/admin/dashboardSats";
 import { getDashboardStats } from "@/lib/server/actions/admin/stats/dashboardStats";
 
