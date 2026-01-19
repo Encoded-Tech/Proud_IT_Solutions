@@ -428,14 +428,15 @@ export default function ProductPageClient({
         </div>
       </section>
 
-      {/* Description */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-medium">Description</h2>
-        <div
-          className="min-h-[50vh] text-sm md:p-4 p-2 bg-zinc-100 rounded-md"
-          dangerouslySetInnerHTML={{ __html: description }}
-        />
-      </div>
+     {/* Description */}
+<div className="space-y-4">
+  <h2 className="text-2xl font-medium">Description</h2>
+
+  <div className="min-h-[50vh] text-sm md:p-4 p-2 bg-zinc-100 rounded-md whitespace-pre-line">
+    {description}
+  </div>
+</div>
+
 
       {/* Reviews */}
       <div className="space-y-4">
