@@ -1,4 +1,5 @@
-// app/admin/categories/page.tsx
+
+export const revalidate = 0;
 import AdminCategoryTable from "@/components/admin/AdminCategoryTable";
 import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
 
