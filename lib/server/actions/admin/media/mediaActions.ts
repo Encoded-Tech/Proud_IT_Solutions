@@ -185,6 +185,6 @@ export const getAllMedia = async (): Promise<ApiResponse<AnyMediaItem[]>> => {
     };
   } catch (err) {
     console.error("Error fetching media:", err);
-    return { success: false, message: "Failed to fetch media" };
+    return { success: false, message: "Failed to fetch media", data: []};
   }
 };
