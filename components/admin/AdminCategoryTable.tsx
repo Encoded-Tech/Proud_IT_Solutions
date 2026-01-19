@@ -44,19 +44,26 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
   // 🗑 Delete
   const confirmDelete = () => {
     if (!deleteTarget) return;
-  startTransition(async () => {
-  const res = await deleteCategory(deleteTarget.id);
-
-  if (!res.success) {
-    toast.error(res.message || "Failed to delete");
-    return; // just exit, don't return string
-  }
-
-  toast.success(res.message || "Category deleted successfully");
-  setDeleteTarget(null);
-  router.refresh(); // refresh the server data
-});
-
+    
+    startTransition(async () => {
+      const res = await deleteCategory(deleteTarget.id);
+      
+      if (!res.success) {
+        toast.error(res.message || "Failed to delete");
+        return;
+      }
+      
+      toast.success(res.message || "Category deleted successfully");
+      setDeleteTarget(null);
+      
+      // Force a complete refresh
+      router.refresh();
+      
+      // Optional: Force a hard navigation after a short delay
+      setTimeout(() => {
+        router.push("/admin/category");
+      }, 100);
+    });
   };
 
   return (

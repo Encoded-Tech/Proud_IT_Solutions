@@ -94,10 +94,8 @@ const onSubmit = async (values: z.infer<typeof categorySchema>) => {
     const formData = new FormData();
     formData.append("categoryName", values.categoryName);
     if (values.categoryImage) formData.append("categoryImage", values.categoryImage);
-if (values.parentId) formData.append("parentId", values.parentId);
+    if (values.parentId) formData.append("parentId", values.parentId);
 
-
-    // ✅ Call server action directly
     const result = await createCategory(formData);
 
     if (!result.success) {
@@ -106,23 +104,29 @@ if (values.parentId) formData.append("parentId", values.parentId);
       return;
     }
     
-
     toast.success(result.message);
     setButtonState('success');
 
-    setTimeout(() => {
-      form.reset({
-        categoryName: "",
-        parentId: "",
-        categoryImage: undefined,
-      });
-      setImagePreview("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      setButtonState('idle');
-   
-      router.refresh();  
-      router.push("/admin/category");
-    }, 1200);
+    // Clear form first
+    form.reset({
+      categoryName: "",
+      parentId: "",
+      categoryImage: undefined,
+    });
+    setImagePreview("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    
+    // Force a hard navigation to refresh data
+    router.push("/admin/category");
+    router.refresh();
+    
+    // Fetch updated categories
+    const updatedRes = await getCategories();
+    if (updatedRes.success) {
+      setCategories(updatedRes.data);
+    }
+    
+    setButtonState('idle');
 
   } catch (error) {
     console.error(error);

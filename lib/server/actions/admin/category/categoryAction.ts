@@ -4,7 +4,7 @@
 import { Category } from "@/models/categoryModel";
 
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, unstable_noStore as noStore, revalidateTag } from "next/cache";
 import { mapCategoryToFrontend } from "@/lib/server/mappers/MapCategory";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { connectDB } from "@/db";
@@ -15,6 +15,7 @@ import mongoose from "mongoose";
 
 export async function getCategories() {
   try {
+     noStore();
     await connectDB();
 
     const categories = await Category.find({})
@@ -44,6 +45,7 @@ export async function getCategories() {
 
 
 export async function createCategory(fd: FormData) {
+  noStore();
   await connectDB();
   await requireAdmin();
 
@@ -76,7 +78,11 @@ export async function createCategory(fd: FormData) {
     categoryImage: imageUrl,
   });
 
-  revalidatePath("/admin/category");
+ // 👇 Aggressive revalidation
+    revalidatePath("/admin/category");
+    revalidatePath("/admin", "layout");
+    revalidateTag("categories");
+    revalidatePath("/");
 
   return {
     success: true,
@@ -108,7 +114,11 @@ export async function updateCategory(id: string, fd: FormData) {
   }
 
   await category.save();
-  revalidatePath("/admin/category");
+ // 👇 Aggressive revalidation
+    revalidatePath("/admin/category");
+    revalidatePath("/admin", "layout");
+    revalidateTag("categories");
+    revalidatePath("/");
 
   return {
     success: true,
@@ -129,7 +139,11 @@ export async function deleteCategory(id: string) {
   }
 
   await category.deleteOne();
-  revalidatePath("/admin/category");
+ // 👇 Aggressive revalidation
+    revalidatePath("/admin/category");
+    revalidatePath("/admin", "layout");
+    revalidateTag("categories");
+    revalidatePath("/");
 
   return { success: true, message: "Category deleted successfully" };
 }

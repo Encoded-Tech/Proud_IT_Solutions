@@ -4,6 +4,7 @@ import { ICategoryWithCountPlain, mapCategoryToFrontend } from "../mappers/MapCa
 import { CategoryType } from "@/types/product";
 import {ICategory } from "@/models/categoryModel";
 import { connectDB } from "@/db";
+import { unstable_noStore  as noStore} from "next/cache";
 
 
 
@@ -24,6 +25,7 @@ export interface ApiSingleCategoryResponse {
 export async function fetchCategories(): Promise<ApiCategoryResponse> {
 
   try {
+    noStore();
     await connectDB();
     // 1) Fetch categories from DB
      const categories: ICategory[] = await Category.find().lean<ICategory[]>().sort({createdAt : -1});
