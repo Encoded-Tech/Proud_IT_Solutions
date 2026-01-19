@@ -5,6 +5,7 @@ import { AuthUser, IUserAddressFrontend } from "@/redux/features/auth/userSlice"
 import { getCurrentUserAction } from "@/lib/server/fetchers/fetchUser";
 import { getMyOrderCount } from "@/lib/server/fetchers/fetchOrders";
 import { getMyBuildCount } from "@/lib/server/fetchers/fetchBuildRequest";
+import { requireUser } from "@/lib/auth/requireSession";
 
 interface FieldCheck {
   label: string;
@@ -79,6 +80,7 @@ function getProfileCompletion(user: AuthUser) {
 }
 
 export default async function AccountOverviewPage() {
+  await requireUser();
   const user = await getCurrentUserAction();
   if (!user) return <p>Unauthorized</p>;
 

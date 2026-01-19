@@ -30,7 +30,7 @@ export default function RootLayout({
 
   
   return (
-    <html lang="en" className={jost.variable}>
+    <html lang="en" className={jost.variable} >
       <body className={jost.variable}>
         <Providers>
         

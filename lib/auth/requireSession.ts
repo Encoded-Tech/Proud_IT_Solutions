@@ -1,6 +1,7 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "./authOptions";
+import { redirect } from "next/navigation";
 
 export async function requireSession(options?: {
   roles?: ("admin" | "user")[];
@@ -9,15 +10,15 @@ export async function requireSession(options?: {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+  redirect("/login");
   }
 
   if (options?.emailVerified && !session.user.emailVerified) {
-    throw new Error("Email not verified");
+       redirect("/verify-email");
   }
 
   if (options?.roles && !options.roles.includes(session.user.role)) {
-    throw new Error("Forbidden");
+    redirect("/unauthorized"); 
   }
 
   return session.user;

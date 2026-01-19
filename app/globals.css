@@ -2,6 +2,35 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+
+/* ================================
+   Global Custom Scrollbar
+   ================================ */
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 8px;              /* scrollbar thickness */
+}
+::-webkit-scrollbar-track {
+  background: #d1d5db; /* Tailwind gray-300 */
+}
+::-webkit-scrollbar-thumb {
+  background-color: #dc2626; /* Tailwind red-600 */
+  border-radius: 9999px;
+  border: 2px solid #ffffff; /* space around thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #b91c1c; /* darker red on hover */
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #dc2626 #ffffff;
+}
+
+
 @custom-variant dark (&:is(.dark *));
 
 .scrollbar-hide {

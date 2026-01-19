@@ -50,6 +50,14 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  if (pathname.startsWith("/account")) {
+    if (token.role !== "user") {
+      return NextResponse.redirect(new URL("/unauthorized", req.url));
+    }
+  }
+
+                                                                        
+
   // User or Admin allowed
   if (pathname.startsWith("/dashboard")) {
     if (!["user", "admin"].includes(token.role as string)) {
@@ -69,7 +77,7 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     "/admin/:path*",
-    "/dashboard/:path*",
+     "/account/:path*", 
     "/profile/:path*",
     "/orders/:path*",
     "/settings/:path*",
