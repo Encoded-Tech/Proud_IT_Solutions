@@ -11,6 +11,8 @@ export default async function AdminCategoriesPage() {
   const res = await fetchCategories();
   const categories = res.data ?? [];
 
+  console.log("frontend categories", categories);
+
   return (
     <div className="p-6">
 
