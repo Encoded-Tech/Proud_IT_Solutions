@@ -1,5 +1,5 @@
 import { Schema, Types, model, models, Document } from "mongoose";
-import uniqueValidator from "mongoose-unique-validator";
+
 
 export const NEPAL_PROVINCES = [
   "Koshi",
@@ -319,8 +319,7 @@ userSchema.virtual("isLocked").get(function () {
 userSchema.set("toJSON", { virtuals: true });
 userSchema.set("toObject", { virtuals: true });
 
-// unique validation plugin
-userSchema.plugin(uniqueValidator);
+
 
 
 export default models.User || model<IUser>("User", userSchema);

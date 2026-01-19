@@ -8,13 +8,13 @@ const TopInfo = () => {
         <div className="flex items-center gap-1">
           <Icon icon="ion:mail" width="16" height="16" />
 
-          <h2>proudNepal@gmail.com</h2>
+          <h2>proudnepalits@gmail.com</h2>
         </div>
 
         <div className="flex items-center gap-1">
           <Icon icon="famicons:call" width="16" height="16" />
 
-          <h2>+977-9842208106</h2>
+          <h2>+977-986-7174242</h2>
         </div>
       </div>
     </div>

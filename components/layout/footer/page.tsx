@@ -30,11 +30,11 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="flex items-center">
                 <Phone className="w-4 h-4 mr-3 " />
-                <span className="text-sm">+977-9898989898</span>
+                <span className="text-sm">+977-986-7174242</span>
               </div>
               <div className="flex items-center">
                 <Mail className="w-4 h-4 mr-3 " />
-                <span className="text-sm">proudnepal@gmail.com</span>
+                <span className="text-sm">proudnepalits@gmail.com</span>
               </div>
               <div className="flex items-center">
                 <MapPin className="w-4 h-4 mr-3 " />

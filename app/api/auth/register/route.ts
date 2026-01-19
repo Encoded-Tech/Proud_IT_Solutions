@@ -8,6 +8,7 @@ import { isStrongPassword } from "@/lib/helpers/isStrongPw";
 import { sendEmail } from "@/lib/helpers/sendEmail";
 import { FRONTEND_URL } from "@/config/env";
 import { generateResetToken, hashToken } from "@/lib/helpers/genHashToken";
+import { isMongoDuplicateError } from "@/lib/errors";
 
 //total apis
 //user-create api/auth/register
@@ -67,8 +68,10 @@ export const POST = withDB(async (req: NextRequest, context?) => {
 
   // Token expires in 1 hour
   const verifyTokenExpiry = Date.now() + 1000 * 60 * 60;
+let newUser;
 
-  const newUser = await User.create({
+try {
+  newUser = await User.create({
     name,
     email,
     hashedPassword,
@@ -76,12 +79,25 @@ export const POST = withDB(async (req: NextRequest, context?) => {
     image: imageUrl,
     provider: "credentials",
     signupIP,
-
     emailVerified: false,
-
     emailVerificationToken: hashedVerifyToken,
     emailVerificationExpiry: verifyTokenExpiry,
   });
+} catch (error: unknown) {
+  if (isMongoDuplicateError(error)) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Email already registered",
+      },
+      { status: 409 }
+    );
+  }
+
+  // rethrow unknown errors
+  throw error;
+}
+
 
   const verifyUrl = `${FRONTEND_URL}/verify-email/confirm?token=${rawVerifyToken}&email=${encodeURIComponent(
     email

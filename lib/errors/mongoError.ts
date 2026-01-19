@@ -1,3 +1,5 @@
+import type { MongoServerError } from "mongodb";
+
 import { ERROR_DICTIONARY } from "../constants";
 import { MongoErrorType } from "../types";
 
@@ -35,4 +37,15 @@ export function handleMongoError(error: MongoErrorType, resourceName?: string) {
     return { statusCode: 429, message: ERROR_DICTIONARY.RATE_LIMIT, code: "RATE_LIMIT" };
   }
   return null;
+}
+
+ export function isMongoDuplicateError(
+  error: unknown
+): error is MongoServerError & { code: 11000 } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as MongoServerError).code === 11000
+  );
 }

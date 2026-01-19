@@ -96,7 +96,7 @@ export default Header;
 const info = [
   {
     title: "Customer Support",
-    desc: "+977 9898989898",
+    desc: "+977 986-7174242",
     icon: (
       <Icon
         icon="streamline-plump:customer-support-3-remix"
