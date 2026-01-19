@@ -23,6 +23,7 @@ export async function getCategories() {
 
     return {
       success: true,
+      message: "Categories fetched successfully",
       data: categories.map((c) => ({
         _id: c.id,
         categoryName: c.categoryName,

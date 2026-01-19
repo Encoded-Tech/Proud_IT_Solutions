@@ -44,11 +44,8 @@ export const uploadToCloudinary = async (
       folder,
       resource_type: file.type === "application/pdf" ? "raw" : "auto",
     });
-
-    console.info("Cloudinary upload success:", result.secure_url);
     return result.secure_url;
   } catch (error) {
-    console.error("Error in uploadToCloudinary:", error);
     throw error;
   }
 };
@@ -72,9 +69,7 @@ export const deleteFromCloudinary = async (
       resource_type: "image",
     });
 
-    console.info("Image deleted from Cloudinary:", publicId);
   } catch (error) {
-    console.error("Error deleting image from Cloudinary:", error);
     throw error;
   }
 };
@@ -99,14 +94,12 @@ export const uploadVideoToCloudinary = async (
       resource_type: "video",
     });
 
-    console.info("Video uploaded to Cloudinary:", result.secure_url);
 
     return {
       videoUrl: result.secure_url,
       publicId: result.public_id,
     };
   } catch (error) {
-    console.error("Error uploading video to Cloudinary:", error);
     throw error;
   }
 };
@@ -123,12 +116,8 @@ export const deleteFromCloudinaryByPublicId = async (
       resource_type: resourceType,
     });
 
-    console.info(
-      `Deleted ${resourceType} from Cloudinary:`,
-      publicId
-    );
+
   } catch (error) {
-    console.error("Error deleting from Cloudinary:", error);
     throw error;
   }
 };

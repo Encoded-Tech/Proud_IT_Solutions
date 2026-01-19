@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,9 +22,10 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import Image from "next/image";
-import useSWR from "swr";
+
 import { Check, Loader2, Upload, X, FolderTree, ImageIcon, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { createCategory, getCategories } from "@/lib/server/actions/admin/category/categoryAction";
 
 export interface Category {
   _id: string;
@@ -47,17 +48,34 @@ const categorySchema = z.object({
     .optional(),
 });
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 
 export default function AddCategoryPage() {
   const [imagePreview, setImagePreview] = useState<string>("");
   const [buttonState, setButtonState] = useState<'idle' | 'loading' | 'success'>('idle');
   const [isDragging, setIsDragging] = useState(false);
 
-  const { data, mutate } = useSWR("/api/category/", fetcher);
+ const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await getCategories();
+        if (res.success) {
+          setCategories(res.data);
+        } else {
+          console.error("Failed to fetch categories");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchCategories();
+  }, []);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const categories: Category[] = data?.data || [];
+
   const router = useRouter();
 
   const form = useForm<z.infer<typeof categorySchema>>({
@@ -69,50 +87,49 @@ export default function AddCategoryPage() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof categorySchema>) => {
-    try {
-      setButtonState('loading');
-  
-      const formData = new FormData();
-      formData.append("categoryName", values.categoryName);
-      if (values.categoryImage) formData.append("categoryImage", values.categoryImage);
-      formData.append("parentId", values.parentId || "");
-  
-      const res = await fetch("/api/category", { method: "POST", body: formData });
-      const result = await res.json();
-  
-      if (!res.ok || !result.success) {
-        const errorMessage = result.message || result.error || "Failed to create category";
-        toast.error(errorMessage);
-        setButtonState("idle");
-        return;
-      }
-  
-      toast.success(result.message);
-      setButtonState('success');
-  
-      setTimeout(() => {
-        form.reset({
-          categoryName: "",
-          parentId: "",
-          categoryImage: undefined,
-        });
-        setImagePreview("");
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-        setButtonState('idle');
-        mutate();
-        router.refresh();  
-        router.push("/admin/category");
-      }, 1200);
-  
-    } catch (error) {
-      console.error(error);
-      toast.error("Something went wrong!");
-      setButtonState('idle');
+const onSubmit = async (values: z.infer<typeof categorySchema>) => {
+  try {
+    setButtonState('loading');
+
+    const formData = new FormData();
+    formData.append("categoryName", values.categoryName);
+    if (values.categoryImage) formData.append("categoryImage", values.categoryImage);
+if (values.parentId) formData.append("parentId", values.parentId);
+
+
+    // ✅ Call server action directly
+    const result = await createCategory(formData);
+
+    if (!result.success) {
+      toast.error(result.message || "Failed to create category");
+      setButtonState("idle");
+      return;
     }
-  };
+    
+
+    toast.success(result.message);
+    setButtonState('success');
+
+    setTimeout(() => {
+      form.reset({
+        categoryName: "",
+        parentId: "",
+        categoryImage: undefined,
+      });
+      setImagePreview("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setButtonState('idle');
+   
+      router.refresh();  
+      router.push("/admin/category");
+    }, 1200);
+
+  } catch (error) {
+    console.error(error);
+    toast.error("Something went wrong!");
+    setButtonState('idle');
+  }
+};
 
   const handleFileChange = (file: File | undefined) => {
     if (file) {
