@@ -1,5 +1,6 @@
 
 export const revalidate = 0;
+export const dynamic = "force-dynamic";
 import AdminCategoryTable from "@/components/admin/AdminCategoryTable";
 import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
 
