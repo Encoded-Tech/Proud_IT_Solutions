@@ -2,7 +2,7 @@ import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
 import SliderClient from "../products/categories";
 import ShopCategories from "@/app/(root)/shop/shop-category";
 
-export const revalidate = 60;
+
 type Props = {
   page: "home" | "shop";
 };

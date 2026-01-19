@@ -103,6 +103,7 @@ export default function AddCategoryPage() {
         }
         setButtonState('idle');
         mutate();
+        router.refresh();  
         router.push("/admin/category");
       }, 1200);
   

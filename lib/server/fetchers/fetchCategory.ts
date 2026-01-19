@@ -3,6 +3,7 @@ import { Category, Product } from "@/models";
 import { ICategoryWithCountPlain, mapCategoryToFrontend } from "../mappers/MapCategory";
 import { CategoryType } from "@/types/product";
 import {ICategory } from "@/models/categoryModel";
+import { connectDB } from "@/db";
 
 
 
@@ -21,7 +22,9 @@ export interface ApiSingleCategoryResponse {
 }
 
 export async function fetchCategories(): Promise<ApiCategoryResponse> {
+
   try {
+    await connectDB();
     // 1) Fetch categories from DB
      const categories: ICategory[] = await Category.find().lean<ICategory[]>().sort({createdAt : -1});
 
@@ -71,6 +74,7 @@ export async function fetchCategoryBySlug(
   slug: string
 ): Promise<ApiSingleCategoryResponse> {
   try {
+    await connectDB();
     // 1) Fetch single category
     const category: ICategory | null = await Category.findOne({ slug }).lean<ICategory>();
 
