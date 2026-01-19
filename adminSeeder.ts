@@ -12,7 +12,7 @@ export async function seedAdmin() {
         name: "Proud Nepal",
         email: ADMIN_EMAIL,
         hashedPassword,
-        phone: "986-7174242",
+        phone: "9867174242",
         role: "admin",
         emailVerified: true,
         provider: "credentials",

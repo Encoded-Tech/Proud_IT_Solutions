@@ -109,7 +109,7 @@ const userAddressSchema = new Schema<IUserAddress>(
     fullName: { type: String, trim: true },
     phone: {
       type: String,
-      match: /^[0-9]{10,15}$/,
+      match: /^[0-9]{10,15}$/, 
     },
 
     province: {
