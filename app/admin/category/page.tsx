@@ -3,7 +3,7 @@ import AdminCategoryTable from "@/components/admin/AdminCategoryTable";
 import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
 
 
-export const revalidate = 60;
+
 
 export default async function AdminCategoriesPage() {
   const res = await fetchCategories();

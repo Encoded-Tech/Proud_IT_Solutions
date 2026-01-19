@@ -17,6 +17,7 @@ export default function AdminCategoryTable({
   categories: CategoryType[];
 }) {
   const router = useRouter();
+  
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");

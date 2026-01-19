@@ -70,13 +70,13 @@ export async function fetchCategories(): Promise<ApiCategoryResponse> {
     };
   }
 }
-export async function fetchCategoryBySlug(
-  slug: string
+export async function fetchCategoryById(
+  id: string
 ): Promise<ApiSingleCategoryResponse> {
   try {
     await connectDB();
     // 1) Fetch single category
-    const category: ICategory | null = await Category.findOne({ slug }).lean<ICategory>();
+    const category: ICategory | null = await Category.findOne({ id }).lean<ICategory>();
 
     if (!category) {
       return {
