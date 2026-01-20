@@ -349,7 +349,7 @@ export default function MediaForm({ media, isModal = false, onCancel }: MediaFor
                   {isDragging ? 'Drop file here!' : media ? 'Click to change file or drag & drop' : 'Click to upload or drag & drop'}
                 </p>
                 <p className="text-sm text-gray-500">
-                  {type === 'image' ? 'PNG, JPG, WEBP, GIF' : 'MP4, WEBM, MOV'} up to 50MB
+                  {type === 'image' ? 'PNG, JPG, WEBP, GIF' : 'MP4, WEBM, MOV'} up to 5MB
                 </p>
                 {media && (
                   <p className="text-xs text-gray-600 mt-2">Leave unchanged to keep current file</p>
