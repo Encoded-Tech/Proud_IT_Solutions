@@ -5,6 +5,7 @@ import { mapMediaToFrontend } from "@/lib/server/mappers/MapMedia";
 import { Media } from "@/models/promotionModel";
 
 import { AnyMediaItem, MediaPlacement } from "@/types/media";
+import { revalidatePath } from "next/cache";
 
 
 interface ApiResponse<T = undefined> {
@@ -65,6 +66,8 @@ export const addMedia = async ({
           }
         : {}),
     });
+
+    revalidatePath("/admin/posts");
 
     return {
       success: true,
@@ -128,6 +131,7 @@ export const updateMedia = async ({
     }
 
     await existing.save();
+    revalidatePath("/admin/posts");
 
     return {
       success: true,
@@ -164,6 +168,7 @@ export const deleteMediaByPlacement = async (
 
     // Delete from MongoDB
     await Media.deleteOne({ _id: media._id });
+    revalidatePath("/admin/posts");
 
     return { success: true, message: "Media deleted successfully" };
   } catch (err) {

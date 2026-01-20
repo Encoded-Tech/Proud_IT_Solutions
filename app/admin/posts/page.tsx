@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import React from "react";
 import { getAllMedia } from "@/lib/server/actions/admin/media/mediaActions";
 import { AnyMediaItem } from "@/types/media";
