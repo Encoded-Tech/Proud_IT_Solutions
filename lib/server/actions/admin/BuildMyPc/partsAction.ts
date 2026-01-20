@@ -1,6 +1,7 @@
 "use server";
 
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
+import { PART_TYPES, PartType } from "@/constants/part";
 import { connectDB } from "@/db";
 import { requireAdmin } from "@/lib/auth/requireSession";
 import { mapPartOption, mapPartOptionsArray } from "@/lib/server/mappers/MapPartsOption";
@@ -44,26 +45,29 @@ export async function createPartOption(formData: FormData) {
     imageUrl = await uploadToCloudinary(imageFile);
   }
 
-  const part = await PartOption.create({
-    name: formData.get("name"),
-    type: formData.get("type"),
-    brand: formData.get("brand"),
-    modelName: formData.get("modelName"),
+ const typeValue = (formData.get("type") as string)?.toLowerCase(); // normalize
+if (!typeValue || !PART_TYPES.includes(typeValue as PartType)) {
+  throw new Error("Invalid part type");
+}
 
-    price: toNumber(formData.get("price")), // REQUIRED
-    wattage: toNumber(formData.get("wattage")),
-    lengthMM: toNumber(formData.get("lengthMM")),
-    capacityGB: toNumber(formData.get("capacityGB")),
-
-    socket: formData.get("socket") || undefined,
-    chipset: formData.get("chipset") || undefined,
-    ramType: formData.get("ramType") || undefined,
- storageType: ["ssd","nvme","hdd"].includes(formData.get("storageType") as string)
-  ? formData.get("storageType")
-  : undefined,
-    isActive: formData.get("isActive") === "true",
-    imageUrl,
-  });
+const part = await PartOption.create({
+  name: formData.get("name"),
+  type: typeValue as PartType, // now safe
+  brand: formData.get("brand"),
+  modelName: formData.get("modelName"),
+  price: toNumber(formData.get("price")),
+  wattage: toNumber(formData.get("wattage")),
+  lengthMM: toNumber(formData.get("lengthMM")),
+  capacityGB: toNumber(formData.get("capacityGB")),
+  socket: formData.get("socket") || undefined,
+  chipset: formData.get("chipset") || undefined,
+  ramType: formData.get("ramType") || undefined,
+  storageType: ["ssd","nvme","hdd"].includes(formData.get("storageType") as string)
+    ? formData.get("storageType")
+    : undefined,
+  isActive: formData.get("isActive") === "true",
+  imageUrl,
+});
 
   revalidatePath("/admin/build-user-pc/parts-table");
 
