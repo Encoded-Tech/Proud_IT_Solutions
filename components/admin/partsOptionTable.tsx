@@ -18,12 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import PartForm from "./parts-option-form";
+import PartForm, { PartType } from "./parts-option-form";
 
 
 interface Props {
   initialParts: (PartOptionInput & { _id?: string; imageUrl?: string })[];
-  partTypes: string[];
+  partTypes: readonly PartType[];
 }
 
 export default function PartsTable({ initialParts, partTypes }: Props) {

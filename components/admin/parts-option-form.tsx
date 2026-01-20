@@ -45,7 +45,7 @@ export type PartType =
 interface Props {
   part?: PartOptionInput & { _id?: string; imageUrl?: string };
   onSuccess?: (part: ReturnType<typeof mapPartOption>) => void;
-  partTypes?: string[]; // dynamic types from server
+  partTypes?: readonly PartType[]; // dynamic types from server
 }
 
 export default function PartForm({ part, onSuccess, partTypes  }: Props) {

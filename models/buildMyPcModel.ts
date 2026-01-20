@@ -1,5 +1,7 @@
 import { Schema, model, models, Document, Types } from "mongoose";
-import { PartType } from "./partsOption";
+
+
+import { PartType } from "@/constants/part";
 
 
 /** BUILD PART SNAPSHOT */

@@ -4,7 +4,7 @@ import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { connectDB } from "@/db";
 import { requireAdmin } from "@/lib/auth/requireSession";
 import { mapPartOption, mapPartOptionsArray } from "@/lib/server/mappers/MapPartsOption";
-import { IPartOption, PartOption, PartType } from "@/models/partsOption";
+import { IPartOption, PartOption, } from "@/models/partsOption";
 import { Types } from "mongoose";
 
 
@@ -177,17 +177,5 @@ export async function fetchPartOptions(activeOnly = true) {
 
 
 
-export async function fetchPartTypes(activeOnly = true): Promise<{ success: boolean; data: PartType[]; message?: string }> {
-  try {
-    await connectDB();
 
-    const query = activeOnly ? { isActive: true } : {};
-    const types = await PartOption.distinct("type", query);
-
-    return { success: true, data: types as PartType[] };
-  } catch (err) {
-    console.error("fetchPartTypes error:", err);
-    return { success: false, data: [], message: "Failed to fetch part types" };
-  }
-}
 

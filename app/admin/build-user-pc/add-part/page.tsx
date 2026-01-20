@@ -1,12 +1,12 @@
 import Link from "next/link";
 import PartForm from "../../../../components/admin/parts-option-form";
-import { fetchPartTypes } from "@/lib/server/actions/admin/BuildMyPc/partsAction";
+
 import { ArrowLeft } from "lucide-react";
+import { PART_TYPES } from "@/constants/part";
 
 export default async function AddPartPage() {
   // Fetch part types on the server
-  const res = await fetchPartTypes();
-  const partTypes = res.success ? res.data : [];
+
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -20,7 +20,7 @@ export default async function AddPartPage() {
           <span className="font-medium">Back to Build User PC</span>
         </button></Link>
       </div>
-      <PartForm partTypes={partTypes} />
+      <PartForm partTypes={PART_TYPES} />
     </div>
   );
 }

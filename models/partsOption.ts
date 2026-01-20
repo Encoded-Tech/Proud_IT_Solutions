@@ -1,27 +1,9 @@
-// models/PartOption.ts
 
+
+import { PartType } from "@/constants/part";
 import { Schema, model, models, Document, Types } from "mongoose";
 
-/** ENUMS */
-export type PartType =
-  | "cpu"
-  | "gpu"
-  | "motherboard"
-  | "ram"
-  | "storage"
-  | "psu"
-  | "case"
-  | "cooler"
-  | "monitor"
-  | "keyboard"
-  | "mouse"
-  | "ups"
-  | "fan"
-  | "headset"
-  | "thermalPaste"
-  | "captureCard"
-  | "rgbAccessory"
-  | "usbPort";
+
 
 export type RAMType = "DDR4" | "DDR5";
 export type StorageType = "ssd" | "nvme" | "hdd";
