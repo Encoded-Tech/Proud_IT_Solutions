@@ -26,43 +26,52 @@ export interface PartOptionInput {
   isActive?: boolean;
 }
 
+function toNumber(value: FormDataEntryValue | null) {
+  if (value === null || value === "") return undefined;
+  const num = Number(value);
+  return isNaN(num) ? undefined : num;
+}
 
 
 export async function createPartOption(formData: FormData) {
-
   await requireAdmin();
   await connectDB();
 
-
   const imageFile = formData.get("imageFile") as File | null;
+  let imageUrl: string | undefined;
 
-  let imageUrl;
-  if (imageFile) {
+  if (imageFile && imageFile.size > 0) {
     imageUrl = await uploadToCloudinary(imageFile);
   }
-
 
   const part = await PartOption.create({
     name: formData.get("name"),
     type: formData.get("type"),
     brand: formData.get("brand"),
-    price: Number(formData.get("price")),
     modelName: formData.get("modelName"),
-    socket: formData.get("socket"),
-    chipset: formData.get("chipset"),
-    ramType: formData.get("ramType"),
-    wattage: Number(formData.get("wattage")),
-    lengthMM: Number(formData.get("lengthMM")),
- storageType: formData.get("storageType") as "ssd" | "nvme" | "hdd" | undefined,
 
-    capacityGB: Number(formData.get("capacityGB")),
+    price: toNumber(formData.get("price")), // REQUIRED
+    wattage: toNumber(formData.get("wattage")),
+    lengthMM: toNumber(formData.get("lengthMM")),
+    capacityGB: toNumber(formData.get("capacityGB")),
+
+    socket: formData.get("socket") || undefined,
+    chipset: formData.get("chipset") || undefined,
+    ramType: formData.get("ramType") || undefined,
+ storageType: ["ssd","nvme","hdd"].includes(formData.get("storageType") as string)
+  ? formData.get("storageType")
+  : undefined,
     isActive: formData.get("isActive") === "true",
     imageUrl,
   });
 
   revalidatePath("/admin/build-user-pc/parts-table");
 
-  return { success: true, message: "Part option created successfully", data: mapPartOption(part) };
+  return {
+    success: true,
+    message: "Part option created successfully",
+    data: mapPartOption(part),
+  };
 }
 
 
@@ -149,7 +158,7 @@ export async function deletePartOption(id: string) {
 
     await part.deleteOne();
     revalidatePath("/admin/build-user-pc/parts-table");
-    
+
 
     return {
       success: true,
