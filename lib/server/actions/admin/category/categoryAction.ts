@@ -11,22 +11,42 @@ import { connectDB } from "@/db";
 import { requireAdmin } from "@/lib/auth/requireSession";
 import mongoose from "mongoose";
 
+// lib/types/category-response.ts
+export interface CategoryResponse {
+  _id: string;
+  categoryName: string;
+  parentId: {
+    _id: string;
+    categoryName: string;
+  } | null;
+}
 
+import { Types } from "mongoose";
 
-export async function getCategories() {
+export interface CategoryLean {
+  _id: Types.ObjectId;
+  categoryName: string;
+  parentId?: Types.ObjectId | null;
+}
+
+export async function getCategories(): Promise<{
+  success: boolean;
+  message?: string;
+  data: CategoryResponse[];
+}> {
   try {
-     noStore();
+    noStore();
     await connectDB();
 
     const categories = await Category.find({})
       .select("_id categoryName parentId")
-      .lean();
+      .lean<CategoryLean[]>();
 
     return {
       success: true,
       message: "Categories fetched successfully",
       data: categories.map((c) => ({
-        _id: c.id,
+        _id: c._id.toString(), // ✅ string
         categoryName: c.categoryName,
         parentId: c.parentId
           ? {
@@ -41,6 +61,7 @@ export async function getCategories() {
     return { success: false, data: [] };
   }
 }
+
 
 
 

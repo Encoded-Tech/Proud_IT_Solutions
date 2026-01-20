@@ -57,6 +57,9 @@ export default function AddCategoryPage() {
 
  const [categories, setCategories] = useState<Category[]>([]);
 
+ const NO_PARENT = "__NO_PARENT__";
+
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -82,7 +85,7 @@ export default function AddCategoryPage() {
     resolver: zodResolver(categorySchema),
     defaultValues: {
       categoryName: "",
-      parentId: "",
+      parentId: undefined,
       categoryImage: undefined,
     },
   });
@@ -94,7 +97,11 @@ const onSubmit = async (values: z.infer<typeof categorySchema>) => {
     const formData = new FormData();
     formData.append("categoryName", values.categoryName);
     if (values.categoryImage) formData.append("categoryImage", values.categoryImage);
-    if (values.parentId) formData.append("parentId", values.parentId);
+    if (values.parentId && values.parentId !== NO_PARENT) {
+  formData.append("parentId", values.parentId);
+}
+// else → do not append → Mongo default = null
+
 
     const result = await createCategory(formData);
 
@@ -110,7 +117,7 @@ const onSubmit = async (values: z.infer<typeof categorySchema>) => {
     // Clear form first
     form.reset({
       categoryName: "",
-      parentId: "",
+      parentId: undefined,
       categoryImage: undefined,
     });
     setImagePreview("");
@@ -243,17 +250,19 @@ const onSubmit = async (values: z.infer<typeof categorySchema>) => {
                         <FormLabel className="text-sm font-semibold text-gray-700 mb-2 block">
                           Parent Category <span className="text-gray-500 font-normal">(Optional)</span>
                         </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value || ""}
-                        >
+                     <Select
+  value={field.value ?? NO_PARENT}
+  onValueChange={(value) => {
+    field.onChange(value === NO_PARENT ? undefined : value);
+  }}
+>
                           <FormControl>
                             <SelectTrigger className="h-12 border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl text-base">
                               <SelectValue placeholder="Select a parent category" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="null">
+                            <SelectItem value={NO_PARENT}>
                               <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-gray-400" />
                                 <span>None (Top Level Category)</span>

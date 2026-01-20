@@ -115,7 +115,7 @@ export interface CategoryType {
   categoryName: string;
   slug: string;
   categoryImage: string;
-  parentId?: string;
+  parentId?: string | null;
   productCount: number;
   isActive: boolean;
   createdAt: string;
