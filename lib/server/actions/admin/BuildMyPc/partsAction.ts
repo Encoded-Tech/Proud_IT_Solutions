@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth/requireSession";
 import { mapPartOption, mapPartOptionsArray } from "@/lib/server/mappers/MapPartsOption";
 import { IPartOption, PartOption, } from "@/models/partsOption";
 import { Types } from "mongoose";
+import { revalidatePath } from "next/cache";
 
 
 export interface PartOptionInput {
@@ -58,6 +59,8 @@ export async function createPartOption(formData: FormData) {
     isActive: formData.get("isActive") === "true",
     imageUrl,
   });
+
+  revalidatePath("/admin/build-user-pc/parts-table");
 
   return { success: true, message: "Part option created successfully", data: mapPartOption(part) };
 }
@@ -119,6 +122,7 @@ fields.forEach((field) => {
 });
 
   await part.save();
+  revalidatePath("/admin/build-user-pc/parts-table");
 
   return {
     success: true,
@@ -144,6 +148,8 @@ export async function deletePartOption(id: string) {
     if (part.imageUrl) await deleteFromCloudinary(part.imageUrl);
 
     await part.deleteOne();
+    revalidatePath("/admin/build-user-pc/parts-table");
+    
 
     return {
       success: true,
