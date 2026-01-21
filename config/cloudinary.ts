@@ -19,7 +19,7 @@ cloudinary.config({
 /* INTERNAL helper – shared uploader (DO NOT export)                   */
 /* ------------------------------------------------------------------ */
 const uploadBase64ToCloudinary = async (
-  file: Blob,
+  file: File,
   options: UploadApiOptions
 ) => {
   const arrayBuffer = await file.arrayBuffer();
@@ -36,7 +36,7 @@ const uploadBase64ToCloudinary = async (
 /* PUBLIC: Generic uploader (USED EVERYWHERE – images, pdfs, etc.)    */
 /* ------------------------------------------------------------------ */
 export const uploadToCloudinary = async (
-  file: Blob | File,
+  file: File,
   folder: string = CLOUDINARY_FOLDER
 ): Promise<string> => {
   try {
@@ -78,8 +78,7 @@ export const deleteFromCloudinary = async (
 /* PUBLIC: VIDEO upload (ADMIN / PROMOTIONAL USE)                      */
 /* ------------------------------------------------------------------ */
 export const uploadVideoToCloudinary = async (
-
-  file: Blob | File,
+  file: File,
   folder: string = "media/videos"
 ): Promise<{
   videoUrl: string;
