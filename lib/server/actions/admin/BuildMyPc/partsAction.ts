@@ -173,70 +173,89 @@ if (!typeValue || !PART_TYPES.includes(typeValue as PartType)) {
 }
 
 
-/** ---------- UPDATE ---------- */
 export async function updatePartOption(id: string, formData: FormData) {
-  await requireAdmin();
-  await connectDB();
+  try {
+    await requireAdmin();
+    await connectDB();
 
-  if (!Types.ObjectId.isValid(id)) {
-    return { success: false, message: "Invalid part option ID" };
-  }
-
-  const part = await PartOption.findById(id);
-  if (!part) {
-    return { success: false, message: "Part option not found" };
-  }
-
-  const imageFile = formData.get("imageFile") as File | null;
-
-  if (imageFile) {
-    if (part.imageUrl) {
-      await deleteFromCloudinary(part.imageUrl);
+    if (!Types.ObjectId.isValid(id)) {
+      return { success: false, message: "Invalid part option ID" };
     }
-    part.imageUrl = await uploadToCloudinary(imageFile);
+
+    const part = await PartOption.findById(id);
+    if (!part) {
+      return { success: false, message: "Part option not found" };
+    }
+
+    // --- Image Handling ---
+    const imageFile = formData.get("imageFile");
+    if (imageFile && imageFile instanceof File && imageFile.size > 0) {
+      if (part.imageUrl) {
+        await deleteFromCloudinary(part.imageUrl);
+      }
+      part.imageUrl = await uploadToCloudinary(imageFile);
+    }
+
+    // --- Update other fields safely ---
+    const updateFields: Partial<IPartOption> = {};
+
+    const name = formData.get("name")?.toString();
+    if (name) updateFields.name = name;
+
+    const type = formData.get("type")?.toString();
+    if (type && PART_TYPES.includes(type as PartType)) updateFields.type = type as PartType;
+
+    const brand = formData.get("brand")?.toString();
+    if (brand) updateFields.brand = brand;
+
+    const modelName = formData.get("modelName")?.toString();
+    if (modelName) updateFields.modelName = modelName;
+
+    const price = Number(formData.get("price"));
+    if (!isNaN(price)) updateFields.price = price;
+
+    const wattage = Number(formData.get("wattage"));
+    if (!isNaN(wattage)) updateFields.wattage = wattage;
+
+    const lengthMM = Number(formData.get("lengthMM"));
+    if (!isNaN(lengthMM)) updateFields.lengthMM = lengthMM;
+
+    const capacityGB = Number(formData.get("capacityGB"));
+    if (!isNaN(capacityGB)) updateFields.capacityGB = capacityGB;
+
+    const socket = formData.get("socket")?.toString();
+    if (socket) updateFields.socket = socket;
+
+    const chipset = formData.get("chipset")?.toString();
+    if (chipset) updateFields.chipset = chipset;
+
+    const ramType = formData.get("ramType")?.toString();
+    if (ramType === "DDR4" || ramType === "DDR5") updateFields.ramType = ramType;
+
+    const storageType = formData.get("storageType")?.toString();
+    if (storageType === "ssd" || storageType === "nvme" || storageType === "hdd") updateFields.storageType = storageType;
+
+    const isActive = formData.get("isActive");
+    if (isActive !== null) updateFields.isActive = isActive === "true";
+
+    // Assign all safely
+    Object.assign(part, updateFields);
+
+    await part.save();
+    revalidatePath("/admin/build-user-pc/parts-table");
+
+    return {
+      success: true,
+      message: "Part option updated successfully",
+      data: mapPartOption(part),
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Failed to update part option:", errorMessage);
+    return { success: false, message: `Failed to update part option: ${errorMessage}` };
   }
-
-  // Update scalar fields safely
-  const fields: (keyof PartOptionInput)[] = [
-    "name",
-    "type",
-    "brand",
-    "price",
-    "modelName",
-    "socket",
-    "chipset",
-    "ramType",
-    "wattage",
-    "lengthMM",
-    "storageType",
-    "capacityGB",
-    "isActive",
-  ];
-fields.forEach((field) => {
-  const value = formData.get(field);
-
-  if (value === null || value === "") return;
-
-  part[field] =
-    field === "price" ||
-    field === "wattage" ||
-    field === "lengthMM" ||
-    field === "capacityGB"
-      ? Number(value)
-      : field === "isActive"
-      ? value === "true"
-      : value;
-});
-
-  await part.save();
-  revalidatePath("/admin/build-user-pc/parts-table");
-
-  return {
-    success: true,
-    message: "Part option updated successfully",
-    data: mapPartOption(part),
-  };
 }
+
 
 /** ---------- DELETE ---------- */
 export async function deletePartOption(id: string) {
