@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import PartForm, { PartType } from "./parts-option-form";
+import PartForm from "./parts-option-form";
+import { PartType } from "@/constants/part";
 
 
 interface Props {

@@ -27,55 +27,149 @@ export interface PartOptionInput {
   isActive?: boolean;
 }
 
+// function toNumber(value: FormDataEntryValue | null) {
+//   if (value === null || value === "") return undefined;
+//   const num = Number(value);
+//   return isNaN(num) ? undefined : num;
+// }
+
+
+// export async function createPartOption(formData: FormData) {
+//   await requireAdmin();
+//   await connectDB();
+
+//   const imageFile = formData.get("imageFile") as File | null;
+//   let imageUrl: string | undefined;
+
+//   if (imageFile && imageFile.size > 0) {
+//     imageUrl = await uploadToCloudinary(imageFile);
+//   }
+
+//  const typeValue = (formData.get("type") as string); 
+// if (!typeValue || !PART_TYPES.includes(typeValue as PartType)) {
+//   throw new Error("Invalid part type");
+// }
+
+// const part = await PartOption.create({
+//   name: formData.get("name"),
+//   type: typeValue as PartType, // now safe
+//   brand: formData.get("brand"),
+//   modelName: formData.get("modelName"),
+//   price: toNumber(formData.get("price")),
+//   wattage: toNumber(formData.get("wattage")),
+//   lengthMM: toNumber(formData.get("lengthMM")),
+//   capacityGB: toNumber(formData.get("capacityGB")),
+//   socket: formData.get("socket") || undefined,
+//   chipset: formData.get("chipset") || undefined,
+//   ramType: formData.get("ramType") || undefined,
+//   storageType: ["ssd","nvme","hdd"].includes(formData.get("storageType") as string)
+//     ? formData.get("storageType")
+//     : undefined,
+//   isActive: formData.get("isActive") === "true",
+//   imageUrl,
+// });
+
+//   revalidatePath("/admin/build-user-pc/parts-table");
+
+//   return {
+//     success: true,
+//     message: "Part option created successfully",
+//     data: mapPartOption(part),
+//   };
+// }
+
+
+
 function toNumber(value: FormDataEntryValue | null) {
-  if (value === null || value === "") return undefined;
+  if (value === null || value === "" || value === "undefined") return undefined;
   const num = Number(value);
   return isNaN(num) ? undefined : num;
 }
 
-
-export async function createPartOption(formData: FormData) {
-  await requireAdmin();
-  await connectDB();
-
-  const imageFile = formData.get("imageFile") as File | null;
-  let imageUrl: string | undefined;
-
-  if (imageFile && imageFile.size > 0) {
-    imageUrl = await uploadToCloudinary(imageFile);
-  }
-
- const typeValue = (formData.get("type") as string)?.toLowerCase(); // normalize
-if (!typeValue || !PART_TYPES.includes(typeValue as PartType)) {
-  throw new Error("Invalid part type");
+function toString(value: FormDataEntryValue | null) {
+  if (value === null || value === "" || value === "undefined") return undefined;
+  return value.toString();
 }
 
-const part = await PartOption.create({
-  name: formData.get("name"),
-  type: typeValue as PartType, // now safe
-  brand: formData.get("brand"),
-  modelName: formData.get("modelName"),
-  price: toNumber(formData.get("price")),
-  wattage: toNumber(formData.get("wattage")),
-  lengthMM: toNumber(formData.get("lengthMM")),
-  capacityGB: toNumber(formData.get("capacityGB")),
-  socket: formData.get("socket") || undefined,
-  chipset: formData.get("chipset") || undefined,
-  ramType: formData.get("ramType") || undefined,
-  storageType: ["ssd","nvme","hdd"].includes(formData.get("storageType") as string)
-    ? formData.get("storageType")
-    : undefined,
-  isActive: formData.get("isActive") === "true",
-  imageUrl,
-});
+export async function createPartOption(formData: FormData) {
+  try {
+    await requireAdmin();
+    await connectDB();
 
-  revalidatePath("/admin/build-user-pc/parts-table");
+    const imageFile = formData.get("imageFile") as File | null;
+    let imageUrl: string | undefined;
 
-  return {
-    success: true,
-    message: "Part option created successfully",
-    data: mapPartOption(part),
-  };
+    if (imageFile && imageFile.size > 0) {
+      imageUrl = await uploadToCloudinary(imageFile);
+    }
+
+  const typeValue = formData.get("type");
+
+if (!typeValue || !PART_TYPES.includes(typeValue as PartType)) {
+  throw new Error(`Invalid part type: ${typeValue}`);
+}
+
+
+
+    // Get all form values with proper validation
+    const name = toString(formData.get("name"));
+    if (!name) {
+      throw new Error("Name is required");
+    }
+
+    const type = typeValue as PartType;
+    
+    // Only set compatibility fields that are relevant
+    const partData: Partial<IPartOption> = {
+      name,
+      type,
+      brand: toString(formData.get("brand")),
+      modelName: toString(formData.get("modelName")),
+      price: toNumber(formData.get("price")),
+      imageUrl,
+      isActive: formData.get("isActive") === "true",
+    };
+
+    // Only set compatibility fields if they have valid values
+    const wattage = toNumber(formData.get("wattage"));
+    const lengthMM = toNumber(formData.get("lengthMM"));
+    const capacityGB = toNumber(formData.get("capacityGB"));
+    const socket = toString(formData.get("socket"));
+    const chipset = toString(formData.get("chipset"));
+    const ramType = toString(formData.get("ramType"));
+    const storageType = toString(formData.get("storageType"));
+
+    if (wattage !== undefined) partData.wattage = wattage;
+    if (lengthMM !== undefined) partData.lengthMM = lengthMM;
+    if (capacityGB !== undefined) partData.capacityGB = capacityGB;
+    if (socket !== undefined) partData.socket = socket;
+    if (chipset !== undefined) partData.chipset = chipset;
+    
+    // Only set enum fields if they match allowed values
+    if (ramType === "DDR4" || ramType === "DDR5") {
+      partData.ramType = ramType;
+    }
+    
+    if (storageType === "ssd" || storageType === "nvme" || storageType === "hdd") {
+      partData.storageType = storageType;
+    }
+
+    console.log("Creating part with data:", partData); // Debug log
+
+    const part = await PartOption.create(partData);
+
+    revalidatePath("/admin/build-user-pc/parts-table");
+
+    return {
+      success: true,
+      message: "Part option created successfully",
+      data: mapPartOption(part),
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error creating part option:", errorMessage);
+    throw new Error(`Failed to create part option: ${errorMessage}`);
+  }
 }
 
 

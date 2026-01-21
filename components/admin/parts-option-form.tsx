@@ -21,25 +21,7 @@ import {
 import { Switch } from "@/components/ui/switch"; // NOT Radix directly
 
      import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Shadcn Select
-export type PartType =
-  | "cpu"
-  | "gpu"
-  | "motherboard"
-  | "ram"
-  | "storage"
-  | "psu"
-  | "case"
-  | "cooler"
-  | "fan"
-  | "monitor"
-  | "keyboard"
-  | "mouse"
-  | "ups"
-  | "headset"
-  | "thermalPaste"
-  | "captureCard"
-  | "rgbAccessory"
-  | "usbPort";
+import { PartType } from "@/constants/part";
 
 
 interface Props {
