@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Pencil, Search, Trash2 } from "lucide-react";
+import { Edit, Search, Trash2 } from "lucide-react";
 
 import {
   PartOptionInput,
@@ -267,7 +267,7 @@ export default function PartsTable({ initialParts, partTypes }: Props) {
                       className="p-2 rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
                       onClick={() => handleEdit(part)}
                     >
-                      <Pencil className="w-4 h-4" />
+                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       className="p-2 rounded bg-red-50 text-red-700 hover:bg-red-100"

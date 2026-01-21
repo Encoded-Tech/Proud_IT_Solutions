@@ -55,15 +55,26 @@ useEffect(() => {
 }, [searchParams]);
 
 
-  const handleGoogleLogin = async () => {
-    setIsLoading(true);
-    try {
-      await signIn("google", { callbackUrl: "/", });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Google login failed");
-      setIsLoading(false);
-    }
-  };
+  // const handleGoogleLogin = async () => {
+  //   setIsLoading(true);
+  //   try {
+  //     await signIn("google", { callbackUrl: "/", });
+  //   } catch (error) {
+  //     toast.error(error instanceof Error ? error.message : "Google login failed");
+  //     setIsLoading(false);
+  //   }
+  // };
+const redirect = searchParams.get("redirect") || "/";
+
+const handleGoogleLogin = async () => {
+  setIsLoading(true);
+  try {
+    await signIn("google", { callbackUrl: redirect });
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Google login failed");
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="mt-6 flex flex-col items-center w-full max-w-sm mx-auto">
