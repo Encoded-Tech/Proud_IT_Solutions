@@ -154,7 +154,7 @@ if (!typeValue || !PART_TYPES.includes(typeValue as PartType)) {
       partData.storageType = storageType;
     }
 
-    console.log("Creating part with data:", partData); // Debug log
+ 
 
     const part = await PartOption.create(partData);
 
