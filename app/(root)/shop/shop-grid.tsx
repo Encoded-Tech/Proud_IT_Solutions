@@ -458,7 +458,7 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
       },
       { 
         threshold: 0.1,
-        rootMargin: '600px' // Start loading before user reaches the bottom
+        rootMargin: '800px' // Start loading before user reaches the bottom
       }
     );
 
@@ -734,8 +734,6 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
             )}
           </div>
         )}
-
-
         {/* End of Products */}
         {!hasMore && filteredProducts.length > 6 && (
           <div className="text-center py-8 text-gray-400 text-sm">
