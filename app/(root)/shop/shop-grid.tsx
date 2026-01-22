@@ -458,7 +458,7 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
       },
       { 
         threshold: 0.1,
-        rootMargin: '400px' // Start loading before user reaches the bottom
+        rootMargin: '600px' // Start loading before user reaches the bottom
       }
     );
 
@@ -734,6 +734,7 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
             )}
           </div>
         )}
+
 
         {/* End of Products */}
         {!hasMore && filteredProducts.length > 6 && (

@@ -59,7 +59,7 @@ const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
   </div>
 
   {/* Product image */}
-  <figure className="overflow-hidden rounded-md cursor-pointer">
+  <figure className="overflow-hidden aspect-ratio-[3/4] rounded-md cursor-pointer">
     <Image
       src={images?.[0] || ""}
       alt={name}
