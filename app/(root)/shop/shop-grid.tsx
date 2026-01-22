@@ -372,7 +372,14 @@ import { fetchBrands } from "@/lib/server/actions/admin/brand/brandAction";
 interface ShopGridProps {
   products: productType[];
   categories: CategoryType[];
+  
 }
+
+interface BrandCount {
+  name: string;
+  count?: number;
+}
+
 
 /* -------------------------------- COMPONENT -------------------------------- */
 const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
@@ -382,7 +389,7 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef<HTMLDivElement>(null);
-  const [brands, setBrands] = useState<string[]>([]);
+  const [brands, setBrands] = useState<BrandCount[]>([]);
   const [pendingProducts, setPendingProducts] = useState<productType[]>([]);
 
   /* ------------------------------ FILTER STATE ----------------------------- */
@@ -605,30 +612,29 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
           <div className="space-y-3">
             <h3 className="font-medium text-lighttext">Brand</h3>
             <div className="space-y-2 max-h-40 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-              {brands.map((brand) => {
-                const count = allProducts.filter((p) => p.brandName === brand).length;
+          {brands.map((brand) => (
+  <label
+    key={brand.name}
+    className="flex justify-between items-center cursor-pointer text-sm font-medium text-lighttext hover:text-primary transition-colors"
+  >
+    <div className="flex items-center gap-2">
+      <input
+        type="radio"
+        name="brand"
+        checked={selectedBrand === brand.name}
+        onChange={() =>
+          setSelectedBrand(
+            selectedBrand === brand.name ? null : brand.name
+          )
+        }
+        className="accent-primarymain cursor-pointer"
+      />
+      <span>{brand.name}</span>
+    </div>
+    <span className="text-gray-400">({brand.count})</span>
+  </label>
+))}
 
-                return (
-                  <label
-                    key={brand}
-                    className="flex justify-between items-center cursor-pointer text-sm font-medium text-lighttext hover:text-primary transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="brand"
-                        checked={selectedBrand === brand}
-                        onChange={() =>
-                          setSelectedBrand(selectedBrand === brand ? null : brand)
-                        }
-                        className="accent-primarymain cursor-pointer"
-                      />
-                      <span>{brand}</span>
-                    </div>
-                    <span className="text-gray-400">({count})</span>
-                  </label>
-                );
-              })}
             </div>
           </div>
 

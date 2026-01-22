@@ -13,6 +13,7 @@ export default async function ListProducts({ page = 1, limit = 6 }: { page?: num
 const categories = categoriesRes.data || [];
 
 
+
   return (
     <div className="space-y-20">
       <ShopGrid products={products} categories={categories} />
