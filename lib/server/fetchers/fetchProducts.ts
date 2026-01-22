@@ -4,6 +4,8 @@ import { FilterQuery } from "mongoose";
 import { connectDB } from "@/db";
 import { mapProductToFrontend } from "../mappers/MapProductData";
 import { productType } from "@/types/product";
+import { Category } from "@/models";
+
 
 export interface PaginationMeta {
   page: number;
@@ -19,6 +21,125 @@ export interface PaginatedProductResponse<T> {
   data: T[] | null;
   pagination?: PaginationMeta;
   error?: string | null;
+}
+
+// fetchFilteredProducts.ts
+
+
+
+
+
+
+interface Params {
+  page: number;
+  limit: number;
+  brand?: string | null;
+  category?: string | null;
+  minPrice?: number;
+  maxPrice?: number;
+  rating?: number | null;
+}
+
+export async function fetchFilteredProducts({
+  page,
+  limit,
+  brand,
+  category,
+  minPrice,
+  maxPrice,
+  rating,
+}: Params) {
+  const query: FilterQuery<IProduct> = {};
+
+  if (brand) query.brandName = brand;
+if (category) {
+    const cat = await Category.findOne({ slug: category }).select("_id");
+    if (cat) query.category = cat._id;
+  }
+
+  if (rating !== null && rating !== undefined) {
+    query.avgRating = { $gte: rating };
+  }
+
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    query.price = {};
+    if (minPrice !== undefined) query.price.$gte = minPrice;
+    if (maxPrice !== undefined) query.price.$lte = maxPrice;
+  }
+
+  const total = await Product.countDocuments(query);
+
+  const products = await Product.find(query)
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
+
+  return {
+    success: true,
+    message: "Products fetched successfully",
+    data: products.map(mapProductToFrontend),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+    hasMore: page * limit < total,
+  };
+}
+
+
+export async function fetchAllProducts(
+  page = 1,
+  limit = 6,
+  filters?: FilterQuery<IProduct>
+): Promise<PaginatedProductResponse<productType>> {
+  try {
+    await connectDB();
+
+    const skip = (page - 1) * limit;
+
+    const filter: FilterQuery<IProduct> = { isActive: true, ...filters };
+
+    const total = await Product.countDocuments(filter);
+
+    const products = await Product.find(filter)
+      .sort({ createdAt: -1 }) // newest first
+      .skip(skip)
+      .limit(limit)
+      .populate({
+    path: "category",
+    select: "categoryName slug categoryImage isActive createdAt"
+  })
+      .populate({
+        path: "variants",
+        match: { isActive: true },
+        select: "price stock specs images isActive",
+      })
+      .lean<IProduct[]>();
+
+    return {
+      success: true,
+      message: "Products fetched successfully",
+      data: products.map(mapProductToFrontend),
+    pagination: {
+  page,
+  limit,
+  total: total ?? 0,  
+  totalPages: Math.ceil((total ?? 0) / limit),
+}
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unexpected server error";
+    console.error("Fetch All Products Error:", errorMessage);
+
+    return {
+      success: false,
+      message: "Failed to fetch products",
+      data: null,
+      error: errorMessage,
+    };
+  }
 }
 
 export async function fetchBestSellers(
@@ -197,58 +318,7 @@ export async function fetchHotDeals(
   }
 }
 
-export async function fetchAllProducts(
-  page = 1,
-  limit = 6,
-  filters?: FilterQuery<IProduct>
-): Promise<PaginatedProductResponse<productType>> {
-  try {
-    await connectDB();
 
-    const skip = (page - 1) * limit;
-
-    const filter: FilterQuery<IProduct> = { isActive: true, ...filters };
-
-    const total = await Product.countDocuments(filter);
-
-    const products = await Product.find(filter)
-      .sort({ createdAt: -1 }) // newest first
-      .skip(skip)
-      .limit(limit)
-      .populate({
-    path: "category",
-    select: "categoryName slug categoryImage isActive createdAt"
-  })
-      .populate({
-        path: "variants",
-        match: { isActive: true },
-        select: "price stock specs images isActive",
-      })
-      .lean<IProduct[]>();
-
-    return {
-      success: true,
-      message: "Products fetched successfully",
-      data: products.map(mapProductToFrontend),
-    pagination: {
-  page,
-  limit,
-  total: total ?? 0,  
-  totalPages: Math.ceil((total ?? 0) / limit),
-}
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unexpected server error";
-    console.error("Fetch All Products Error:", errorMessage);
-
-    return {
-      success: false,
-      message: "Failed to fetch products",
-      data: null,
-      error: errorMessage,
-    };
-  }
-}
 export interface ApiSingleProductResponse {
   success: boolean;
   message: string;

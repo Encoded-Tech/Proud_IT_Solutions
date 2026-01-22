@@ -360,12 +360,12 @@
 
 "use client";
 
-import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Icon } from "@iconify/react";
 
 import ProductCard from "@/components/card/product-card";
 import { productType, CategoryType } from "@/types/product";
-import { fetchAllProducts } from "@/lib/server/fetchers/fetchProducts";
+import {  fetchFilteredProducts } from "@/lib/server/fetchers/fetchProducts";
 import { fetchBrands } from "@/lib/server/actions/admin/brand/brandAction";
 
 /* ---------------------------------- PROPS --------------------------------- */
@@ -414,46 +414,78 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
     getBrands();
   }, []);
 
-  /* ----------------------------- LOAD MORE PRODUCTS ---------------------------- */
-  const loadMoreProducts = useCallback(async () => {
-    if (loading || !hasMore) return;
 
+  useEffect(() => {
+  const applyFilters = async () => {
     setLoading(true);
-    try {
-      const nextPage = page + 1;
-      const res = await fetchAllProducts(nextPage, 6);
-      const newProducts = res.data || [];
+    setPage(1);
+    setHasMore(true);
 
-      if (newProducts.length > 0) {
-        const existingIds = new Set(allProducts.map((p) => p.id));
-        const uniqueNewProducts = newProducts.filter(
-          (p) => !existingIds.has(p.id)
-        );
-        
-        // Add to pending first
-        setPendingProducts(uniqueNewProducts);
-        
-        // Then add to actual products after a brief moment
-        setTimeout(() => {
-          setAllProducts((prev) => [...prev, ...uniqueNewProducts]);
-          setPendingProducts([]);
-        }, 150);
+    const res = await fetchFilteredProducts({
+      page: 1,
+      limit: 6,
+      brand: selectedBrand,
+      category: selectedCategorySlug,
+      minPrice,
+      maxPrice,
+      rating: selectedRating,
+    });
 
-        setPage(nextPage);
-
-        if (newProducts.length < 6) {
-          setHasMore(false);
-        }
-      } else {
-        setHasMore(false);
-      }
-    } catch (error) {
-      console.error("Error loading products:", error);
-      setHasMore(false);
-    } finally {
-      setTimeout(() => setLoading(false), 200);
+    if (res.success) {
+      setAllProducts(res.data);
+      setHasMore(res.hasMore);
     }
-  }, [page, loading, hasMore, allProducts]);
+
+    setLoading(false);
+  };
+
+  applyFilters();
+}, [
+  selectedBrand,
+  selectedCategorySlug,
+  minPrice,
+  maxPrice,
+  selectedRating,
+]);
+
+  /* ----------------------------- LOAD MORE PRODUCTS ---------------------------- */
+const loadMoreProducts = useCallback(async () => {
+  if (loading || !hasMore) return;
+
+  setLoading(true);
+
+  const nextPage = page + 1;
+
+  const res = await fetchFilteredProducts({
+    page: nextPage,
+    limit: 6,
+    brand: selectedBrand,
+    category: selectedCategorySlug,
+    minPrice,
+    maxPrice,
+    rating: selectedRating,
+  });
+
+  if (res.success && res.data.length > 0) {
+    setAllProducts((prev) => [...prev, ...res.data]);
+    setPage(nextPage);
+    setHasMore(res.hasMore);
+  } else {
+    setHasMore(false);
+  }
+
+  setLoading(false);
+}, [
+  page,
+  hasMore,
+  loading,
+  selectedBrand,
+  selectedCategorySlug,
+  minPrice,
+  maxPrice,
+  selectedRating,
+]);
+
 
   /* ----------------------------- INTERSECTION OBSERVER ---------------------------- */
   useEffect(() => {
@@ -482,41 +514,29 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
   }, [hasMore, loading, loadMoreProducts]);
 
   /* ----------------------------- FILTER LOGIC ------------------------------ */
-  const filteredProducts = useMemo(() => {
-    return allProducts.filter((product) => {
-      if (minPrice !== undefined && product.price < minPrice) return false;
-      if (maxPrice !== undefined && product.price > maxPrice) return false;
 
-      if (selectedCategorySlug && product.category.slug !== selectedCategorySlug)
-        return false;
-
-      if (selectedRating && product.avgRating < selectedRating) return false;
-
-      if (selectedBrand && product.brandName !== selectedBrand)
-        return false;
-
-      return true;
-    });
-  }, [
-    allProducts,
-    minPrice,
-    maxPrice,
-    selectedCategorySlug,
-    selectedRating,
-    selectedBrand,
-  ]);
 
   /* ----------------------------- RESET FILTERS ------------------------------ */
-  const resetFilters = () => {
-    setMinPrice(undefined);
-    setMaxPrice(undefined);
-    setSelectedCategorySlug(null);
-    setSelectedRating(null);
-    setSelectedBrand(null);
-    setAllProducts(initialProducts);
-    setPage(1);
-    setHasMore(true);
-  };
+ const resetFilters = async () => {
+  setSelectedBrand(null);
+  setSelectedCategorySlug(null);
+  setMinPrice(undefined);
+  setMaxPrice(undefined);
+  setSelectedRating(null);
+setPendingProducts([]);
+  setPage(1);
+  setHasMore(true);
+
+  const res = await fetchFilteredProducts({
+    page: 1,
+    limit: 6,
+  });
+
+  if (res.success) {
+    setAllProducts(res.data);
+    setHasMore(res.hasMore);
+  }
+};
 
   /* -------------------------------- RENDER --------------------------------- */
   return (
@@ -593,13 +613,19 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
                   className="flex justify-between cursor-pointer text-sm font-medium text-lighttext hover:text-primary transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="category"
-                      checked={selectedCategorySlug === cat.slug}
-                      onChange={() => setSelectedCategorySlug(cat.slug)}
-                      className="accent-primarymain cursor-pointer"
-                    />
+                   <input
+  type="radio"
+  name="category"
+  checked={selectedCategorySlug === cat.slug}
+  onChange={() => setSelectedCategorySlug(cat.slug)}
+  onClick={() => {
+    if (selectedCategorySlug === cat.slug) {
+      setSelectedCategorySlug(null);
+    }
+  }}
+  className="accent-primarymain cursor-pointer"
+/>
+
                     <span>{cat.categoryName}</span>
                   </div>
                   {cat.productCount && <span className="text-gray-400">({cat.productCount})</span>}
@@ -618,17 +644,19 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
     className="flex justify-between items-center cursor-pointer text-sm font-medium text-lighttext hover:text-primary transition-colors"
   >
     <div className="flex items-center gap-2">
-      <input
-        type="radio"
-        name="brand"
-        checked={selectedBrand === brand.name}
-        onChange={() =>
-          setSelectedBrand(
-            selectedBrand === brand.name ? null : brand.name
-          )
-        }
-        className="accent-primarymain cursor-pointer"
-      />
+    <input
+  type="radio"
+  name="brand"
+  checked={selectedBrand === brand.name}
+  onChange={() => setSelectedBrand(brand.name)}
+  onClick={() => {
+    if (selectedBrand === brand.name) {
+      setSelectedBrand(null);
+    }
+  }}
+  className="accent-primarymain cursor-pointer"
+/>
+
       <span>{brand.name}</span>
     </div>
     <span className="text-gray-400">({brand.count})</span>
@@ -686,13 +714,13 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
       <section className="col-span-5">
         {/* Results Count */}
         <div className="mb-4 text-sm text-gray-600">
-          Showing {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''}
+          Showing {allProducts.length} product{allProducts.length !== 1 ? 's' : ''}
         </div>
 
         {/* Products Grid */}
         <div className="grid lg:grid-cols-3 grid-cols-2 gap-4 transition-all duration-300">
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((prod, index) => (
+          {allProducts.length > 0 ? (
+            allProducts.map((prod, index) => (
               <div
                 key={prod.id}
                 className="animate-fadeIn"
@@ -719,7 +747,7 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
         </div>
 
         {/* Infinite Scroll Trigger */}
-        {hasMore && filteredProducts.length > 0 && (
+        {hasMore && allProducts.length > 0 && (
           <div ref={observerTarget} className="flex justify-center py-8 min-h-[100px]">
             {loading && (
               <div className="flex items-center gap-2 text-gray-500 animate-fadeIn">
@@ -741,7 +769,7 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
           </div>
         )}
         {/* End of Products */}
-        {!hasMore && filteredProducts.length > 6 && (
+        {!hasMore && allProducts.length > 6 && (
           <div className="text-center py-8 text-gray-400 text-sm">
             You&apos;ve reached the end of the products
           </div>
