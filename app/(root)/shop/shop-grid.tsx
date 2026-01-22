@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import ProductCard from "@/components/card/product-card";
 import { productType, CategoryType } from "@/types/product";
 import { fetchAllProducts } from "@/lib/server/fetchers/fetchProducts";
+import { fetchBrands } from "@/lib/server/actions/admin/brand/brandAction";
 
 /* ---------------------------------- PROPS --------------------------------- */
 interface ShopGridProps {
@@ -21,12 +22,33 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const [brands, setBrands] = useState<string[]>([]);
+
+  
 
   /* ------------------------------ FILTER STATE ----------------------------- */
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
   const [selectedCategorySlug, setSelectedCategorySlug] = useState<string | null>(null);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
+
+  /* ----------------------------- FETCH STATIC BRANDS ------------------------ */
+
+    useEffect(() => {
+    const getBrands = async () => {
+      try {
+        const res = await fetchBrands();
+        if (res.success && res.data) {
+          setBrands(res.data); // static brand list
+        }
+      } catch (err) {
+        console.error("Failed to fetch brands:", err);
+      }
+    };
+    getBrands();
+  }, []);
 
   /* ----------------------------- LOAD MORE PRODUCTS ---------------------------- */
  const loadMoreProducts = useCallback(async () => {
@@ -88,30 +110,59 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
   }, [hasMore, loading, loadMoreProducts]); // Removed 'page' dependency to prevent infinite loop
 
   /* ----------------------------- FILTER LOGIC ------------------------------ */
+  // const filteredProducts = useMemo(() => {
+  //   return allProducts.filter((product) => {
+  //     if (minPrice !== undefined && product.price < minPrice) return false;
+  //     if (maxPrice !== undefined && product.price > maxPrice) return false;
+
+  //     if (selectedCategorySlug && product.category.slug !== selectedCategorySlug)
+  //       return false;
+
+  //     if (selectedRating && product.avgRating < selectedRating) return false;
+
+  //     return true;
+  //   });
+  // }, [allProducts, minPrice, maxPrice, selectedCategorySlug, selectedRating]);
+
   const filteredProducts = useMemo(() => {
-    return allProducts.filter((product) => {
-      if (minPrice !== undefined && product.price < minPrice) return false;
-      if (maxPrice !== undefined && product.price > maxPrice) return false;
+  return allProducts.filter((product) => {
+    if (minPrice !== undefined && product.price < minPrice) return false;
+    if (maxPrice !== undefined && product.price > maxPrice) return false;
 
-      if (selectedCategorySlug && product.category.slug !== selectedCategorySlug)
-        return false;
+    if (selectedCategorySlug && product.category.slug !== selectedCategorySlug)
+      return false;
 
-      if (selectedRating && product.avgRating < selectedRating) return false;
+    if (selectedRating && product.avgRating < selectedRating) return false;
 
-      return true;
-    });
-  }, [allProducts, minPrice, maxPrice, selectedCategorySlug, selectedRating]);
+    // ✅ BRAND FILTER
+    if (selectedBrand && product.brandName !== selectedBrand)
+      return false;
+
+    return true;
+  });
+}, [
+  allProducts,
+  minPrice,
+  maxPrice,
+  selectedCategorySlug,
+  selectedRating,
+  selectedBrand,
+]);
 
   /* ----------------------------- RESET FILTERS ------------------------------ */
-  const resetFilters = () => {
-    setMinPrice(undefined);
-    setMaxPrice(undefined);
-    setSelectedCategorySlug(null);
-    setSelectedRating(null);
-    setAllProducts(initialProducts);
-    setPage(1);
-    setHasMore(true);
-  };
+const resetFilters = () => {
+  setMinPrice(undefined);
+  setMaxPrice(undefined);
+  setSelectedCategorySlug(null);
+  setSelectedRating(null);
+  setSelectedBrand(null); // ✅ ADD THIS
+  setAllProducts(initialProducts);
+  setPage(1);
+  setHasMore(true);
+};
+
+
+
 
   /* -------------------------------- RENDER --------------------------------- */
   return (
@@ -174,6 +225,32 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
               ))}
             </div>
           </div>
+
+
+          {/* Brand */}
+<div className="space-y-4">
+  <h3 className="font-medium text-lighttext">Brand</h3>
+  <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+    {brands.map((brand) => (
+      <label
+        key={brand}
+        className="flex items-center gap-2 cursor-pointer text-sm font-medium text-lighttext hover:text-primary transition-colors"
+      >
+        <input
+          type="radio"
+          name="brand"
+          checked={selectedBrand === brand}
+          onChange={() =>
+            setSelectedBrand(selectedBrand === brand ? null : brand)
+          }
+          className="accent-primarymain cursor-pointer"
+        />
+        <span>{brand}</span>
+      </label>
+    ))}
+  </div>
+</div>
+
 
           {/* Rating */}
           <div className="space-y-4">
