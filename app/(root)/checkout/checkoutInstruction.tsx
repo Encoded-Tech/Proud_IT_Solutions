@@ -23,7 +23,7 @@ export default function CheckoutInstructions() {
       icon: <CreditCard className="w-5 h-5" />,
       title: "Select Payment Method",
       description:
-        "Choose your preferred payment option. If you select online payment, ensure the transaction is completed successfully.",
+       "Choose your payment method pay cash on delivery (COD) or complete an online payment and upload the receipt before placing your order",
       bg: "bg-primary/10",
       text: "text-primary",
     },

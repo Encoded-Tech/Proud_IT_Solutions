@@ -6,6 +6,7 @@
     const { cart }: { cart: CartItem[] } = await getCartAction();
     const initialCart = Array.isArray(cart) ? cart : [];
 
+
     return (
       
       <CartClient initialCart={initialCart} />

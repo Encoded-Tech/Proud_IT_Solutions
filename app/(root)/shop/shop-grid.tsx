@@ -169,7 +169,8 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
     <main className="grid md:grid-cols-7 gap-x-6">
       {/* ------------------------------- FILTERS ------------------------------ */}
       <aside className="hidden md:block col-span-2 h-fit sticky top-4">
-        <div className="p-4 bg-zinc-50 rounded-md shadow-sm space-y-8 max-h-[calc(100vh-2rem)]">
+ <div className="p-4 bg-zinc-50 rounded-md shadow-sm space-y-8 max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-none">
+
           {/* Header */}
           <div className="flex justify-between pb-4 border-b">
             <h2 className="font-medium text-xl">Filter</h2>
