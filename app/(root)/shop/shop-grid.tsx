@@ -383,6 +383,7 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef<HTMLDivElement>(null);
   const [brands, setBrands] = useState<string[]>([]);
+  const [pendingProducts, setPendingProducts] = useState<productType[]>([]);
 
   /* ------------------------------ FILTER STATE ----------------------------- */
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
@@ -417,16 +418,19 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
       const newProducts = res.data || [];
 
       if (newProducts.length > 0) {
-        // Small delay to prevent jarring jumps
-        await new Promise(resolve => setTimeout(resolve, 100));
+        const existingIds = new Set(allProducts.map((p) => p.id));
+        const uniqueNewProducts = newProducts.filter(
+          (p) => !existingIds.has(p.id)
+        );
         
-        setAllProducts((prev) => {
-          const existingIds = new Set(prev.map((p) => p.id));
-          const uniqueNewProducts = newProducts.filter(
-            (p) => !existingIds.has(p.id)
-          );
-          return [...prev, ...uniqueNewProducts];
-        });
+        // Add to pending first
+        setPendingProducts(uniqueNewProducts);
+        
+        // Then add to actual products after a brief moment
+        setTimeout(() => {
+          setAllProducts((prev) => [...prev, ...uniqueNewProducts]);
+          setPendingProducts([]);
+        }, 150);
 
         setPage(nextPage);
 
@@ -440,9 +444,9 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
       console.error("Error loading products:", error);
       setHasMore(false);
     } finally {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 200);
     }
-  }, [page, loading, hasMore]);
+  }, [page, loading, hasMore, allProducts]);
 
   /* ----------------------------- INTERSECTION OBSERVER ---------------------------- */
   useEffect(() => {
@@ -452,7 +456,10 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
           loadMoreProducts();
         }
       },
-      { threshold: 0.1 }
+      { 
+        threshold: 0.1,
+        rootMargin: '400px' // Start loading before user reaches the bottom
+      }
     );
 
     const currentTarget = observerTarget.current;
@@ -519,7 +526,19 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
           }
         }
         .animate-fadeIn {
-          animation: fadeIn 0.4s ease-out forwards;
+          animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
       `}</style>
       <main className="grid md:grid-cols-7 gap-x-6">
@@ -665,13 +684,16 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid lg:grid-cols-3 grid-cols-2 gap-4">
+        <div className="grid lg:grid-cols-3 grid-cols-2 gap-4 transition-all duration-300">
           {filteredProducts.length > 0 ? (
             filteredProducts.map((prod, index) => (
               <div
                 key={prod.id}
                 className="animate-fadeIn"
-                style={{ animationDelay: `${(index % 6) * 50}ms` }}
+                style={{ 
+                  animationDelay: `${(index % 6) * 40}ms`,
+                  minHeight: '300px' // Prevents layout shift
+                }}
               >
                 <ProductCard label="All Products" product={prod} />
               </div>
@@ -692,11 +714,22 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
 
         {/* Infinite Scroll Trigger */}
         {hasMore && filteredProducts.length > 0 && (
-          <div ref={observerTarget} className="flex justify-center py-8">
+          <div ref={observerTarget} className="flex justify-center py-8 min-h-[100px]">
             {loading && (
-              <div className="flex items-center gap-2 text-gray-500">
+              <div className="flex items-center gap-2 text-gray-500 animate-fadeIn">
                 <Icon icon="svg-spinners:ring-resize" className="text-2xl" />
                 <span className="text-sm font-medium">Loading more products...</span>
+              </div>
+            )}
+            {/* Skeleton placeholders while loading */}
+            {pendingProducts.length > 0 && (
+              <div className="grid lg:grid-cols-3 grid-cols-2 gap-4 w-full">
+                {pendingProducts.map((_, idx) => (
+                  <div
+                    key={`skeleton-${idx}`}
+                    className="h-[300px] bg-gray-100 rounded-lg animate-pulse"
+                  />
+                ))}
               </div>
             )}
           </div>
