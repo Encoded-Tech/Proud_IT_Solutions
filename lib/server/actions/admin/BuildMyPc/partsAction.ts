@@ -1,5 +1,4 @@
 "use server";
-
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { PART_TYPES, PartType } from "@/constants/part";
 import { connectDB } from "@/db";
@@ -154,7 +153,7 @@ if (!typeValue || !PART_TYPES.includes(typeValue as PartType)) {
       partData.storageType = storageType;
     }
 
-    console.log("Creating part with data:", partData); // Debug log
+
 
     const part = await PartOption.create(partData);
 
@@ -174,68 +173,152 @@ if (!typeValue || !PART_TYPES.includes(typeValue as PartType)) {
 
 
 /** ---------- UPDATE ---------- */
+// export async function updatePartOption(id: string, formData: FormData) {
+//   await requireAdmin();
+//   await connectDB();
+
+//   if (!Types.ObjectId.isValid(id)) {
+//     return { success: false, message: "Invalid part option ID" };
+//   }
+
+//   const part = await PartOption.findById(id);
+//   if (!part) {
+//     return { success: false, message: "Part option not found" };
+//   }
+
+//   const imageFile = formData.get("imageFile") as File | null;
+
+//   if (imageFile) {
+//     if (part.imageUrl) {
+//       await deleteFromCloudinary(part.imageUrl);
+//     }
+//     part.imageUrl = await uploadToCloudinary(imageFile);
+//   }
+
+//   // Update scalar fields safely
+//   const fields: (keyof PartOptionInput)[] = [
+//     "name",
+//     "type",
+//     "brand",
+//     "price",
+//     "modelName",
+//     "socket",
+//     "chipset",
+//     "ramType",
+//     "wattage",
+//     "lengthMM",
+//     "storageType",
+//     "capacityGB",
+//     "isActive",
+//   ];
+// fields.forEach((field) => {
+//   const value = formData.get(field);
+
+//   if (value === null || value === "") return;
+
+//   part[field] =
+//     field === "price" ||
+//     field === "wattage" ||
+//     field === "lengthMM" ||
+//     field === "capacityGB"
+//       ? Number(value)
+//       : field === "isActive"
+//       ? value === "true"
+//       : value;
+// });
+
+//   await part.save();
+//   revalidatePath("/admin/build-user-pc/parts-table");
+
+//   return {
+//     success: true,
+//     message: "Part option updated successfully",
+//     data: mapPartOption(part),
+//   };
+// }
 export async function updatePartOption(id: string, formData: FormData) {
-  await requireAdmin();
-  await connectDB();
+  try {
+    await requireAdmin();
+    await connectDB();
 
-  if (!Types.ObjectId.isValid(id)) {
-    return { success: false, message: "Invalid part option ID" };
-  }
+    if (!Types.ObjectId.isValid(id)) {
+      return { success: false, message: "Invalid part option ID" };
+    }
 
-  const part = await PartOption.findById(id);
-  if (!part) {
-    return { success: false, message: "Part option not found" };
-  }
+    const part = await PartOption.findById(id);
+    if (!part) {
+      return { success: false, message: "Part option not found" };
+    }
 
-  const imageFile = formData.get("imageFile") as File | null;
+    // --- Image Handling ---
+   const imageFile = formData.get("imageFile");
 
-  if (imageFile) {
+if (imageFile instanceof File && imageFile.size > 0) {
+  try {
     if (part.imageUrl) {
       await deleteFromCloudinary(part.imageUrl);
     }
-    part.imageUrl = await uploadToCloudinary(imageFile);
+
+    part.imageUrl = await uploadToCloudinary(imageFile, "part-image");
+  } catch (err) {
+    console.error("Cloudinary upload failed:", err);
+    return { success: false, message: "Failed to upload image" };
   }
+}
 
-  // Update scalar fields safely
-  const fields: (keyof PartOptionInput)[] = [
-    "name",
-    "type",
-    "brand",
-    "price",
-    "modelName",
-    "socket",
-    "chipset",
-    "ramType",
-    "wattage",
-    "lengthMM",
-    "storageType",
-    "capacityGB",
-    "isActive",
-  ];
-fields.forEach((field) => {
-  const value = formData.get(field);
 
-  if (value === null || value === "") return;
+    // --- Update Scalar Fields ---
+    const updateFields: Partial<IPartOption> = {};
+    const fields: (keyof IPartOption)[] = [
+      "name", "type", "brand", "modelName", "price",
+      "wattage", "lengthMM", "capacityGB", "socket",
+      "chipset", "ramType", "storageType", "isActive"
+    ];
 
-  part[field] =
-    field === "price" ||
-    field === "wattage" ||
-    field === "lengthMM" ||
-    field === "capacityGB"
-      ? Number(value)
-      : field === "isActive"
-      ? value === "true"
-      : value;
-});
+    fields.forEach((field) => {
+      const raw = formData.get(field);
+      if (raw === null || raw === "" || raw === "undefined") return;
 
-  await part.save();
-  revalidatePath("/admin/build-user-pc/parts-table");
+      switch (field) {
+        case "price":
+        case "wattage":
+        case "lengthMM":
+        case "capacityGB":
+          const num = toNumber(raw);
+          if (num !== undefined) updateFields[field] = num;
+          break;
+        case "isActive":
+          updateFields[field] = raw === "true";
+          break;
+        case "type":
+          const typeVal = toString(raw);
+          if (typeVal && PART_TYPES.includes(typeVal as PartType)) updateFields.type = typeVal as PartType;
+          break;
+        case "ramType":
+          const ram = toString(raw);
+          if (ram === "DDR4" || ram === "DDR5") updateFields.ramType = ram;
+          break;
+        case "storageType":
+          const st = toString(raw);
+          if (st === "ssd" || st === "nvme" || st === "hdd") updateFields.storageType = st;
+          break;
+        default:
+          const val = toString(raw);
+          if (val) updateFields[field] = val;
+      }
+    });
 
-  return {
-    success: true,
-    message: "Part option updated successfully",
-    data: mapPartOption(part),
-  };
+    Object.assign(part, updateFields);
+
+    await part.save();
+    revalidatePath("/admin/build-user-pc/parts-table");
+
+    return { success: true, message: "Part option updated successfully", data: mapPartOption(part) };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    console.error("Failed to update part option:", msg);
+    return { success: false, message: `Failed to update part option: ${msg}` };
+  }
 }
 
 /** ---------- DELETE ---------- */

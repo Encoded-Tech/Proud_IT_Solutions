@@ -447,7 +447,12 @@ export async function createProductAction(formData: FormData): Promise<ActionRes
     const brandName = formData.get("brandName")?.toString() || "";
 
     /* ------------------------- OFFERS ------------------------- */
-    const discountPercent = Number(formData.get("discountPercent") || 0);
+ const discountRaw = formData.get("discountPercent");
+const discountPercent =
+  discountRaw && Number(discountRaw) > 0
+    ? Number(discountRaw)
+    : undefined;
+
     const offerStartDate = formData.get("offerStartDate") ? new Date(formData.get("offerStartDate")!.toString()) : null;
     const offerEndDate = formData.get("offerEndDate") ? new Date(formData.get("offerEndDate")!.toString()) : null;
 
@@ -455,12 +460,14 @@ export async function createProductAction(formData: FormData): Promise<ActionRes
       return { success: false, message: "Offer end date cannot be before start date" };
     }
 
-    let offeredPrice = 0;
-    let isOfferedPriceActive = false;
-    if (discountPercent > 0) {
-      offeredPrice = Math.round(price - (price * discountPercent) / 100);
-      isOfferedPriceActive = true;
-    }
+   let offeredPrice: number | undefined;
+let isOfferedPriceActive = false;
+
+if (discountPercent !== undefined) {
+  offeredPrice = Math.round(price - (price * discountPercent) / 100);
+  isOfferedPriceActive = true;
+}
+
 
     /* ------------------------- VALIDATIONS ------------------------- */
 
@@ -568,7 +575,12 @@ export async function updateProductAction({ productId, formData }: UpdateProduct
     const brandName = formData.get("brandName")?.toString();
 
     /* ------------------------- OFFERS ------------------------- */
-    const discountPercent = formData.get("discountPercent") ? Number(formData.get("discountPercent")!.toString()) : undefined;
+const discountRaw = formData.get("discountPercent");
+const discountPercent =
+  discountRaw && Number(discountRaw) > 0
+    ? Number(discountRaw)
+    : undefined;
+
     const offerStartDate = formData.get("offerStartDate") ? new Date(formData.get("offerStartDate")!.toString()) : undefined;
     const offerEndDate = formData.get("offerEndDate") ? new Date(formData.get("offerEndDate")!.toString()) : undefined;
 
@@ -582,6 +594,14 @@ export async function updateProductAction({ productId, formData }: UpdateProduct
       offeredPrice = Math.round(price - (price * discountPercent) / 100);
       isOfferedPriceActive = true;
     }
+
+    // 🔥 CLEAR DISCOUNT IF REMOVED (CRITICAL FIX)
+if (discountPercent === undefined) {
+  productToUpdate.discountPercent = undefined;
+  productToUpdate.offeredPrice = undefined;
+  productToUpdate.isOfferedPriceActive = false;
+}
+
 
     /* ------------------------- IMAGE UPLOAD ------------------------- */
     const images = formData.getAll("images") as File[];
