@@ -24,7 +24,7 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
   const observerTarget = useRef<HTMLDivElement>(null);
   const [brands, setBrands] = useState<string[]>([]);
 
-  
+
 
   /* ------------------------------ FILTER STATE ----------------------------- */
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
@@ -36,7 +36,7 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
 
   /* ----------------------------- FETCH STATIC BRANDS ------------------------ */
 
-    useEffect(() => {
+  useEffect(() => {
     const getBrands = async () => {
       try {
         const res = await fetchBrands();
@@ -51,39 +51,39 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
   }, []);
 
   /* ----------------------------- LOAD MORE PRODUCTS ---------------------------- */
- const loadMoreProducts = useCallback(async () => {
-  if (loading || !hasMore) return;
+  const loadMoreProducts = useCallback(async () => {
+    if (loading || !hasMore) return;
 
-  setLoading(true);
-  try {
-    const nextPage = page + 1;
-    const res = await fetchAllProducts(nextPage, 6);
-    const newProducts = res.data || [];
+    setLoading(true);
+    try {
+      const nextPage = page + 1;
+      const res = await fetchAllProducts(nextPage, 6);
+      const newProducts = res.data || [];
 
-    if (newProducts.length > 0) {
-      setAllProducts((prev) => {
-        const existingIds = new Set(prev.map((p) => p.id));
-        const uniqueNewProducts = newProducts.filter(
-          (p) => !existingIds.has(p.id)
-        );
-        return [...prev, ...uniqueNewProducts];
-      });
+      if (newProducts.length > 0) {
+        setAllProducts((prev) => {
+          const existingIds = new Set(prev.map((p) => p.id));
+          const uniqueNewProducts = newProducts.filter(
+            (p) => !existingIds.has(p.id)
+          );
+          return [...prev, ...uniqueNewProducts];
+        });
 
-      setPage(nextPage);
+        setPage(nextPage);
 
-      if (newProducts.length < 6) {
+        if (newProducts.length < 6) {
+          setHasMore(false);
+        }
+      } else {
         setHasMore(false);
       }
-    } else {
+    } catch (error) {
+      console.error("Error loading products:", error);
       setHasMore(false);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error loading products:", error);
-    setHasMore(false);
-  } finally {
-    setLoading(false);
-  }
-}, [page, loading, hasMore]);
+  }, [page, loading, hasMore]);
 
 
   /* ----------------------------- INTERSECTION OBSERVER ---------------------------- */
@@ -125,41 +125,41 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
   // }, [allProducts, minPrice, maxPrice, selectedCategorySlug, selectedRating]);
 
   const filteredProducts = useMemo(() => {
-  return allProducts.filter((product) => {
-    if (minPrice !== undefined && product.price < minPrice) return false;
-    if (maxPrice !== undefined && product.price > maxPrice) return false;
+    return allProducts.filter((product) => {
+      if (minPrice !== undefined && product.price < minPrice) return false;
+      if (maxPrice !== undefined && product.price > maxPrice) return false;
 
-    if (selectedCategorySlug && product.category.slug !== selectedCategorySlug)
-      return false;
+      if (selectedCategorySlug && product.category.slug !== selectedCategorySlug)
+        return false;
 
-    if (selectedRating && product.avgRating < selectedRating) return false;
+      if (selectedRating && product.avgRating < selectedRating) return false;
 
-    // ✅ BRAND FILTER
-    if (selectedBrand && product.brandName !== selectedBrand)
-      return false;
+      // ✅ BRAND FILTER
+      if (selectedBrand && product.brandName !== selectedBrand)
+        return false;
 
-    return true;
-  });
-}, [
-  allProducts,
-  minPrice,
-  maxPrice,
-  selectedCategorySlug,
-  selectedRating,
-  selectedBrand,
-]);
+      return true;
+    });
+  }, [
+    allProducts,
+    minPrice,
+    maxPrice,
+    selectedCategorySlug,
+    selectedRating,
+    selectedBrand,
+  ]);
 
   /* ----------------------------- RESET FILTERS ------------------------------ */
-const resetFilters = () => {
-  setMinPrice(undefined);
-  setMaxPrice(undefined);
-  setSelectedCategorySlug(null);
-  setSelectedRating(null);
-  setSelectedBrand(null); // ✅ ADD THIS
-  setAllProducts(initialProducts);
-  setPage(1);
-  setHasMore(true);
-};
+  const resetFilters = () => {
+    setMinPrice(undefined);
+    setMaxPrice(undefined);
+    setSelectedCategorySlug(null);
+    setSelectedRating(null);
+    setSelectedBrand(null); // ✅ ADD THIS
+    setAllProducts(initialProducts);
+    setPage(1);
+    setHasMore(true);
+  };
 
 
 
@@ -169,7 +169,7 @@ const resetFilters = () => {
     <main className="grid md:grid-cols-7 gap-x-6">
       {/* ------------------------------- FILTERS ------------------------------ */}
       <aside className="hidden md:block col-span-2 h-fit sticky top-4">
-        <div className="p-4 bg-zinc-50 rounded-md shadow-sm space-y-8 max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <div className="p-4 bg-zinc-50 rounded-md shadow-sm space-y-8 max-h-[calc(100vh-2rem)]">
           {/* Header */}
           <div className="flex justify-between pb-4 border-b">
             <h2 className="font-medium text-xl">Filter</h2>
@@ -228,28 +228,36 @@ const resetFilters = () => {
 
 
           {/* Brand */}
-<div className="space-y-4">
-  <h3 className="font-medium text-lighttext">Brand</h3>
-  <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-    {brands.map((brand) => (
-      <label
-        key={brand}
-        className="flex items-center gap-2 cursor-pointer text-sm font-medium text-lighttext hover:text-primary transition-colors"
-      >
-        <input
-          type="radio"
-          name="brand"
-          checked={selectedBrand === brand}
-          onChange={() =>
-            setSelectedBrand(selectedBrand === brand ? null : brand)
-          }
-          className="accent-primarymain cursor-pointer"
-        />
-        <span>{brand}</span>
-      </label>
-    ))}
-  </div>
-</div>
+          <div className="space-y-4">
+            <h3 className="font-medium text-lighttext">Brand</h3>
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-none">
+              {brands.map((brand) => {
+                // Count products for this brand
+                const count = allProducts.filter((p) => p.brandName === brand).length;
+
+                return (
+                  <label
+                    key={brand}
+                    className="flex justify-between items-center cursor-pointer text-sm font-medium text-lighttext hover:text-primary transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="brand"
+                        checked={selectedBrand === brand}
+                        onChange={() =>
+                          setSelectedBrand(selectedBrand === brand ? null : brand)
+                        }
+                        className="accent-primarymain cursor-pointer"
+                      />
+                      <span>{brand}</span>
+                    </div>
+                    <span className="text-gray-400">({count})</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
 
 
           {/* Rating */}
@@ -280,7 +288,7 @@ const resetFilters = () => {
                         }
                       />
                     ))}
-                    
+
                   </div>
                 </div>
               ))}

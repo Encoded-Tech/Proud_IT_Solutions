@@ -41,7 +41,7 @@ const isAdmin = isLoggedIn && user?.role === "admin";
       <div className="flex justify-between items-center">
         <Link href="/">
           <Image
-            src="/logo/mainlogo.png"
+            src="/logo/logomain.png"
             alt="logo"
             width={1000}
             height={1000}
