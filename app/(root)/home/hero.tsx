@@ -1,6 +1,7 @@
 import Image from "next/image";
 import React from "react";
 
+
 const Hero = () => {
   return (
     <main className="max-w-7xl xl:mx-auto mx-4 grid sm:grid-cols-2 items-center gap-6 my-8 ">

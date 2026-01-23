@@ -1,6 +1,38 @@
-"use client";
+
+import { APP_NAME } from "@/constants";
 import { Heart, Users, Leaf } from "lucide-react";
+import { Metadata } from "next";
 import Image from "next/image";
+
+export const metadata: Metadata = {
+  title: `About | ${APP_NAME}`, // Custom title for About page
+  description:
+    "Learn about Proud Nepal, our mission, vision, and commitment to delivering authentic electronics and innovative technology solutions in Nepal.",
+  openGraph: {
+    title: `About | ${APP_NAME}`,
+    description:
+      "Learn about Proud Nepal, our mission, vision, and commitment to delivering authentic electronics and innovative technology solutions in Nepal.",
+    type: "website",
+    siteName: APP_NAME,
+    images: [
+      {
+        url: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1074",
+        width: 1200,
+        height: 630,
+        alt: "About Proud Nepal",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `About | ${APP_NAME}`,
+    description:
+      "Learn about Proud Nepal, our mission, vision, and commitment to delivering authentic electronics and innovative technology solutions in Nepal.",
+    images: [
+      "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1074",
+    ],
+  },
+};
 
 export default function Component() {
   return (
@@ -174,8 +206,8 @@ export default function Component() {
                   and businesses.
                 </p>
                 <p>
-                  Today, we continue our founder’s vision—providing authentic,
-                  affordable, and future-ready electronics that uplift Nepal’s
+                  Today, we continue our founder&apos;s vision—providing authentic,
+                  affordable, and future-ready electronics that uplift Nepal&apos;s
                   digital journey.
                 </p>
               </div>

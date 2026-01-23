@@ -1,8 +1,28 @@
 
 
 import BuildClient from "@/components/client/BuildClient";
-import { fetchPartOptions } from "@/lib/server/actions/admin/BuildMyPc/partsAction";
+import { APP_NAME } from "@/config/env";
 
+import { fetchPartOptions } from "@/lib/server/actions/admin/BuildMyPc/partsAction";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: `Build Your PC | ${APP_NAME}`,
+  description: `Customize and build your own PC with the best components. Select parts, compare prices, and create your perfect PC setup with ${APP_NAME}.`,
+  openGraph: {
+    title: `Build Your PC | ${APP_NAME}`,
+    description: `Customize and build your own PC with the best components.`,
+    type: "website",
+    siteName: APP_NAME,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Build Your PC | ${APP_NAME}`,
+    description: `Customize and build your own PC with the best components.`,
+    images: []
+    
+  },
+};
 
 
 export default async function BuildPage() {
@@ -22,6 +42,10 @@ export default async function BuildPage() {
     specs: [],
   }));
 
-  return <BuildClient parts={parts} />;
+  return (
+    <main>
+      <BuildClient parts={parts} />
+    </main>
+  );
 }
 

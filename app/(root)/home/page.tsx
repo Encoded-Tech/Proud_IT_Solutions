@@ -8,6 +8,8 @@ import HeroBanners from "./hero-banners";
 
 import { getAllMedia } from "@/lib/server/actions/admin/media/mediaActions";
 import { ImageMediaItem } from "@/types/media";
+import { Metadata } from "next";
+import { APP_DESCRIPTION, APP_NAME } from "@/config/env";
 
 type HeroBannerDTO = {
   _id: string;
@@ -15,6 +17,27 @@ type HeroBannerDTO = {
   placement: string;
 };
 
+export const metadata: Metadata = {
+  title: {
+    template: `%s | ${APP_NAME}`,
+    default: APP_NAME,
+  },
+  description: APP_DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: APP_NAME,
+    description: APP_DESCRIPTION,
+    images: []
+    
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: APP_NAME,
+    description: APP_DESCRIPTION,
+    images: [], // optional, but good for social
+  },
+};
 
 const HomeMain = async () => {
   const mediaRes = await getAllMedia();
@@ -45,7 +68,8 @@ const HomeMain = async () => {
 
     
       {/* ✅ HERO FALLBACK LOGIC */}
-      {hasHeroBanners ? (
+<main>
+        {hasHeroBanners ? (
         <div className="max-w-7xl xl:mx-auto mx-4 my-12">
           <HeroBanners banners={heroBanners}  />
         </div>
@@ -59,6 +83,7 @@ const HomeMain = async () => {
         <HomeProducts showBestSellers />
         <Article />
       </div>
+</main>
     </>
   );
 };

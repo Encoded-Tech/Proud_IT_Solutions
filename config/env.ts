@@ -1,7 +1,6 @@
 export const MONGODB_URI = process.env.NEXT_PUBLIC_MONGODB_URI as string;
-export const APP_NAME = process.env.APP_NAME as string;
-export const APP_DESCRIPTION = process.env.APP_DESCRIPTION as string;
-export const SERVER_URL = process.env.SERVER_URL as string;
+
+export const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL as string;
 export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME as string;
 export const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY as string;
 export const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET as string;
@@ -32,3 +31,10 @@ export const ALLOWED_EXT_FOR_PAYMENT_PROOF: string[] = JSON.parse(process.env.AL
 export const ALLOWED_MIME_TYPE_FOR_PAYMENT_PROOF: string[] = JSON.parse(process.env.ALLOWED_MIME_TYPE_FOR_PAYMENT_PROOF || "[]");
 export const MAX_SIZE_FOR_PAYMENT_PROOF = parseInt(process.env.MAX_SIZE_FOR_PAYMENT_PROOF as string);
 export const SEND_TO = process.env.SEND_TO as string;
+export const SERVER_PRODUCTION_URL =
+  process.env.NEXT_PUBLIC_SERVER_URL as string;
+
+  export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME as string;
+  export const APP_DESCRIPTION = process.env.NEXT_PUBLIC_APP_DESCRIPTION as string;
+  export const FOUNDING_DATE = process.env.NEXT_PUBLIC_FOUNDING_DATE as string;
+  export const PRICE_RANGE = process.env.NEXT_PUBLIC_PRICE_RANGE as string;
