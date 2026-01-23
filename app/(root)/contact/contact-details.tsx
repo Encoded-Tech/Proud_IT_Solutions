@@ -17,7 +17,6 @@ const ContactDetails = () => {
               {item.title}
             </h1>
             <p className="font-medium text-sm">{item.desc}</p>
-            <p className="font-medium text-sm">{item.desc2}</p>
           </div>
         </div>
       ))}
@@ -35,14 +34,12 @@ const contactdata = [
   },
   {
     title: "Contact Number",
-    desc: "+977-1-5913427",
-    desc2: "985-1073427",
+    desc: "9867174242",
     icon: <Icon icon="fluent:call-24-regular" />,
   },
   {
     title: "Mailing Address",
-    desc: "info@proudnepal.com",
-    desc2: " proudnepal@hotmail.com",
+    desc: "proudnepalits@gmail.com",
     icon: <Icon icon="famicons:mail-outline" />,
   },
 ];
