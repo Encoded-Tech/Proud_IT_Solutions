@@ -114,10 +114,10 @@ export default function Footer() {
 
               <li>
                 <Link
-                  href="#"
+                  href="/build-my-pc"
                   className="text-sm hover:text-primary transition-colors"
                 >
-                  Shipping Info
+                  Build My Pc
                 </Link>
               </li>
 

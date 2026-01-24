@@ -8,8 +8,9 @@ import HeroBanners from "./hero-banners";
 
 import { getAllMedia } from "@/lib/server/actions/admin/media/mediaActions";
 import { ImageMediaItem } from "@/types/media";
-import { Metadata } from "next";
-import { APP_DESCRIPTION, APP_NAME } from "@/config/env";
+
+import HomePromoLinks from "./homePromoLinks";
+
 
 type HeroBannerDTO = {
   _id: string;
@@ -17,27 +18,6 @@ type HeroBannerDTO = {
   placement: string;
 };
 
-export const metadata: Metadata = {
-  title: {
-    template: `%s | ${APP_NAME}`,
-    default: APP_NAME,
-  },
-  description: APP_DESCRIPTION,
-  openGraph: {
-    type: "website",
-    siteName: APP_NAME,
-    title: APP_NAME,
-    description: APP_DESCRIPTION,
-    images: []
-    
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: APP_NAME,
-    description: APP_DESCRIPTION,
-    images: [], // optional, but good for social
-  },
-};
 
 const HomeMain = async () => {
   const mediaRes = await getAllMedia();
@@ -69,6 +49,27 @@ const HomeMain = async () => {
     
       {/* ✅ HERO FALLBACK LOGIC */}
 <main>
+
+  {/*Seo section*/}
+  <h1 className="sr-only">
+        Trusted Electronics Store in Nepal for Laptops, PCs & Accessories
+      </h1>
+
+      <section className="sr-only">
+  <h2>Best Electronics Store in Kathmandu, Nepal</h2>
+  <p>
+    Buy laptops, desktops, printers, monitors, PC components and accessories
+    from a trusted electronics shop in Nepal, located in Putalisadak.
+  </p>
+
+  <h2>Best Laptops, customized PCs, and Accessories</h2>
+  <p>
+    We offer gaming laptops, business laptops, custom PCs, monitors, keyboards,
+    mice, UPS, printers and more at competitive prices in Nepal.
+  </p>
+</section>
+{/*Seo section*/}
+
         {hasHeroBanners ? (
         <div className="max-w-7xl xl:mx-auto mx-4 my-12">
           <HeroBanners banners={heroBanners}  />
@@ -77,12 +78,18 @@ const HomeMain = async () => {
         <Hero />
       )}
 
+
       {/* Rest of homepage */}
       <div className="max-w-7xl xl:mx-auto mx-4 my-20 space-y-20">
         <ListCategories page="home" />
         <HomeProducts showBestSellers />
-        <Article />
+
       </div>
+      <HomePromoLinks />
+      <div className="max-w-7xl xl:mx-auto mx-4 my-20 space-y-20">
+ <Article />
+      </div>
+             
 </main>
     </>
   );

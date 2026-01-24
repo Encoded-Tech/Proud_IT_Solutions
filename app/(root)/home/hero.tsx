@@ -8,7 +8,8 @@ const Hero = () => {
       <div>
         <Image
           src={heroimg[0].img}
-          alt="hero"
+         alt="Best electronics shop in Nepal for laptops, desktops, and accessories"
+
           width={1000}
           height={500}
           priority
@@ -19,7 +20,8 @@ const Hero = () => {
         {" "}
         <Image
           src={heroimg[1].img}
-          alt="hero"
+      alt="Laptop and PC store in Putalisadak Kathmandu Nepal"
+
           width={1000}
           height={500}
           priority
