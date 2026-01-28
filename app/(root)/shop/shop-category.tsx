@@ -18,7 +18,7 @@ const ShopCategories = ({ categories }: { categories: CategoryType[] }) => {
     autoplay: true,
     autoplaySpeed: 2000,
     centerMode: true,
-    dots: true,
+    dots: false,
     arrows: false,
     centerPadding: "0px",
     responsive: [

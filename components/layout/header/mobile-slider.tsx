@@ -38,7 +38,7 @@ const isAdmin = isLoggedIn && user?.role === "admin";
   return (
     <div>
       {/* HEADER */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center ">
         <Link href="/">
           <Image
             src="/logo/logomain.png"

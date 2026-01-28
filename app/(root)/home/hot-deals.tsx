@@ -16,17 +16,16 @@ type Props = {
   media: AnyMediaItem[];
 };
 
-// Hot deal video placement
 const placement: MediaPlacement = "hot_deals_video";
-
-// Fallback video URL
-const fallbackVideo = "https://cdn.pixabay.com/video/2018/11/14/19321-300877558_large.mp4";
+const fallbackVideo =
+  "https://cdn.pixabay.com/video/2018/11/14/19321-300877558_large.mp4";
 
 const HotDeals = ({ hotDeals, title, media }: Props) => {
   const sliderRef = useRef<Slider | null>(null);
 
-  // Find hot deal video by placement, fallback if missing
-  const hotDealVideo = media.find((m) => m.placement === placement && m.type === "video")?.videoUrl || fallbackVideo;
+  const hotDealVideo =
+    media.find((m) => m.placement === placement && m.type === "video")
+      ?.videoUrl || fallbackVideo;
 
   const settings = {
     infinite: true,
@@ -38,10 +37,10 @@ const HotDeals = ({ hotDeals, title, media }: Props) => {
     dots: false,
     arrows: false,
     responsive: [
-      { breakpoint: 1200, settings: { slidesToShow: 3, slidesToScroll: 1, infinite: true, dots: true } },
-      { breakpoint: 1024, settings: { slidesToShow: 2, slidesToScroll: 1, infinite: true, dots: true } },
-      { breakpoint: 900, settings: { slidesToShow: 2, slidesToScroll: 1, initialSlide: 2 } },
-      { breakpoint: 480, settings: { slidesToShow: 1, slidesToScroll: 1 } },
+      { breakpoint: 1200, settings: { slidesToShow: 3, dots: true } },
+      { breakpoint: 1024, settings: { slidesToShow: 3, dots: true } },
+      { breakpoint: 900, settings: { slidesToShow: 3 } },
+      { breakpoint: 480, settings: { slidesToShow: 2 } },
     ],
   };
 
@@ -49,19 +48,34 @@ const HotDeals = ({ hotDeals, title, media }: Props) => {
   const handlePrev = () => sliderRef.current?.slickPrev();
 
   return (
-    <main className="grid grid-cols-3 items-center md:gap-x-8 gap-x-2">
-      {/* Video Column */}
-      <video loop autoPlay muted controls className="w-full lg:h-full h-1/2 object-cover rounded-lg shadow-md">
-        <source src={hotDealVideo} type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+ <main className="grid grid-cols-1 lg:grid-cols-3 items-start lg:items-stretch gap-y-8 lg:gap-x-8">
 
-      {/* Hot Deals Slider */}
-      <div className="col-span-2">
+      {/* ================= VIDEO ================= */}
+   {/* ================= VIDEO ================= */}
+<div className="w-full mb-6 lg:mb-0">
+  <div className="w-full aspect-video lg:aspect-auto lg:h-full overflow-hidden rounded-lg shadow-md">
+    <video
+      loop
+      autoPlay
+      muted
+      controls
+      playsInline
+      className="w-full h-full object-cover"
+    >
+      <source src={hotDealVideo} type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+  </div>
+</div>
+
+
+      {/* ================= SLIDER ================= */}
+      <div className="w-full lg:col-span-2">
         <PageHeader title={title} />
+
         {hotDeals.length > 2 ? (
           <div className="relative">
-            <Slider {...settings} ref={sliderRef} className="my-10">
+            <Slider {...settings} ref={sliderRef} className="my-8">
               {hotDeals.map((item) => (
                 <div key={item.id} className="px-2">
                   <ProductCard product={item} label="Hot Deal" />
@@ -69,30 +83,29 @@ const HotDeals = ({ hotDeals, title, media }: Props) => {
               ))}
             </Slider>
 
-            {/* Slider Arrows */}
-            <div className="absolute top-1/2 -translate-y-1/2 -left-2">
+            {/* Arrows (desktop only) */}
+            <div className="absolute hidden md:block top-1/2 -translate-y-1/2 -left-2">
               <button
                 onClick={handlePrev}
-                className="cursor-pointer rounded-full bg-primary/80 shadow-sm hover:bg-primarymain/80 text-white border-zinc-300 p-3 hover:scale-110 ease-in-out duration-300 text-lg"
+                className="rounded-full bg-primary/80 p-3 text-white hover:scale-110 transition"
               >
                 <Icon icon="iconamoon:arrow-left-2-light" />
               </button>
             </div>
-            <div className="absolute top-1/2 -translate-y-1/2 -right-2">
+
+            <div className="absolute hidden md:block top-1/2 -translate-y-1/2 -right-2">
               <button
                 onClick={handleNext}
-                className="cursor-pointer rounded-full bg-primary/80 shadow-sm hover:bg-primarymain/80 text-white border-zinc-300 p-3 hover:scale-110 ease-in-out duration-300 text-lg"
+                className="rounded-full bg-primary/80 p-3 text-white hover:scale-110 transition"
               >
                 <Icon icon="iconamoon:arrow-right-2-light" />
               </button>
             </div>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-x-8 my-10">
+          <div className="grid md:grid-cols-2 gap-x-8 my-8">
             {hotDeals.map((item) => (
-              <div key={item.id} className="px-2">
-                <ProductCard product={item} label="Hot Deal" />
-              </div>
+              <ProductCard key={item.id} product={item} label="Hot Deal" />
             ))}
           </div>
         )}

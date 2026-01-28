@@ -22,7 +22,6 @@ const placements: MediaPlacement[] = [
   "best_seller_video_2",
 ];
 
-// Fallback videos in order
 const fallbackVideos = [
   "https://cdn.pixabay.com/video/2023/06/30/169476-841382886_large.mp4",
   "https://cdn.pixabay.com/video/2017/06/01/9486-220088143_large.mp4",
@@ -31,12 +30,11 @@ const fallbackVideos = [
 const BestSellers = ({ bestSellers, title, media }: Props) => {
   const sliderRef = useRef<Slider | null>(null);
 
-  // Map each placement to either the media video or fallback
   const videoItems = placements.map((placement, idx) => {
-    const mediaVideo = media.find((m) => m.placement === placement && m.type === "video");
-    if (mediaVideo) return mediaVideo;
-    // fallback video if not set
-    return { videoUrl: fallbackVideos[idx] } as AnyMediaItem;
+    const mediaVideo = media.find(
+      (m) => m.placement === placement && m.type === "video"
+    );
+    return mediaVideo ?? ({ videoUrl: fallbackVideos[idx] } as AnyMediaItem);
   });
 
   const settings = {
@@ -49,10 +47,9 @@ const BestSellers = ({ bestSellers, title, media }: Props) => {
     dots: false,
     arrows: false,
     responsive: [
-      { breakpoint: 1200, settings: { slidesToShow: 3, slidesToScroll: 1, infinite: true, dots: true } },
-      { breakpoint: 1024, settings: { slidesToShow: 2, slidesToScroll: 1, infinite: true, dots: true } },
-      { breakpoint: 900, settings: { slidesToShow: 2, slidesToScroll: 1, initialSlide: 2 } },
-      { breakpoint: 480, settings: { slidesToShow: 1, slidesToScroll: 1 } },
+      { breakpoint: 1200, settings: { slidesToShow: 3 } },
+      { breakpoint: 1024, settings: { slidesToShow: 3  } },
+      { breakpoint: 480, settings: { slidesToShow: 2 } },
     ],
   };
 
@@ -60,28 +57,33 @@ const BestSellers = ({ bestSellers, title, media }: Props) => {
   const handlePrev = () => sliderRef.current?.slickPrev();
 
   return (
-    <main className="grid grid-cols-3 items-center gap-x-8">
-      {/* Videos Column */}
+    <main className="grid grid-cols-1 gap-10 lg:grid-cols-3 lg:items-center lg:gap-x-8">
+      {/* ================= VIDEOS ================= */}
       <div className="flex flex-col gap-6">
         {videoItems.map((video, index) => (
-          <video
+          <div
             key={index}
-            loop
-            autoPlay
-            muted
-            controls
-            className="w-full h-1/2 object-cover rounded-lg shadow-md"
+            className="w-full overflow-hidden rounded-lg shadow-md aspect-video"
           >
-            <source src={video.videoUrl} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+            <video
+              loop
+              autoPlay
+              muted
+              controls
+              playsInline
+              className="h-full w-full object-cover"
+            >
+              <source src={video.videoUrl} type="video/mp4" />
+            </video>
+          </div>
         ))}
       </div>
 
-      {/* Best Sellers Slider */}
-      <div className="col-span-2">
+      {/* ================= BEST SELLERS ================= */}
+      <div className="  lg:col-span-2">
         <PageHeader title={title} />
-        {bestSellers.length > 3 ? (
+
+        {bestSellers.length >= 2 ? (
           <div className="relative">
             <Slider {...settings} ref={sliderRef} className="my-10">
               {bestSellers.map((item) => (
@@ -91,19 +93,20 @@ const BestSellers = ({ bestSellers, title, media }: Props) => {
               ))}
             </Slider>
 
-            {/* Slider Arrows */}
-            <div className="absolute top-1/2 -translate-y-1/2 -left-2">
+            {/* ARROWS (desktop only visually) */}
+            <div className="absolute top-1/2 -translate-y-1/2 -left-2 hidden md:block">
               <button
                 onClick={handlePrev}
-                className="cursor-pointer rounded-full bg-primary/80 shadow-sm hover:bg-primarymain/80 text-white border-zinc-300 p-3 hover:scale-110 ease-in-out duration-300 text-lg"
+                className="rounded-full bg-primary/80 p-3 text-white hover:scale-110"
               >
                 <Icon icon="iconamoon:arrow-left-2-light" />
               </button>
             </div>
-            <div className="absolute top-1/2 -translate-y-1/2 -right-2">
+
+            <div className="absolute top-1/2 -translate-y-1/2 -right-2 hidden md:block">
               <button
                 onClick={handleNext}
-                className="cursor-pointer rounded-full bg-primary/80 shadow-sm hover:bg-primarymain/80 text-white border-zinc-300 p-3 hover:scale-110 ease-in-out duration-300 text-lg"
+                className="rounded-full bg-primary/80 p-3 text-white hover:scale-110"
               >
                 <Icon icon="iconamoon:arrow-right-2-light" />
               </button>
@@ -112,9 +115,7 @@ const BestSellers = ({ bestSellers, title, media }: Props) => {
         ) : (
           <div className="grid md:grid-cols-2 gap-x-8 my-10">
             {bestSellers.map((item) => (
-              <div key={item.id} className="px-2">
-                <ProductCard product={item} label="Best Seller" />
-              </div>
+              <ProductCard key={item.id} product={item} label="Best Seller" />
             ))}
           </div>
         )}

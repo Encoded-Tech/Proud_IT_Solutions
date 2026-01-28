@@ -37,7 +37,7 @@ export default async function HomeProducts({
   const newArrivals = newRes.data || [];
 
   return (
-    <div className="space-y-20">
+    <div className=" md:space-y-20">
    
       {showBestSellers && <BestSellers media = {mediaItems} bestSellers={bestSellers} title="Best Sellers" />}
          {showNewArrivals && <Sale newArrivals={newArrivals} title="New Arrivals" />}

@@ -67,7 +67,7 @@ const Sale = ({newArrivals, title}: Props) => {
     <main>
       <PageHeader title={title} />
       {newArrivals.length > 4 ? (
-        <div className="relative my-8">
+        <div className="relative my-10">
           <Slider {...settings} ref={sliderRef} className="my-10">
             {newArrivals.map((item, index) => (
               <div key={index} className="px-2">
@@ -79,7 +79,7 @@ const Sale = ({newArrivals, title}: Props) => {
           <div className="absolute top-1/2 -translate-y-1/2 -left-2">
             <button
               onClick={handlePrev}
-              className="cursor-pointer rounded-full  bg-primary shadow-sm  hover:bg-primarymain/80 text-white border-zinc-300 p-3 hover:scale-110 ease-in-out duration-300   text-lg"
+              className="cursor-pointer rounded-full  bg-primary shadow-sm  hover:bg-primarymain/80 text-white border-zinc-300 p-3 hover:scale-110 ease-in-out duration-300 hidden md:block  text-lg"
             >
               <Icon icon="iconamoon:arrow-left-2-light" />
             </button>
@@ -87,7 +87,7 @@ const Sale = ({newArrivals, title}: Props) => {
           <div className="absolute top-1/2 -translate-y-1/2 -right-2">
             <button
               onClick={handleNext}
-              className="cursor-pointer rounded-full  bg-primary shadow-sm  hover:bg-primarymain/80 text-white border-zinc-300 p-3 hover:scale-110 ease-in-out duration-300   text-lg"
+              className="cursor-pointer rounded-full  bg-primary shadow-sm  hover:bg-primarymain/80 text-white border-zinc-300 p-3 hover:scale-110 ease-in-out duration-300 hidden md:block  text-lg"
             >
               <Icon icon="iconamoon:arrow-right-2-light" />
             </button>

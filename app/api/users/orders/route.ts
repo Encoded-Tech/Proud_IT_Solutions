@@ -69,7 +69,7 @@ export interface IOrderResponse {
 export const GET = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
 
     const orders = await Order.find({ user: userId })
       .populate({
@@ -118,7 +118,7 @@ export const POST = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
 
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
     const { orderItems, deliveryInfo, paymentMethod } = await req.json();
 
     // Validate order items

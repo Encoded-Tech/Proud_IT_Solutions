@@ -398,6 +398,7 @@ const ShopGrid = ({ products: initialProducts, categories }: ShopGridProps) => {
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
   const [selectedCategorySlug, setSelectedCategorySlug] = useState<string | null>(null);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
+   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   /* ----------------------------- FETCH STATIC BRANDS ------------------------ */
   useEffect(() => {
@@ -568,6 +569,155 @@ setPendingProducts([]);
           animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
       `}</style>
+
+       {/* Mobile Filter Button */}
+      <div className="block md:hidden mb-4 ">
+        <button
+          onClick={() => setMobileFilterOpen(true)}
+          className="bg-primary text-white px-4 py-2 rounded font-medium shadow"
+        >
+         Apply Filters
+        </button>
+      </div>
+
+      {/* Mobile Filter Drawer */}
+      {mobileFilterOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          <div
+            className="fixed inset-0 bg-black/40"
+            onClick={() => setMobileFilterOpen(false)}
+          />
+          <div className="relative w-3/4 max-w-xs bg-white p-4 overflow-y-auto">
+            <button
+              onClick={() => setMobileFilterOpen(false)}
+              className="bg-primary text-white px-4 py-2 rounded font-medium shadow mb-4"
+            >
+              Close Filters
+            </button>
+
+            {/* Render filters inside drawer */}
+            <div className="space-y-6">
+              {/* Price */}
+              <div className="space-y-2">
+                <h3 className="font-medium text-lighttext">Price</h3>
+                <div className="flex items-start gap-2">
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={minPrice ?? ""}
+                    onChange={(e) =>
+                      setMinPrice(e.target.value ? Number(e.target.value) : undefined)
+                    }
+                    className="w-full h-9 border border-gray-300 rounded px-2 text-sm"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={maxPrice ?? ""}
+                    onChange={(e) =>
+                      setMaxPrice(e.target.value ? Number(e.target.value) : undefined)
+                    }
+                    className="w-full h-9 border border-gray-300 rounded px-2 text-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Category */}
+              <div className="space-y-2">
+                <h3 className="font-medium text-lighttext">Category</h3>
+                <div className="space-y-1 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                  {categories.map((cat) => (
+                    <label
+                      key={cat.id}
+                      className="flex justify-between cursor-pointer text-sm font-medium text-lighttext hover:text-primary transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="category-mobile"
+                          checked={selectedCategorySlug === cat.slug}
+                          onChange={() =>
+                            setSelectedCategorySlug(
+                              selectedCategorySlug === cat.slug ? null : cat.slug
+                            )
+                          }
+                          className="accent-primarymain cursor-pointer"
+                        />
+                        <span>{cat.categoryName}</span>
+                      </div>
+                      {cat.productCount && (
+                        <span className="text-gray-400">({cat.productCount})</span>
+                      )}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Brand */}
+              <div className="space-y-2">
+                <h3 className="font-medium text-lighttext">Brand</h3>
+                <div className="space-y-1 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+                  {brands.map((brand) => (
+                    <label
+                      key={brand.name}
+                      className="flex justify-between items-center cursor-pointer text-sm font-medium text-lighttext hover:text-primary transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          name="brand-mobile"
+                          checked={selectedBrand === brand.name}
+                          onChange={() =>
+                            setSelectedBrand(selectedBrand === brand.name ? null : brand.name)
+                          }
+                          className="accent-primarymain cursor-pointer"
+                        />
+                        <span>{brand.name}</span>
+                      </div>
+                      <span className="text-gray-400">({brand.count})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Rating */}
+              <div className="space-y-2">
+                <h3 className="font-medium text-lighttext">Rating</h3>
+                {[5, 4, 3, 2, 1].map((r) => (
+                  <div
+                    key={r}
+                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors"
+                    onClick={() => setSelectedRating(selectedRating === r ? null : r)}
+                  >
+                    <input
+                      type="radio"
+                      checked={selectedRating === r}
+                      onChange={() => setSelectedRating(r)}
+                      className="accent-primarymain cursor-pointer"
+                    />
+                    <div className="flex items-center">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Icon
+                          key={i}
+                          icon="ic:round-star"
+                          className={i < r ? "text-yellow-500 text-lg" : "text-gray-300 text-lg"}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={resetFilters}
+                className="w-full py-2 text-sm text-white bg-primary hover:bg-primary/90 rounded-md transition-colors font-medium"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <main className="grid md:grid-cols-7 gap-x-6">
       {/* ------------------------------- FILTERS ------------------------------ */}
       <aside className="hidden md:block col-span-2 h-fit sticky top-4">

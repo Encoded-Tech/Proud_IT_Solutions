@@ -1,18 +1,21 @@
 "use client";
+
 import React, { useRef } from "react";
 import PageHeader from "../text/page-header";
 import Image from "next/image";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
 import Slider from "react-slick";
 import Link from "next/link";
-import { Icon } from "@iconify/react/dist/iconify.js";
+import { Icon } from "@iconify/react";
 import { CategoryType } from "@/types/product";
 
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 
-
-
-export default function SliderClient({ categories }: { categories: CategoryType[] }) {
+export default function SliderClient({
+  categories,
+}: {
+  categories: CategoryType[];
+}) {
   const sliderRef = useRef<Slider | null>(null);
 
   const settings = {
@@ -21,9 +24,9 @@ export default function SliderClient({ categories }: { categories: CategoryType[
     slidesToShow: 5,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 2000,
+    autoplaySpeed: 2500,
     centerMode: true,
-    dots: true,
+    dots: false,
     arrows: false,
     centerPadding: "0px",
     responsive: [
@@ -31,122 +34,128 @@ export default function SliderClient({ categories }: { categories: CategoryType[
         breakpoint: 1200,
         settings: {
           slidesToShow: 5,
-          slidesToScroll: 3,
-          infinite: true,
-          dots: true,
         },
       },
       {
         breakpoint: 1024,
         settings: {
           slidesToShow: 4,
-          slidesToScroll: 2,
-          initialSlide: 2,
         },
       },
       {
         breakpoint: 768,
         settings: {
           slidesToShow: 3,
-          slidesToScroll: 2,
-          initialSlide: 2,
         },
       },
       {
         breakpoint: 470,
         settings: {
           slidesToShow: 2,
-          slidesToScroll: 1,
         },
       },
     ],
   };
 
-  const handleNext = () => {
-    sliderRef.current?.slickNext();
-  };
+  const handleNext = () => sliderRef.current?.slickNext();
+  const handlePrev = () => sliderRef.current?.slickPrev();
 
-  const handlePrev = () => {
-    sliderRef.current?.slickPrev();
-  };
   return (
     <div className="relative">
       <PageHeader title="Popular Categories" />
+
       {categories.length > 5 ? (
-        <section>
-          <Slider {...settings} ref={sliderRef} className="my-10">
-            {categories?.map((item, index) => (
+        <section className="relative">
+          <Slider ref={sliderRef} {...settings} className="my-10">
+            {categories.map((item, index) => (
               <div key={index} className="px-2">
                 <Link href="/shop">
-                  <figure className="overflow-hidden rounded-md cursor-pointer">
+                  {/* IMAGE + BADGE */}
+                  <figure className="relative overflow-hidden rounded-md cursor-pointer group">
+              {item.productCount > 0 && (
+  <span
+    aria-label={`${item.productCount} ${
+      item.productCount === 1 ? "Product" : "Products"
+    }`}
+    className="absolute top-2 right-2 z-10 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-md ring-1 ring-black/5"
+  >
+    {item.productCount}{" "}
+    {item.productCount === 1 ? "Product" : "Products"}
+  </span>
+)}
+
+
                     <Image
                       src={item.categoryImage}
-                      alt="hero"
+                      alt={item.categoryName}
                       width={1000}
                       height={500}
-                      priority
-                      className="lg:h-46   hover:scale-110 ease-in-out duration-300"
+                      loading="lazy"
+                      className="h-40 w-full object-cover transition-transform duration-300 group-hover:scale-110"
                     />
                   </figure>
 
-                  <div className="flex flex-col justify-center items-center my-2">
-                    <h2 className="font-medium text-md">{item.categoryName}</h2>
-                    <p className="text-zinc-500 font-medium text-sm">
-                      {item.productCount} Products
-                    </p>
+                  {/* CATEGORY NAME */}
+                  <div className="flex justify-center mt-3">
+                    <h2 className="font-medium text-md text-center line-clamp-2 min-h-[3rem]">
+                      {item.categoryName}
+                    </h2>
                   </div>
                 </Link>
               </div>
             ))}
           </Slider>
 
-          <div className="absolute top-1/2 -translate-y-1/2 -left-2">
-            <button
-              onClick={handlePrev}
-              className="cursor-pointer rounded-full  bg-primary/80 shadow-sm  hover:bg-primarymain/80 text-white border-zinc-300 p-3 hover:scale-110 ease-in-out duration-300   text-lg"
-            >
-              <Icon icon="iconamoon:arrow-left-2-light" />
-            </button>
-          </div>
-          <div className="absolute top-1/2 -translate-y-1/2 -right-2">
-            <button
-              onClick={handleNext}
-              className="cursor-pointer rounded-full  bg-primary/80 shadow-sm  hover:bg-primarymain/80 text-white border-zinc-300 p-3 hover:scale-110 ease-in-out duration-300   text-lg"
-            >
-              <Icon icon="iconamoon:arrow-right-2-light" />
-            </button>
-          </div>
+          {/* CUSTOM ARROWS */}
+          <button
+            aria-label="Previous categories"
+            onClick={handlePrev}
+            className="absolute top-1/2 -left-2 -translate-y-1/2 rounded-full bg-primary/80 p-3 text-white shadow-sm transition hover:scale-110 hover:bg-primarymain/80"
+          >
+            <Icon icon="iconamoon:arrow-left-2-light" />
+          </button>
+
+          <button
+            aria-label="Next categories"
+            onClick={handleNext}
+            className="absolute top-1/2 -right-2 -translate-y-1/2 rounded-full bg-primary/80 p-3 text-white shadow-sm transition hover:scale-110 hover:bg-primarymain/80"
+          >
+            <Icon icon="iconamoon:arrow-right-2-light" />
+          </button>
         </section>
       ) : (
-        <section className="grid grid-cols-5 my-10">
-          {categories?.map((item, index) => (
-            <div key={index} className="px-2">
-              <Link href="/">
-                <figure className="overflow-hidden rounded-md cursor-pointer">
+        /* FALLBACK GRID */
+        <section className="grid grid-cols-2 gap-4 my-10 sm:grid-cols-3 md:grid-cols-5">
+          {categories.map((item, index) => (
+            <Link key={index} href="/shop">
+              <div className="px-2">
+                <figure className="relative overflow-hidden rounded-md cursor-pointer group">
+                  {item.productCount > 0 && (
+                    <span className="absolute top-2 right-2 z-10 rounded-full bg-black/70 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+                      {item.productCount > 99
+                        ? "99+"
+                        : item.productCount}
+                    </span>
+                  )}
+
                   <Image
                     src={item.categoryImage}
-                    alt="hero"
+                    alt={item.categoryName}
                     width={1000}
                     height={500}
-                    priority
-                    className="h-46  hover:scale-110 ease-in-out duration-300"
+                    loading="lazy"
+                    className="h-40 w-full object-cover transition-transform duration-300 group-hover:scale-110"
                   />
                 </figure>
 
-                <div className="flex flex-col justify-center items-center my-2">
-                  <h2 className="font-medium text-lg">{item.categoryName}</h2>
-                  <p className="text-zinc-500 font-medium">
-                      {item.productCount} Products 
-                  </p>
-                </div>
-              </Link>
-            </div>
+                <h2 className="mt-3 text-center font-medium text-md line-clamp-2 min-h-[3rem]">
+                  {item.categoryName}
+                </h2>
+              </div>
+            </Link>
           ))}
         </section>
       )}
     </div>
   );
-};
-
-
-
+}
