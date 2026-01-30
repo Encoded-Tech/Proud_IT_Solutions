@@ -1,7 +1,17 @@
-import { blogType } from "@/types/blog";
+
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
+export interface blogType {
+  id: number;
+  title: string;
+  slug: string;
+  author: string;
+  tags: string[];
+  date: string;
+  summary: string;  
+  image: string;
+}
 
 const BlogCard = ({ blogs }: { blogs: blogType }) => {
   const { title, slug, author, date, summary, image } = blogs;

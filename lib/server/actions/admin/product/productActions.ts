@@ -405,6 +405,7 @@ import { requireAdmin } from "@/lib/auth/requireSession";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { productType } from "@/types/product";
 import { mapProductToFrontend } from "@/lib/server/mappers/MapProductData";
+import { revalidatePath } from "next/cache";
 
 /* ------------------------ API RESPONSE TYPES ------------------------ */
 export interface ActionResult<T = undefined> {
@@ -523,6 +524,10 @@ if (discountPercent !== undefined) {
       isActive,
     });
 
+    revalidatePath("/");
+    revalidatePath("/shop");
+    revalidatePath("/admin/product");
+
     return { success: true, message: "Product created successfully", data: mapProductToFrontend(product) };
   } catch (err) {
     console.error("Create Product Error:", err);
@@ -638,6 +643,10 @@ if (discountPercent === undefined) {
     if (offerEndDate) productToUpdate.offerEndDate = offerEndDate;
 
     await productToUpdate.save();
+    
+    revalidatePath("/");
+    revalidatePath("/shop");
+    revalidatePath("/admin/product");
 
     return { success: true, message: "Product updated successfully", data: mapProductToFrontend(productToUpdate) };
   } catch (err) {
@@ -673,6 +682,10 @@ export const deleteProductAction = async ({ productId }: DeleteProductInput): Pr
 
     // Delete product from DB
     await productToDelete.deleteOne();
+    
+    revalidatePath("/");
+    revalidatePath("/shop");
+    revalidatePath("/admin/product");
 
     return { success: true, message: "Product deleted successfully" };
   } catch (err) {

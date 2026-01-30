@@ -1,4 +1,5 @@
-import { blogType } from "@/types/blog";
+import { blogType } from "@/components/card/blog-card";
+
 
 export const mockblogs: blogType[] = [
   {
