@@ -9,14 +9,16 @@ export default async function ListProducts({ page = 1, limit = 6 }: { page?: num
   const res = await fetchAllProducts(page, limit);
   const products = res.data || [];
 
+  console.log(res.pagination);
+
   const categoriesRes = await fetchCategories();
 const categories = categoriesRes.data || [];
 
 
 
   return (
-    <div className="space-y-20">
-      <ShopGrid products={products} categories={categories} />
+    <div className="space-y-20 mb-24">
+      <ShopGrid products={products} categories={categories} pagination={res.pagination} />
       {/* pagination component using res.pagination */}
     </div>
   );
