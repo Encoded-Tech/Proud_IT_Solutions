@@ -1357,7 +1357,7 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
 
         {/* Products Grid */}
         <section className="col-span-5">
-      <div className="grid sm:grid-cols-2 sm:justify-between sm:items-center mb-4">
+  <div className="grid sm:grid-cols-2 sm:justify-between sm:items-center mb-4">
   <div className="hidden sm:block text-sm text-gray-600">
     Showing {allProducts.length} product{allProducts.length !== 1 ? 's' : ''} and have {pagination?.total} more
   </div>
@@ -1376,27 +1376,9 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
           <span className="sm:hidden">Prev</span>
         </button>
 
-        {/* First Page + Ellipsis */}
-        {page > 2 && (
-          <>
-            <button
-              onClick={() => goToPage(1)}
-              className="px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-all text-xs sm:text-sm font-medium min-w-[36px]"
-            >
-              1
-            </button>
-            {page > 3 && (
-              <span className="px-1 text-gray-400 text-xs sm:text-sm">...</span>
-            )}
-          </>
-        )}
-
-        {/* Visible Page Numbers - Always show only 3 pages max */}
-        {Array.from({ length: totalPages }, (_, i) => i + 1)
-          .filter(pageNum => {
-            // Show current page and 1 page on each side (max 3 pages)
-            return pageNum >= page - 1 && pageNum <= page + 1;
-          })
+        {/* Always show exactly 3 consecutive pages starting from current page */}
+        {Array.from({ length: 3 }, (_, i) => page + i)
+          .filter(pageNum => pageNum <= totalPages) // Don't show pages beyond total
           .map(pageNum => (
             <button
               key={pageNum}
@@ -1412,12 +1394,10 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
             </button>
           ))}
 
-        {/* Last Page + Ellipsis */}
-        {page < totalPages - 1 && (
+        {/* Show ellipsis and last page if we're not near the end */}
+        {page + 2 < totalPages && (
           <>
-            {page < totalPages - 2 && (
-              <span className="px-1 text-gray-400 text-xs sm:text-sm">...</span>
-            )}
+            <span className="px-1 text-gray-400 text-xs sm:text-sm">...</span>
             <button
               onClick={() => goToPage(totalPages)}
               className="px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-all text-xs sm:text-sm font-medium min-w-[36px]"
