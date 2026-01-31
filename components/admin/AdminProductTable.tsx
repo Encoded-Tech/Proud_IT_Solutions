@@ -1,13 +1,24 @@
+
+
+
 "use client";
 
 import Image from "next/image";
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CategoryType, productType } from "@/types/product";
-import { Search, Edit, Trash2 } from "lucide-react";
+import { Search, Edit, Trash2, ArrowUpDown } from "lucide-react";
 import { deleteProductAction } from "@/lib/server/actions/admin/product/productActions";
 import toast from "react-hot-toast";
 import { AddProductForm, Product } from "@/app/admin/product/add-product/addproductForm";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PaginationMeta {
   page: number;
@@ -28,13 +39,59 @@ export default function ProductTable({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [search, setSearch] = useState("");
+  /* ---------------- URL STATE ---------------- */
+  const page = pagination.page;
+  const totalPages = pagination.totalPages;
+
+  const currentSearch = searchParams.get("search") ?? "";
+  const currentStatus = searchParams.get("status") ?? "all";
+  const currentSort = searchParams.get("sort") ?? "newest";
+
+  const [search, setSearch] = useState(currentSearch);
+  const [status, setStatus] = useState(currentStatus);
+  const [sort, setSort] = useState(currentSort);
+
   const [editingProduct, setEditingProduct] = useState<productType | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<productType | null>(null);
   const [isPending, setIsPending] = useState(false);
 
-  const page = pagination.page;
-  const totalPages = pagination.totalPages;
+  /* ---------------- LIVE SEARCH (DEBOUNCED) ---------------- */
+  useEffect(() => {
+    if (search === currentSearch) return; // 👈 prevent reset
+
+    const timeout = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      if (search.trim()) params.set("search", search.trim());
+      else params.delete("search");
+
+      params.set("page", "1");
+      router.push(`?${params.toString()}`);
+    }, 400);
+
+    return () => clearTimeout(timeout);
+  }, [search, router, currentSearch, searchParams]);
+
+
+  /* ---------------- SYNC UI WITH URL ---------------- */
+  useEffect(() => {
+    setSearch(currentSearch);
+    setStatus(currentStatus);
+    setSort(currentSort);
+  }, [currentSearch, currentStatus, currentSort]);
+
+  /* ---------------- PARAM UPDATER ---------------- */
+  const updateParams = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (!value || value === "all") params.delete(key);
+      else params.set(key, value);
+    });
+
+    params.set("page", "1");
+    router.push(`?${params.toString()}`);
+  };
 
   const goToPage = (p: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -42,20 +99,7 @@ export default function ProductTable({
     router.push(`?${params.toString()}`);
   };
 
-  const filteredProducts = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return products;
-
-    return products.filter((product) => {
-      const name = product.name?.toLowerCase() ?? "";
-      const category = product.category?.categoryName?.toLowerCase() ?? "";
-      const brand = product.brandName?.toLowerCase() ?? "";
-
-      return name.includes(q) || category.includes(q) || brand.includes(q);
-    });
-  }, [products, search]);
-
-  // Actual deletion function
+  /* ---------------- DELETE ---------------- */
   const confirmDelete = async () => {
     if (!deleteTarget) return;
 
@@ -72,6 +116,12 @@ export default function ProductTable({
     }
   };
 
+  const hasActiveFilters =
+    !!currentSearch ||
+    currentStatus !== "all" ||
+    currentSort !== "newest";
+
+
   return (
     <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
       {/* Header */}
@@ -79,21 +129,78 @@ export default function ProductTable({
         <div>
           <h2 className="text-2xl font-bold">Products</h2>
           <p className="text-sm text-gray-500">
-            Showing {filteredProducts.length} of {pagination.total} products
+            Showing {products.length} of {pagination.total} products
           </p>
         </div>
 
-        {/* Search */}
-        <div className="relative">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search product by name, category"
-            className="border px-12 py-4 rounded-lg text-lg w-80 focus:outline-none"
-          />
-          <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+        {/* Filters */}
+        <div className="flex gap-3 items-center">
+          {/* Status */}
+          <Select
+            value={status}
+            onValueChange={(value) => updateParams({ status: value })}
+          >
+            <SelectTrigger className="w-[260px] py-8 rounded-lg  text-lg ">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">🟢 Active</SelectItem>
+              <SelectItem value="inactive">🔴 Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+
+
+          {/* Sort */}
+          <div className="relative">
+            <ArrowUpDown className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Select
+              value={sort}
+              onValueChange={(value) => updateParams({ sort: value })}
+            >
+              <SelectTrigger className="w-[260px]  py-8 rounded-lg  text-lg ">
+                <div className="flex items-center gap-2">
+                  <ArrowUpDown className="w-4 h-4 text-gray-500" />
+                  <SelectValue placeholder="Sort by" />
+                </div>
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="oldest">Oldest</SelectItem>
+                <SelectItem value="price_asc">Price ↑</SelectItem>
+                <SelectItem value="price_desc">Price ↓</SelectItem>
+              </SelectContent>
+            </Select>
+
+          </div>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search product or brand"
+              className="border px-12 py-4 rounded-lg text-lg w-80 focus:outline-none"
+            />
+          </div>
+          {hasActiveFilters && (
+            <button
+              onClick={() => router.push("?")}
+              className="px-5 py-4 rounded-lg text-lg border border-red-300 
+           text-red-600 hover:bg-red-50 
+           hover:border-red-400 transition"
+            >
+              ❌ Clear All
+            </button>
+          )}
         </div>
+
       </div>
+
+
 
       {/* Table */}
       <div className="overflow-x-auto">
@@ -114,9 +221,8 @@ export default function ProductTable({
           </thead>
 
           <tbody className="divide-y">
-            {filteredProducts.map((product) => (
+            {products.map((product) => (
               <tr key={product.id}>
-                {/* Product */}
                 <td className="px-6 py-4 flex gap-3">
                   <div className="relative w-14 h-14 border rounded">
                     <Image
@@ -131,7 +237,6 @@ export default function ProductTable({
                   </div>
                 </td>
 
-                {/* Brand */}
                 <td className="px-6 py-4 text-center">
                   {product.brandName ? (
                     <span className="px-3 py-1 rounded bg-blue-50 text-blue-800 text-sm">
@@ -144,7 +249,6 @@ export default function ProductTable({
                   )}
                 </td>
 
-                {/* Category */}
                 <td className="px-6 py-4 text-center">
                   {product.category?.categoryName ? (
                     <span className="px-3 py-1 rounded bg-green-50 text-green-800 text-sm">
@@ -157,13 +261,10 @@ export default function ProductTable({
                   )}
                 </td>
 
-                {/* Price */}
                 <td className="px-6 py-4 text-center font-medium">
                   {product.price?.toLocaleString()}
                 </td>
 
-                {/* Discount */}
-          {/* Discount */}
                 <td className="px-6 py-4 text-center">
                   {product.isOfferedPriceActive ? (
                     <span className="px-2 py-1 rounded bg-green-50 text-green-700 text-sm">
@@ -176,7 +277,6 @@ export default function ProductTable({
                   )}
                 </td>
 
-                {/* Offered Price */}
                 <td className="px-6 py-4 text-center">
                   {product.isOfferedPriceActive ? (
                     product.offeredPrice?.toLocaleString()
@@ -187,7 +287,6 @@ export default function ProductTable({
                   )}
                 </td>
 
-                {/* Stock */}
                 <td className="px-6 py-4 text-center">
                   {product.stock > 0 ? (
                     <span className="px-2 py-1 rounded bg-green-50 text-green-700 text-sm">
@@ -200,7 +299,6 @@ export default function ProductTable({
                   )}
                 </td>
 
-                {/* Status */}
                 <td className="px-6 py-4 text-center">
                   {product.isActive ? (
                     <span className="px-2 py-1 rounded bg-green-50 text-green-700 text-sm">
@@ -213,7 +311,6 @@ export default function ProductTable({
                   )}
                 </td>
 
-                {/* Created */}
                 <td className="px-6 py-4 text-right text-sm">
                   <div>{new Date(product.createdAt).toLocaleDateString()}</div>
                   <div className="text-xs text-gray-500">
@@ -221,7 +318,6 @@ export default function ProductTable({
                   </div>
                 </td>
 
-                {/* Actions */}
                 <td className="px-6 py-8 text-center flex justify-center gap-2">
                   <button
                     className="p-2 rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
@@ -269,7 +365,6 @@ export default function ProductTable({
         </div>
       )}
 
-      {/* Edit Form Modal */}
       {editingProduct && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-start pt-16 z-50 overflow-auto">
           <div className="bg-white rounded-2xl p-6 w-full max-w-6xl relative">
@@ -282,7 +377,7 @@ export default function ProductTable({
             </button>
 
             <AddProductForm
-              categories={categories} 
+              categories={categories}
               editProduct={mapProductTypeToFormProduct(editingProduct)}
             />
           </div>
@@ -295,7 +390,7 @@ export default function ProductTable({
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
             <h3 className="text-lg font-semibold mb-2">Delete product?</h3>
             <p className="text-sm text-gray-600 mb-6">
-              This will permanently delete <span className="font-medium">{deleteTarget.name}</span>. 
+              This will permanently delete <span className="font-medium">{deleteTarget.name}</span>.
               This action cannot be undone.
             </p>
 
@@ -320,12 +415,12 @@ export default function ProductTable({
           </div>
         </div>
       )}
+
     </div>
   );
 }
 
-
-// Mapper
+/* ---------------- Mapper (UNCHANGED) ---------------- */
 export function mapProductTypeToFormProduct(p: productType): Product {
   return {
     id: p.id,
@@ -335,11 +430,11 @@ export function mapProductTypeToFormProduct(p: productType): Product {
     description: p.description,
     category: {
       id: p.category?.id || "",
-      categoryName: p.category.categoryName
+      categoryName: p.category.categoryName,
     },
     images: p.images || [],
     variants: p.variants || [],
-    tags: p.tags.map(t => ({ id: t.id, name: t.name })),
+    tags: p.tags.map((t) => ({ id: t.id, name: t.name })),
     brandName: p.brandName,
     discountPercent: p.discountPercent,
     offeredPrice: p.offeredPrice,
@@ -352,3 +447,4 @@ export function mapProductTypeToFormProduct(p: productType): Product {
     avgRating: p.avgRating,
   };
 }
+

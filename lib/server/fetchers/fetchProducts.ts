@@ -89,32 +89,203 @@ if (category) {
 }
 
 
+// export async function fetchAllProducts(
+//   page = 1,
+//   limit = 6,
+//   filters?: FilterQuery<IProduct>
+// ): Promise<PaginatedProductResponse<productType>> {
+//   try {
+//     await connectDB();
+
+//     const skip = (page - 1) * limit;
+
+//     const filter: FilterQuery<IProduct> = { isActive: true, ...filters };
+
+//     const total = await Product.countDocuments(filter);
+
+//     const products = await Product.find(filter)
+//       .sort({ createdAt: -1 }) // newest first
+//       .skip(skip)
+//       .limit(limit)
+//       .populate({
+//     path: "category",
+//     select: "categoryName slug categoryImage isActive createdAt"
+//   })
+//       .populate({
+//         path: "variants",
+//         match: { isActive: true },
+//         select: "price stock specs images isActive",
+//       })
+//       .lean<IProduct[]>();
+
+//     return {
+//       success: true,
+//       message: "Products fetched successfully",
+//       data: products.map(mapProductToFrontend),
+//     pagination: {
+//   page,
+//   limit,
+//   total: total ?? 0,  
+//   totalPages: Math.ceil((total ?? 0) / limit),
+// }
+//     };
+//   } catch (error) {
+//     const errorMessage = error instanceof Error ? error.message : "Unexpected server error";
+//     console.error("Fetch All Products Error:", errorMessage);
+
+//     return {
+//       success: false,
+//       message: "Failed to fetch products",
+//       data: null,
+//       error: errorMessage,
+//     };
+//   }
+// }
+
+// export async function fetchAllProducts(
+//   page = 1,
+//   limit = 6,
+//   options?: {
+//     includeInactive?: boolean; // admin use
+//     filters?: FilterQuery<IProduct>;
+//   }
+// ): Promise<PaginatedProductResponse<productType>> {
+//   try {
+//     await connectDB();
+
+//     const skip = (page - 1) * limit;
+
+//     const filter: FilterQuery<IProduct> = {
+//       ...(options?.filters ?? {}),
+//     };
+
+//     // 👇 SAFE DEFAULT: frontend
+//     if (!options?.includeInactive) {
+//       filter.isActive = true;
+//     }
+
+//     const total = await Product.countDocuments(filter);
+
+//     const products = await Product.find(filter)
+//       .sort({ createdAt: -1 })
+//       .skip(skip)
+//       .limit(limit)
+//       .populate({
+//         path: "category",
+//         select: "categoryName slug categoryImage isActive createdAt",
+//       })
+//       .populate({
+//         path: "variants",
+//         match: { isActive: true }, // variants stay frontend-safe
+//         select: "price stock specs images isActive",
+//       })
+//       .lean<IProduct[]>();
+
+//     return {
+//       success: true,
+//       message: "Products fetched successfully",
+//       data: products.map(mapProductToFrontend),
+//       pagination: {
+//         page,
+//         limit,
+//         total: total ?? 0,
+//         totalPages: Math.ceil((total ?? 0) / limit),
+//       },
+//     };
+//   } catch (error) {
+//     const errorMessage =
+//       error instanceof Error ? error.message : "Unexpected server error";
+//     console.error("Fetch All Products Error:", errorMessage);
+
+//     return {
+//       success: false,
+//       message: "Failed to fetch products",
+//       data: null,
+//       error: errorMessage,
+//     };
+//   }
+// }
+
+
 export async function fetchAllProducts(
   page = 1,
-  limit = 6,
-  filters?: FilterQuery<IProduct>
+  limit = 12,
+  options?: {
+    includeInactive?: boolean;              // admin only
+    search?: string;                        // global search
+    status?: "active" | "inactive" | "all"; // admin filter
+    categoryId?: string;                    // category filter
+    brandName?: string;                     // brand filter
+    sort?: "newest" | "oldest" | "price_asc" | "price_desc";
+  }
 ): Promise<PaginatedProductResponse<productType>> {
   try {
     await connectDB();
 
     const skip = (page - 1) * limit;
+    const filter: FilterQuery<IProduct> = {};
 
-    const filter: FilterQuery<IProduct> = { isActive: true, ...filters };
+    /* -------------------------------- SEARCH -------------------------------- */
+    if (options?.search) {
+      filter.$or = [
+        { name: { $regex: options.search, $options: "i" } },
+        { brandName: { $regex: options.search, $options: "i" } },
+      ];
+    }
 
+    /* ------------------------------ CATEGORY -------------------------------- */
+    if (options?.categoryId) {
+      filter.category = options.categoryId;
+    }
+
+    /* ------------------------------- BRAND ---------------------------------- */
+    if (options?.brandName) {
+      filter.brandName = { $regex: `^${options.brandName}$`, $options: "i" };
+    }
+
+    /* ------------------------------- STATUS --------------------------------- */
+    if (options?.status === "active") {
+      filter.isActive = true;
+    } else if (options?.status === "inactive") {
+      filter.isActive = false;
+    } else if (!options?.includeInactive) {
+      // 👈 frontend safe default
+      filter.isActive = true;
+    }
+
+    /* -------------------------------- SORT ---------------------------------- */
+    let sortQuery: Record<string, 1 | -1> = { createdAt: -1 };
+
+    switch (options?.sort) {
+      case "oldest":
+        sortQuery = { createdAt: 1 };
+        break;
+      case "price_asc":
+        sortQuery = { price: 1 };
+        break;
+      case "price_desc":
+        sortQuery = { price: -1 };
+        break;
+      case "newest":
+      default:
+        sortQuery = { createdAt: -1 };
+    }
+
+    /* ------------------------------- QUERY ---------------------------------- */
     const total = await Product.countDocuments(filter);
 
     const products = await Product.find(filter)
-      .sort({ createdAt: -1 }) // newest first
+      .sort(sortQuery)
       .skip(skip)
       .limit(limit)
       .populate({
-    path: "category",
-    select: "categoryName slug categoryImage isActive createdAt"
-  })
+        path: "category",
+        select: "categoryName slug categoryImage isActive",
+      })
       .populate({
         path: "variants",
-        match: { isActive: true },
-        select: "price stock specs images isActive",
+        match: { isActive: true }, // frontend-safe
+        select: "price stock specs images",
       })
       .lean<IProduct[]>();
 
@@ -122,25 +293,27 @@ export async function fetchAllProducts(
       success: true,
       message: "Products fetched successfully",
       data: products.map(mapProductToFrontend),
-    pagination: {
-  page,
-  limit,
-  total: total ?? 0,  
-  totalPages: Math.ceil((total ?? 0) / limit),
-}
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unexpected server error";
-    console.error("Fetch All Products Error:", errorMessage);
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    console.error("fetchAllProducts error:", msg);
 
     return {
       success: false,
       message: "Failed to fetch products",
       data: null,
-      error: errorMessage,
+      error: msg,
     };
   }
 }
+
+
 
 export async function fetchBestSellers(
   page = 1,

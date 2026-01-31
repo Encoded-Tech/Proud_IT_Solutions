@@ -320,7 +320,7 @@ export default async function AddProductPage() {
   return (
      <div className=" bg-gray-50 py-10 px-4">
        <div className="max-w-6xl mx-auto mb-4">
-      <Link href="/admin/products">
+      <Link href="/admin/product">
       <button
          
           className="flex items-center gap-2 text-gray-600 hover:text-red-600 transition-colors group"
