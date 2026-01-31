@@ -79,7 +79,7 @@ const ShopCategories = ({ categories }: { categories: CategoryType[] }) => {
                   <div className="flex flex-col justify-center items-center my-2">
                     <h2 className="font-medium text-md">{item.categoryName}</h2>
                     <p className="text-zinc-500 font-medium text-sm">
-                      {item.productCount} Products
+                      {item.productCount} Product{item.productCount !== 0 ? 's' : ''}
                     </p>
                   </div>
                 </Link>

@@ -1357,92 +1357,89 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
 
         {/* Products Grid */}
         <section className="col-span-5">
-          <div className=" grid  sm:grid-cols-2  sm:justify-between sm:items-center mb-4">
-            <div className="hidden sm:block text-sm text-gray-600">
-            Showing {allProducts.length} product{allProducts.length !== 1 ? 's' : ''}  and have {pagination?.total} more
-          </div>
-          {/* ----------------- PAGINATION ----------------- */}
-     <div>
-       {allProducts.length > 0 && (
-  <div className="flex justify-center items-center gap-1 sm:gap-2 flex-wrap">
-    {/* Previous Button */}
-    <button
-      onClick={prevPage}
-      disabled={page === 1 || loading}
-      className="px-3 sm:px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-all font-medium text-xs sm:text-sm"
-    >
-      <span className="hidden sm:inline">Previous</span>
-      <span className="sm:hidden">Prev</span>
-    </button>
-
-    {/* First Page + Ellipsis */}
-    {page > 3 && (
-      <>
-        <button
-          onClick={() => goToPage(1)}
-          className="hidden sm:flex px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-all text-sm font-medium"
-        >
-          1
-        </button>
-        {page > 4 && (
-          <span className="hidden sm:inline px-1 text-gray-400">...</span>
-        )}
-      </>
-    )}
-
-    {/* Visible Page Numbers */}
-    {Array.from({ length: totalPages }, (_, i) => i + 1)
-      .filter(pageNum => {
-        // Mobile: show current page and 1 on each side
-        // Desktop: show current page and 2 on each side
-        const range = window.innerWidth < 640 ? 1 : 2;
-        return pageNum >= page - range && pageNum <= page + range;
-      })
-      .map(pageNum => (
-        <button
-          key={pageNum}
-          onClick={() => goToPage(pageNum)}
-          disabled={loading}
-          className={`px-3 py-2 rounded-md transition-all text-xs sm:text-sm font-medium min-w-[36px] ${
-            pageNum === page
-              ? 'bg-primary text-white border border-primary'
-              : 'bg-white border border-gray-300 hover:bg-gray-50'
-          }`}
-        >
-          {pageNum}
-        </button>
-      ))}
-
-    {/* Last Page + Ellipsis */}
-    {page < totalPages - 2 && (
-      <>
-        {page < totalPages - 3 && (
-          <span className="hidden sm:inline px-1 text-gray-400">...</span>
-        )}
-        <button
-          onClick={() => goToPage(totalPages)}
-          className="hidden sm:flex px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-all text-sm font-medium"
-        >
-          {totalPages}
-        </button>
-      </>
-    )}
-
-    {/* Next Button */}
-    <button
-      onClick={nextPage}
-      disabled={!hasMore || loading}
-      className="px-3 sm:px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-all font-medium text-xs sm:text-sm"
-    >
-      <span className="hidden sm:inline">Next</span>
-      <span className="sm:hidden">Next</span>
-    </button>
+      <div className="grid sm:grid-cols-2 sm:justify-between sm:items-center mb-4">
+  <div className="hidden sm:block text-sm text-gray-600">
+    Showing {allProducts.length} product{allProducts.length !== 1 ? 's' : ''} and have {pagination?.total} more
   </div>
+  
+  {/* ----------------- PAGINATION ----------------- */}
+  <div>
+    {allProducts.length > 0 && (
+      <div className="flex justify-center sm:justify-end items-center gap-1 sm:gap-2 flex-wrap">
+        {/* Previous Button */}
+        <button
+          onClick={prevPage}
+          disabled={page === 1 || loading}
+          className="px-3 sm:px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-all font-medium text-xs sm:text-sm"
+        >
+          <span className="hidden sm:inline">Previous</span>
+          <span className="sm:hidden">Prev</span>
+        </button>
 
-)}
+        {/* First Page + Ellipsis */}
+        {page > 2 && (
+          <>
+            <button
+              onClick={() => goToPage(1)}
+              className="px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-all text-xs sm:text-sm font-medium min-w-[36px]"
+            >
+              1
+            </button>
+            {page > 3 && (
+              <span className="px-1 text-gray-400 text-xs sm:text-sm">...</span>
+            )}
+          </>
+        )}
 
-     </div>
-          </div>
+        {/* Visible Page Numbers - Always show only 3 pages max */}
+        {Array.from({ length: totalPages }, (_, i) => i + 1)
+          .filter(pageNum => {
+            // Show current page and 1 page on each side (max 3 pages)
+            return pageNum >= page - 1 && pageNum <= page + 1;
+          })
+          .map(pageNum => (
+            <button
+              key={pageNum}
+              onClick={() => goToPage(pageNum)}
+              disabled={loading}
+              className={`px-3 py-2 rounded-md transition-all text-xs sm:text-sm font-medium min-w-[36px] ${
+                pageNum === page
+                  ? 'bg-primary text-white border border-primary'
+                  : 'bg-white border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              {pageNum}
+            </button>
+          ))}
+
+        {/* Last Page + Ellipsis */}
+        {page < totalPages - 1 && (
+          <>
+            {page < totalPages - 2 && (
+              <span className="px-1 text-gray-400 text-xs sm:text-sm">...</span>
+            )}
+            <button
+              onClick={() => goToPage(totalPages)}
+              className="px-3 py-2 bg-white border border-gray-300 hover:bg-gray-50 rounded-md transition-all text-xs sm:text-sm font-medium min-w-[36px]"
+            >
+              {totalPages}
+            </button>
+          </>
+        )}
+
+        {/* Next Button */}
+        <button
+          onClick={nextPage}
+          disabled={!hasMore || loading}
+          className="px-3 sm:px-4 py-2 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed rounded-md transition-all font-medium text-xs sm:text-sm"
+        >
+          <span className="hidden sm:inline">Next</span>
+          <span className="sm:hidden">Next</span>
+        </button>
+      </div>
+    )}
+  </div>
+</div>
 
           <div className="grid lg:grid-cols-3 grid-cols-2 gap-4 transition-all duration-300">
             {allProducts.length > 0 ? (
