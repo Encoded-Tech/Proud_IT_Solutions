@@ -9,7 +9,6 @@ export default async function ListProducts({ page = 1, limit = 6 }: { page?: num
   const res = await fetchAllProducts(page, limit);
   const products = res.data || [];
 
-  console.log(res.pagination);
 
   const categoriesRes = await fetchCategories();
 const categories = categoriesRes.data || [];

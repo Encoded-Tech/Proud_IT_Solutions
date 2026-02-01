@@ -1,7 +1,39 @@
 "use client";
+
 import React from "react";
 import { Monitor, Cpu, Keyboard, Zap, ChevronRight } from "lucide-react";
 import Link from "next/link";
+
+/* ---------------------------------- STYLES --------------------------------- */
+
+const colorStyles = {
+  red: {
+    border: "hover:border-red-400",
+    bg: "from-red-50",
+    icon: "from-red-500 to-red-600",
+    shadow: "hover:shadow-red-500/20",
+    text: "text-red-500",
+    btn: "from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-red-500/30 hover:shadow-red-500/50",
+  },
+  blue: {
+    border: "hover:border-blue-400",
+    bg: "from-blue-50",
+    icon: "from-blue-500 to-blue-600",
+    shadow: "hover:shadow-blue-500/20",
+    text: "text-blue-500",
+    btn: "from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-blue-500/30 hover:shadow-blue-500/50",
+  },
+  green: {
+    border: "hover:border-green-400",
+    bg: "from-green-50",
+    icon: "from-green-500 to-green-600",
+    shadow: "hover:shadow-green-500/20",
+    text: "text-green-500",
+    btn: "from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-green-500/30 hover:shadow-green-500/50",
+  },
+};
+
+/* -------------------------------- COMPONENT -------------------------------- */
 
 export default function HomePromoLinks() {
   const cards = [
@@ -16,7 +48,7 @@ export default function HomePromoLinks() {
         "Official Warranty & Support",
       ],
       color: "red",
-      link: "/shop/laptops",
+      link: "/shop",
       btn: "Shop Laptops Now",
     },
     {
@@ -44,21 +76,21 @@ export default function HomePromoLinks() {
         "Genuine Products & Warranty",
       ],
       color: "green",
-      link: "/shop/accessories",
+      link: "/shop",
       btn: "Browse Accessories",
     },
-  ];
+  ] as const;
 
   return (
     <section className="w-full bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden">
-      {/* Animated background */}
+      {/* Animated background blobs */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-0 left-1/4 w-72 h-72 md:w-96 md:h-96 bg-blue-400 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-0 right-1/4 w-72 h-72 md:w-96 md:h-96 bg-red-400 rounded-full blur-3xl animate-pulse delay-1000" />
         <div className="absolute top-1/2 left-1/2 w-72 h-72 md:w-96 md:h-96 bg-green-400 rounded-full blur-3xl animate-pulse delay-2000" />
       </div>
 
-      {/* Decorative grid */}
+      {/* Grid overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
@@ -73,23 +105,22 @@ export default function HomePromoLinks() {
 
           <h1 className="text-3xl sm:text-5xl lg:text-7xl font-black text-slate-900 mb-5 leading-tight">
             Premium{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-red-600 to-red-700">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-700">
               Laptops
             </span>
             ,{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-blue-700">
               Custom PCs
             </span>{" "}
             &{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 via-green-600 to-green-700">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-green-700">
               Accessories
             </span>
           </h1>
 
           <p className="text-base sm:text-lg text-slate-600 max-w-3xl mx-auto">
             Buy the latest gaming laptops, workstation computers, custom-built PCs,
-            and premium computer accessories in Nepal. Authorized dealer with
-            warranty, fast delivery all over Nepal.
+            and premium computer accessories in Nepal with genuine warranty.
           </p>
         </div>
 
@@ -97,17 +128,20 @@ export default function HomePromoLinks() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {cards.map((card, i) => {
             const Icon = card.icon;
+            const styles = colorStyles[card.color];
+
             return (
               <div
                 key={i}
-                className={`group relative bg-white rounded-3xl overflow-hidden border-2 border-slate-200 hover:border-${card.color}-400 transition-all duration-500 transform hover:scale-[1.03] hover:shadow-2xl hover:shadow-${card.color}-500/20`}
+                className={`group relative bg-white rounded-3xl overflow-hidden border-2 border-slate-200 transition-all duration-500 transform hover:scale-[1.03] hover:shadow-2xl ${styles.border} ${styles.shadow}`}
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-br from-${card.color}-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+                  className={`absolute inset-0 bg-gradient-to-br ${styles.bg} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
                 />
+
                 <div className="relative p-6 sm:p-8">
                   <div
-                    className={`mb-5 inline-block bg-gradient-to-br from-${card.color}-500 to-${card.color}-600 p-4 rounded-2xl group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-${card.color}-500/30`}
+                    className={`mb-5 inline-block bg-gradient-to-br ${styles.icon} p-4 rounded-2xl group-hover:scale-110 transition-transform duration-500 shadow-lg`}
                   >
                     <Icon className="w-8 sm:w-10 h-8 sm:h-10 text-white" strokeWidth={2.5} />
                   </div>
@@ -123,7 +157,7 @@ export default function HomePromoLinks() {
                   <ul className="space-y-2 mb-6 text-sm text-slate-700">
                     {card.items.map((item, idx) => (
                       <li key={idx} className="flex items-center gap-2">
-                        <ChevronRight className={`w-4 h-4 text-${card.color}-500`} />
+                        <ChevronRight className={`w-4 h-4 ${styles.text}`} />
                         {item}
                       </li>
                     ))}
@@ -131,7 +165,7 @@ export default function HomePromoLinks() {
 
                   <Link href={card.link}>
                     <button
-                      className={`w-full bg-gradient-to-r from-${card.color}-500 to-${card.color}-600 text-white font-bold py-3 sm:py-4 rounded-xl hover:from-${card.color}-600 hover:to-${card.color}-700 transition-all duration-300 shadow-lg shadow-${card.color}-500/30 hover:shadow-${card.color}-500/50 flex items-center justify-center gap-2`}
+                      className={`w-full bg-gradient-to-r text-white font-bold py-3 sm:py-4 rounded-xl transition-all duration-300 shadow-lg flex items-center justify-center gap-2 ${styles.btn}`}
                     >
                       {card.btn}
                       <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />

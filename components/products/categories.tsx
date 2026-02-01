@@ -69,7 +69,8 @@ export default function SliderClient({
           <Slider ref={sliderRef} {...settings} className="my-10">
             {categories.map((item, index) => (
               <div key={index} className="px-2">
-                <Link href="/shop">
+           <Link href={`/shop?category=${item.slug}`}>
+
                   {/* IMAGE + BADGE */}
                   <figure className="relative overflow-hidden rounded-md cursor-pointer group">
               {item.productCount > 0 && (
@@ -127,8 +128,10 @@ export default function SliderClient({
         /* FALLBACK GRID */
         <section className="grid grid-cols-2 gap-4 my-10 sm:grid-cols-3 md:grid-cols-5">
           {categories.map((item, index) => (
-            <Link key={index} href="/shop">
-              <div className="px-2">
+        <div key={index} className="px-2">
+              <Link  href={`/shop?category=${item.slug}`}>
+
+              
                 <figure className="relative overflow-hidden rounded-md cursor-pointer group">
                   {item.productCount > 0 && (
                     <span className="absolute top-2 right-2 z-10 rounded-full bg-black/70 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
@@ -151,8 +154,9 @@ export default function SliderClient({
                 <h2 className="mt-3 text-center font-medium text-md line-clamp-2 min-h-[3rem]">
                   {item.categoryName}
                 </h2>
-              </div>
+             
             </Link>
+        </div>
           ))}
         </section>
       )}

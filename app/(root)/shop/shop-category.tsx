@@ -64,7 +64,8 @@ const ShopCategories = ({ categories }: { categories: CategoryType[] }) => {
           <Slider {...settings} ref={sliderRef} className="my-10">
             {categories.map((item, index) => (
               <div key={index} className="px-2">
-                <Link href="/shop">
+               <Link href={`/shop?category=${item.slug}`}>
+
                   <figure className="overflow-hidden rounded-md cursor-pointer">
                     <Image
                       src={item.categoryImage}
@@ -91,7 +92,8 @@ const ShopCategories = ({ categories }: { categories: CategoryType[] }) => {
         <section className="grid grid-cols-5 my-10">
           {categories.map((item, index) => (
             <div key={index} className="px-2">
-              <Link href="/shop">
+           <Link href={`/shop?category=${item.slug}`}>
+
                 <figure className="overflow-hidden rounded-md cursor-pointer">
                   <Image
                     src={item.categoryImage}
