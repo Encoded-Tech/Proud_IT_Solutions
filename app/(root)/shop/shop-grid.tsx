@@ -455,7 +455,7 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
         <section className="col-span-5">
   <div className="grid sm:grid-cols-2 sm:justify-between sm:items-center mb-4">
   <div className="hidden sm:block text-sm text-gray-600">
-    Showing {allProducts.length} product{allProducts.length !== 1 ? 's' : ''} and have {pagination?.total} more
+    Showing {allProducts.length} product{allProducts.length !== 1 ? 's' : ''} 
   </div>
   
   {/* ----------------- PAGINATION ----------------- */}

@@ -5,7 +5,7 @@ import { Metadata } from "next";
 import { APP_NAME, SERVER_PRODUCTION_URL } from "@/config/env";
 
 export const metadata: Metadata = {
-  title: `Electronics Store in Nepal | Best Laptop & PC Shop in Kathmandu | ${APP_NAME}`,
+  title: `Computer Store in Nepal | Best Laptop & PC Shop in Kathmandu | ${APP_NAME}`,
 
   description:
     "Trusted electronics store in Nepal offering laptops, PCs, printers, monitors, and accessories. Best electronics shop in Kathmandu & Putalisadak.",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: APP_NAME,
-    title: `Electronics Store in Nepal | ${APP_NAME}`,
+    title: `Computer Store in Nepal | ${APP_NAME}`,
     description:
       "Buy laptops, PCs, printers, monitors, and electronics from a trusted electronics store in Kathmandu, Nepal.",
     url: SERVER_PRODUCTION_URL,
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
 
   twitter: {
     card: "summary_large_image",
-    title: `Electronics Store in Nepal | ${APP_NAME}`,
+    title: `Computer Store in Nepal | ${APP_NAME}`,
     description:
       "Best electronics shop in Nepal for laptops, PCs, printers, and accessories.",
     images: [],

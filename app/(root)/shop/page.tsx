@@ -14,7 +14,7 @@ import { APP_NAME, SERVER_PRODUCTION_URL } from "@/config/env";
 export const metadata: Metadata = {
   title: {
     template: `%s | ${APP_NAME}`,
-    default: `Shop Electronics in Nepal | Laptops, PCs & Accessories | ${APP_NAME}`,
+    default: `Shop Gadgets in Nepal | Laptops, PCs & Accessories | ${APP_NAME}`,
   },
  keywords: [
   "shop electronics Nepal",
@@ -46,14 +46,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: APP_NAME,
-    title: `Shop Electronics in Nepal | Laptops, PCs & Accessories | ${APP_NAME}`,
+    title: `Shop Gadgets in Nepal | Laptops, PCs & Accessories | ${APP_NAME}`,
     description: `Browse and buy laptops, custom PCs, printers, monitors, and accessories from a trusted electronics store in Kathmandu, Nepal.`,
     url: `${SERVER_PRODUCTION_URL}/shop`,
     images: [],
   },
   twitter: {
     card: "summary_large_image",
-    title: `Shop Electronics in Nepal | ${APP_NAME}`,
+    title: `Shop Gadgets in Nepal | ${APP_NAME}`,
     description: `Buy laptops, custom PCs, printers, monitors, and accessories online in Kathmandu & Nepal.`,
     images: []
   },

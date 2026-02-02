@@ -11,7 +11,7 @@ import Script from "next/script";
 import AnimatedCounter from "@/components/shared/AnimatedCounter";
 
 export const metadata: Metadata = {
-  title: `About Proud Nepal | Trusted Electronics Store in Nepal`,
+  title: `Trusted Computer Store in Nepal | ${APP_NAME}`,
   description:
     "Learn about Proud Nepal, a trusted electronics store in Nepal. Discover our mission, vision, and commitment to delivering genuine laptops, PCs, and electronic accessories across Nepal.",
 
@@ -45,7 +45,7 @@ keywords: [
   openGraph: {
     type: "website",
     siteName: APP_NAME,
-    title: `About Proud Nepal | Electronics Store in Nepal`,
+    title: `Trusted Computer Store in Nepal  | Electronics Store in Nepal`,
     description:
       "Know the story behind Proud Nepal—your trusted destination for laptops, custom PCs, and electronic accessories in Nepal.",
     url: `${SERVER_PRODUCTION_URL}/about`,
@@ -54,7 +54,7 @@ keywords: [
 
   twitter: {
     card: "summary_large_image",
-    title: `About Proud Nepal | Electronics Store in Nepal`,
+    title: `Trusted Computer Store in Nepal   | Computer Store in Nepal`,
     description:
       "Discover Proud Nepal’s journey, mission, and commitment to genuine electronics, laptops, and PCs in Nepal.",
     images: [],
