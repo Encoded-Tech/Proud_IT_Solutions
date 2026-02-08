@@ -54,7 +54,7 @@ export const checkRealWorldCompatibility = async (
   const partIds = parts.map((p) => p.partId);
   const dbParts = await PartOption.find({ _id: { $in: partIds } }).lean();
 
-  const cpu = dbParts.find((p) => p.type === "cpu");
+  const cpu = dbParts.find((p) => p.type === "processor");
   const motherboard = dbParts.find((p) => p.type === "motherboard");
   const gpu = dbParts.find((p) => p.type === "gpu");
   const ram = dbParts.find((p) => p.type === "ram");
@@ -96,7 +96,7 @@ export const checkRealWorldCompatibility = async (
     componentCounts[p.type] = (componentCounts[p.type] || 0) + 1;
   }
   for (const [type, count] of Object.entries(componentCounts)) {
-    if (["cpu", "gpu"].includes(type) && count > 1) {
+    if (["processor", "gpu"].includes(type) && count > 1) {
       errors.push(`Multiple ${type.toUpperCase()} detected (${count}), only one allowed`);
     }
   }

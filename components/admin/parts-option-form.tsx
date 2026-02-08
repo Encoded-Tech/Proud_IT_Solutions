@@ -34,9 +34,9 @@ export default function PartForm({ part, onSuccess, partTypes  }: Props) {
   const router = useRouter();
   const [formData, setFormData] = useState<PartOptionInput>({
     name: part?.name || "",
-    type: part?.type || "cpu",
+    type: part?.type || "processor",
     brand: part?.brand || "",
-    price: part?.price || 0,
+    price: part?.price || 0,    
     modelName: part?.modelName || "",
     socket: part?.socket,
     chipset: part?.chipset,
@@ -184,7 +184,7 @@ export default function PartForm({ part, onSuccess, partTypes  }: Props) {
         setTimeout(() => {
           setFormData({
             name: "",
-            type: "cpu",
+            type: "processor",
             brand: "",
             price: 0,
             modelName: "",
@@ -206,11 +206,11 @@ export default function PartForm({ part, onSuccess, partTypes  }: Props) {
 
   const showConditionalField = (field: string): boolean => {
     const fieldMap: Record<string, PartType[]> = {
-      socket: ["cpu", "motherboard"],
+      socket: ["processor", "motherboard"],
       chipset: ["motherboard"],
       ramType: ["ram", "motherboard"],
       wattage: ["psu", "gpu"],
-      lengthMM: ["gpu", "cooler", "case"],
+      lengthMM: ["gpu", "cpu_cooler", "casing"],
       storageType: ["storage"],
       capacityGB: ["storage", "ram"],
     };
@@ -409,6 +409,7 @@ export default function PartForm({ part, onSuccess, partTypes  }: Props) {
                         <option value="">Select RAM Type</option>
                         <option value="DDR4">DDR4</option>
                         <option value="DDR5">DDR5</option>
+                           <option value="DDR5">DDR6</option>
                       </select>
                     </div>
                   )}

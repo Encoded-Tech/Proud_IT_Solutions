@@ -1,24 +1,18 @@
-
-
 export const PART_TYPES = [
-  "cpu",
-  "gpu",
+  "casing",
+  "psu",
   "motherboard",
+  "processor",
   "ram",
   "storage",
-  "psu",
-  "case",
-  "cooler",
+  "cpu_cooler",
+  "gpu",
   "monitor",
   "keyboard",
   "mouse",
-  "ups",
-  "fan",
   "headset",
-  "thermalPaste",
-  "captureCard",
-  "rgbAccessory",
-  "usbPort",
+  "mousepad",
+  "rgb_fan"
 ] as const;
 
 export type PartType = typeof PART_TYPES[number];

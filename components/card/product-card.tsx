@@ -69,7 +69,7 @@ const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
       className="sm:h-[15em] h-[8em] object-cover hover:scale-110 hover:brightness-75 ease-in-out duration-300"
     />
   </figure>
-</Link>
+
 
         {/* Product info */}
         <div className="flex flex-col justify-between">
@@ -111,6 +111,8 @@ const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
             )}
           </div>
         )}
+
+        </Link>
 
        
       </div>

@@ -78,3 +78,47 @@ export async function getMyBuildCount() {
      buildCount,
   };
 }
+
+
+import { IPartOption, PartOption } from "@/models/partsOption";
+
+export async function getCompatiblePartsForMotherboard(motherboardId: string) {
+  await connectDB();
+
+  // Tell TypeScript this is an IPartOption
+  const motherboard = await PartOption.findById(motherboardId).lean<IPartOption>();
+
+  if (!motherboard) {
+    return { success: false, message: "Motherboard not found", data: { processors: [], rams: [] } };
+  }
+
+  // CPU compatibility: match socket
+  const compatibleProcessors = await PartOption.find({
+    type: "processor",
+    socket: motherboard.socket, // now TypeScript knows 'socket' exists
+  }).lean<IPartOption[]>();
+
+  // RAM compatibility: match RAM type
+  const compatibleRAMs = await PartOption.find({
+    type: "ram",
+    ramType: motherboard.ramType, // now TypeScript knows 'ramType' exists
+  }).lean<IPartOption[]>();
+
+  const processorsWithStringId = compatibleProcessors.map(p => ({
+  ...p,
+  _id: p._id.toString(),
+}));
+
+const ramsWithStringId = compatibleRAMs.map(p => ({
+  ...p,
+  _id: p._id.toString(),
+}));
+
+  return {
+    success: true,
+    data: {
+      processors: processorsWithStringId,
+      rams: ramsWithStringId,
+    },
+  };
+}

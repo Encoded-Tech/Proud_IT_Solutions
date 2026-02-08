@@ -5,7 +5,7 @@ import { Schema, model, models, Document, Types } from "mongoose";
 
 
 
-export type RAMType = "DDR4" | "DDR5";
+export type RAMType = "DDR4" | "DDR5" | "DDR6";
 export type StorageType = "ssd" | "nvme" | "hdd";
 
 /** PART OPTION INTERFACE */
@@ -41,26 +41,24 @@ const PartOptionSchema = new Schema<IPartOption>(
     type: {
       type: String,
       enum: [
-        "cpu",
-        "gpu",
-        "motherboard",
-        "ram",
-        "storage",
-        "psu",
-        "case",
-        "cooler",
-        "monitor",
-        "keyboard",
-        "mouse",
-        "ups",
-        "fan",
-        "headset",
-        "thermalPaste",
-        "captureCard",
-        "rgbAccessory",
-        "usbPort",
+  "casing",
+  "psu",
+  "motherboard",
+  "processor",
+  "ram",
+  "storage",
+  "cpu_cooler",
+  "gpu",
+  "monitor",
+  "keyboard",
+  "mouse",
+  "headset",
+  "mousepad",
+  "rgb_fan"
       ],
       required: true,
+      index: true,
+
     },
     brand: String,
     modelName: String, // renamed
@@ -68,13 +66,22 @@ const PartOptionSchema = new Schema<IPartOption>(
     imageUrl: String,
 
     /** Compatibility metadata */
-    socket: String,
-    chipset: String,
-    ramType: { type: String, enum: ["DDR4", "DDR5"] },
-    wattage: Number,
-    lengthMM: Number,
-    storageType: { type: String, enum: ["ssd", "nvme", "hdd"] },
-    capacityGB: Number,
+socket: { type: String, required: false },
+chipset: { type: String, required: false },
+ramType: {
+  type: String,
+  enum: ["DDR4", "DDR5", "DDR6"],
+  required: false,
+},
+wattage: { type: Number, required: false },
+lengthMM: { type: Number, required: false },
+storageType: {
+  type: String,
+  enum: ["ssd", "nvme", "hdd"],
+  required: false,
+},
+capacityGB: { type: Number, required: false },
+
 
     /** Admin toggle */
     isActive: { type: Boolean, default: true },

@@ -48,7 +48,7 @@ export default function HomePromoLinks() {
         "Official Warranty & Support",
       ],
       color: "red",
-      link: "/shop",
+      link: "/shop?category=laptops",
       btn: "Shop Laptops Now",
     },
     {
@@ -76,7 +76,7 @@ export default function HomePromoLinks() {
         "Genuine Products & Warranty",
       ],
       color: "green",
-      link: "/shop",
+      link: "/shop?category=monitor",
       btn: "Browse Accessories",
     },
   ] as const;
