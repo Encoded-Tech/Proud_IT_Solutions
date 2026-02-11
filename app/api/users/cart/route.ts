@@ -165,6 +165,7 @@ export const POST = withAuth(
 
     // Check for existing cart item
  const existingIndex = user.cart.findIndex((item: CartItem) => {
+  
   const itemProductId = typeof item.product === "string" ? item.product : item.product._id?.toString();
   const itemVariantId = item.variant?.toString() || null;
 

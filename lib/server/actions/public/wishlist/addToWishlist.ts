@@ -119,21 +119,22 @@ const wishlistItem: IWishlistItem = {
 
 // Remove from wishlist
 
+
+
 export async function removeWishlistAction({
-  productId,
-  variantId,
-}: WishlistActionParams): Promise<WishlistActionResponse> {
+  wishlistItemId,
+}: { wishlistItemId: string }): Promise<WishlistActionResponse> {
   try {
     await connectDB();
 
-    if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
-      throw new Error("Invalid productId");
+    if (!mongoose.Types.ObjectId.isValid(wishlistItemId)) {
+      throw new Error("Invalid wishlist item ID");
     }
 
-let user = await requireUser();
+    let user = await requireUser();
 
-     user = await User.findById(user.id)
-      .populate<{ wishlist: IWishlistItem[] }>({
+    user = await User.findById(user.id)
+      .populate({
         path: "wishlist.product",
         select: "name slug images price",
       })
@@ -141,19 +142,18 @@ let user = await requireUser();
         path: "wishlist.variant",
         select: "specs price sku images",
       });
+
     if (!user) throw new Error("User not found");
 
-    user.wishlist = user.wishlist.filter((item: IWishlistItem) => {
-      const itemProductId = typeof item.product === "string" ? item.product : item.product._id.toString();
-      const itemVariantId = item.variant?.toString() || null;
-
-      if (variantId) return !(itemProductId === productId && itemVariantId === variantId);
-      return !(itemProductId === productId && !itemVariantId);
-    });
+    user.wishlist = user.wishlist.filter(
+      (item: IWishlistItem) =>
+        item._id.toString() !== wishlistItemId
+    );
 
     await user.save();
 
     const wishlistDTO = await mapWishlistArray(user.wishlist);
+
     return {
       wishlist: wishlistDTO,
       success: true,
@@ -165,7 +165,10 @@ let user = await requireUser();
     return {
       wishlist: [],
       success: false,
-      message: error instanceof Error ? error.message : "Failed to remove from wishlist",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to remove from wishlist",
     };
   }
 }

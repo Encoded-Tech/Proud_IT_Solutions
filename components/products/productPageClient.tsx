@@ -38,6 +38,15 @@ export default function ProductPageClient({
   const [reviewsState, setReviewsState] = useState<ReviewType[]>(reviewData.reviews ?? []);
   const [avgRatingState, setAvgRatingState] = useState<number>(reviewData.avgRating ?? 0);
   const dispatch = useAppDispatch();
+    const wishlist = useAppSelector((state) => state.wishlist.items);
+
+    const isWishlisted = wishlist.some((item) => {
+  if (selectedVariant) {
+    return item.variant?._id === selectedVariant.id;
+  }
+  return item.product._id === product.id;
+});
+
   const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +71,9 @@ export default function ProductPageClient({
   const activeIsOfferActive = selectedVariant?.isOfferActive ?? isOfferedPriceActive;
   const activeStock = selectedVariant?.stock ?? stock;
   const activeImages = selectedVariant?.images?.length ? selectedVariant.images : product.images;
+
+
+
 
   const featureImage = activeImages?.[0] || "";
   const media: MediaType[] =
@@ -130,16 +142,31 @@ export default function ProductPageClient({
   return (
     <main className="max-w-6xl xl:mx-auto mx-4 md:my-14 my-8 space-y-8">
       {/* Breadcrumb */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Link href="/" className="text-lighttext">
-          Home
-        </Link>{" "}
-        /{" "}
-        <Link href="/shop" className="text-lighttext">
-          {category?.categoryName}
-        </Link>{" "}
-        / <span className="font-medium">{name}</span>
-      </div>
+ <div className="flex flex-wrap items-center gap-2">
+  {/* Home */}
+  <Link href="/" className="text-lighttext hover:underline">
+    Home
+  </Link>
+
+  <span>/</span>
+
+  {/* Category with search param */}
+  <Link
+    href={{
+      pathname: "/shop",
+      query: { category: category?.categoryName },
+    }}
+    className="text-lighttext hover:underline"
+  >
+    {category?.categoryName}
+  </Link>
+
+  <span>/</span>
+
+  {/* Product Name */}
+  <span className="font-medium">{name}</span>
+</div>
+
 
       {/* Product Section */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -405,7 +432,7 @@ export default function ProductPageClient({
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <AddToCartButton
                   productId={product.id}
                   variantId={selectedVariant?.id ?? ""}
@@ -413,13 +440,71 @@ export default function ProductPageClient({
                   variant="page"
                   quantity={quantity}
                 />
-                <button
-                  onClick={handleAddToWishlist}
-                  className="flex items-center gap-2 hover:scale-110 transition"
-                  aria-label="Add to wishlist"
-                >
-                  <Icon icon="mdi:heart-circle" className="text-pink-600 text-5xl" />
-                </button>
+ <button
+  onClick={handleAddToWishlist}
+  disabled={loading}
+  aria-label="Toggle wishlist"
+  className="relative group flex items-center justify-center"
+>
+  {/* Heart Button */}
+  <div
+    className={`
+      relative
+      rounded-full border
+      w-12 h-12 flex items-center justify-center
+      transition-all duration-300
+      ${
+        isWishlisted
+          ? "bg-pink-50 border-pink-200"
+          : "bg-white border-gray-400"
+      }
+      ${
+        loading
+          ? "opacity-50 cursor-not-allowed"
+          : "hover:scale-110 hover:shadow-md"
+      }
+    `}
+  >
+    {/* Heart Icon */}
+    <Icon
+      icon={isWishlisted ? "mdi:heart" : "mdi:heart-outline"}
+      className={`
+        text-2xl transition-all duration-300
+        ${
+          isWishlisted
+            ? "text-pink-600 scale-110"
+            : "text-gray-600 group-hover:text-pink-500"
+        }
+      `}
+    />
+
+    {/* Burst Animation */}
+    {isWishlisted && !loading && (
+      <span className="absolute inset-0 rounded-full animate-ping bg-pink-400/30" />
+    )}
+  </div>
+
+  {/* Tooltip */}
+  <span
+    className="
+      pointer-events-none
+      absolute -top-10
+      whitespace-nowrap
+      rounded-md px-3 py-1.5
+      text-xs font-medium
+      bg-black text-white
+      opacity-0 translate-y-2
+      transition-all duration-300
+      group-hover:opacity-100
+      group-hover:translate-y-0
+      shadow-lg
+    "
+  >
+    {isWishlisted ? "Already in Wishlist" : "Add to Wishlist"}
+  </span>
+</button>
+
+
               </div>
             </section>
           )}

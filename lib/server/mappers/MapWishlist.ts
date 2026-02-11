@@ -14,6 +14,7 @@ export interface WishlistItemDTO {
     slug: string;
     price: number;
     images: string[];
+    deleted?: boolean; // 🔹 marks deleted products
   };
   variant?: {
     _id: string;
@@ -30,10 +31,9 @@ export interface WishlistItemDTO {
   addedAt: string;
 }
 
-
 // Single item mapper
 export async function mapWishlistItem(item: IWishlistItem): Promise<WishlistItemDTO> {
-  let productDoc: IProduct | null;
+  let productDoc: IProduct | null = null;
   let variantDoc: IProductVariant | null = null;
 
   // Resolve product
@@ -43,7 +43,7 @@ export async function mapWishlistItem(item: IWishlistItem): Promise<WishlistItem
     productDoc = item.product as unknown as IProduct;
   }
 
-  if (!productDoc) throw new Error("Product not found");
+  const isDeleted = !productDoc;
 
   // Resolve variant
   if (item.variant) {
@@ -57,16 +57,17 @@ export async function mapWishlistItem(item: IWishlistItem): Promise<WishlistItem
   return {
     _id: item._id.toString(),
     product: {
-      _id: productDoc._id.toString(),
-      name: productDoc.name,
-      slug: productDoc.slug,
-      price: productDoc.price,
-      images: productDoc.images ?? [],
+      _id: productDoc?._id?.toString() ?? "deleted",
+      name: productDoc?.name ?? "Product deleted",
+      slug: productDoc?.slug ?? "",
+      price: productDoc?.price ?? 0,
+      images: productDoc?.images ?? [],
+      deleted: isDeleted,
     },
     variant: variantDoc
       ? {
-          _id: variantDoc._id.toString(),
-          specs: variantDoc.specs ?? "",
+          _id: variantDoc._id?.toString() ?? "deleted-variant",
+          specs: variantDoc.specs ?? { cpu: "", ram: "", storage: "" },
           price: variantDoc.price,
           sku: variantDoc.sku,
           images: variantDoc.images ?? [],
@@ -75,6 +76,7 @@ export async function mapWishlistItem(item: IWishlistItem): Promise<WishlistItem
     addedAt: item.addedAt.toISOString(),
   };
 }
+
 
 // Mapper for multiple items
 export async function mapWishlistArray(items: IWishlistItem[]): Promise<WishlistItemDTO[]> {

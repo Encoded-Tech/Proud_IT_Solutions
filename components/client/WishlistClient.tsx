@@ -10,11 +10,11 @@ import {
   setWishlist,
   selectWishlistItems,
   selectWishlistCount,
-  removeWishlistItemLocal,
+
   removeWishlistItem,
 } from "@/redux/features/wishlist/wishListSlice";
 
-import  { addToCartApi } from "./AddToCartButton";
+import { addToCartApi } from "./AddToCartButton";
 import { setCart } from "@/redux/features/cart/cartSlice";
 import toast from "react-hot-toast";
 import { removeWishlistAction } from "@/lib/server/actions/public/wishlist/addToWishlist";
@@ -27,33 +27,24 @@ interface WishlistClientProps {
 const WishlistClient = ({ initialWishlist }: WishlistClientProps) => {
   const dispatch = useAppDispatch();
 
-  /** ✅ READ FROM REDUX */
   const wishlist = useAppSelector(selectWishlistItems);
   const wishlistCount = useAppSelector(selectWishlistCount);
 
-  /** ✅ HYDRATE ONCE */
+  /** Hydrate state once */
   useEffect(() => {
     dispatch(setWishlist(initialWishlist));
   }, [dispatch, initialWishlist]);
 
-  /** EMPTY STATE */
   if (wishlist.length === 0) {
     return (
       <div className="max-w-7xl xl:mx-auto mx-4 my-10">
         <div className="flex flex-col justify-center items-center space-y-6">
-          <Image
-            src="/empty-cart.png"
-            alt="Empty Wishlist"
-            width={400}
-            height={400}
-          />
+          <Image src="/empty-cart.png" alt="Empty Wishlist" width={400} height={400} />
           <div className="flex flex-col items-center space-y-4">
-            <h2 className="font-semibold text-xl">
-              Ohh.. Your Wishlist is Empty
-            </h2>
+            <h2 className="font-semibold text-xl">Ohh.. Your Wishlist is Empty</h2>
             <Link href="/shop">
               <button className="flex items-center gap-2 bg-primary rounded-md p-2 text-white text-sm font-medium">
-                <Icon icon="bitcoin-icons:cart-outline" width="24" height="24" />
+                <Icon icon="bitcoin-icons:cart-outline" width={24} height={24} />
                 Shop Now
               </button>
             </Link>
@@ -63,18 +54,15 @@ const WishlistClient = ({ initialWishlist }: WishlistClientProps) => {
     );
   }
 
-  /** MAIN UI */
   return (
     <div className="max-w-7xl mx-auto my-10 px-4">
-     <div className="space-y-3">
+      <div className="space-y-3">
         <ContinueShoppingLink />
 
-        {/* Cart heading */}
         <h1 className="text-2xl font-semibold flex items-center mb-8 gap-3">
           Your Wishlist has
-          {/* Distinct items count */}
           <span className="bg-primary text-white rounded-full min-w-[24px] h-6 px-2 text-sm flex items-center justify-center shadow-sm">
-            {wishlistCount} {/* number of different products */}
+            {wishlistCount}
           </span>
           items in total
         </h1>
@@ -86,86 +74,88 @@ const WishlistClient = ({ initialWishlist }: WishlistClientProps) => {
           const variant = item.variant;
 
           const price = variant?.price ?? product.price;
-          const image =
-            variant?.images?.[0] ||
-            product.images?.[0] ||
-            "/placeholder.png";
+          const image = variant?.images?.[0] || product.images?.[0] || "/placeholder.png";
 
           return (
             <div
               key={item._id}
-              className="border rounded-xl overflow-hidden hover:shadow-md transition"
+              className={`border rounded-xl overflow-hidden hover:shadow-md transition relative ${
+                product.deleted ? "opacity-50" : ""
+              }`}
             >
-              <Link href={`/products/${product.slug}`}>
+              <Link href={product.deleted ? "#" : `/products/${product.slug}`}>
                 <div className="relative w-full h-56 bg-gray-50">
-                  <Image
-                    src={image}
-                    alt={product.name}
-                    fill
-                    className="object-contain p-4"
-                  />
+                  <Image src={image} alt={product.name} fill className="object-contain p-4" />
+                  {product.deleted && (
+                    <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                      Removed
+                    </span>
+                  )}
                 </div>
               </Link>
 
               <div className="p-4 space-y-3">
-                <h3 className="font-medium line-clamp-2">
-                  {product.name}
-                </h3>
+                <h3 className="font-medium line-clamp-2">{product.name}</h3>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold text-primary">
-                    Rs. {price}
-                  </span>
+                  <span className="text-lg font-semibold text-primary">Rs. {price}</span>
 
                   <div className="flex items-center gap-3">
-                   <button
-  className="text-gray-500 hover:text-red-500"
-  title="Remove from wishlist"
-  onClick={async () => {
-    // Optimistic remove locally
-    dispatch(removeWishlistItemLocal(item._id));
+                    <button
+                      className="text-gray-500 hover:text-red-500"
+                      title="Remove from wishlist"
+                      onClick={async () => {
+                  
+                      
 
-    try {
-      const res = await removeWishlistAction({ productId: item.product._id, variantId: item.variant?._id ?? undefined });
+                        try {
+                          const res = await removeWishlistAction({
+  wishlistItemId: item._id,
+});
 
-      if (res.success) {
-        // Sync with server
-        dispatch(removeWishlistItem(res.wishlist));
-       toast.success(res.message || "Added to cart!");
-      } else {
-     toast.error(res.message || "Failed to add to cart");
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to remove");
-    }
-  }}
->
-  <Icon icon="mdi:heart-remove-outline" width={22} />
-</button>
 
-                <button
-  className="text-gray-500 hover:text-primary"
-  title="Add to cart"
-  onClick={async () => {
-    try {
-      const result = await addToCartApi({ productId: item.product._id, quantity: 1 });
-      if (result.success) {
-        dispatch(setCart(result.data));
-        toast.success(result.message || "Added to cart!");
-      } else {
-        toast.error(result.message || "Failed to add to cart");
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unexpected server error");
-    }
-  }}
->
-  <Icon icon="mdi:cart-outline" width={22} />
-</button>
-                    {/* <AddToCartButton productId={item.product._id} quantity={1}>
-  <Icon icon="mdi:cart-outline" width={22} className="text-gray-500 hover:text-primary" />
-</AddToCartButton> */}
+                          if (res.success) {
+                            // Sync with server
+                            dispatch(removeWishlistItem(res.wishlist));
+                            toast.success(res.message || "Removed from wishlist!");
+                          } else {
+                            toast.error(res.message || "Failed to remove");
+                          }
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : "Failed to remove");
+                        }
+                      }}
+                    >
+                      <Icon icon="mdi:heart-remove-outline" width={22} />
+                    </button>
 
+                    <button
+                      className={`text-gray-500 hover:text-primary ${
+                        product.deleted ? "cursor-not-allowed opacity-50" : ""
+                      }`}
+                      title="Add to cart"
+                      disabled={product.deleted}
+                      onClick={async () => {
+                        if (product.deleted) return;
+
+                        try {
+                          const result = await addToCartApi({
+                            productId: item.product._id,
+                            quantity: 1,
+                          });
+                          if (result.success) {
+                            dispatch(setCart(result.data));
+                            toast.success(result.message || "Added to cart!");
+                          } else {
+                            toast.error(result.message || "Failed to add to cart");
+                          }
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : "Unexpected server error");
+                        }
+                      }}
+                    >
+                      <Icon icon="mdi:cart-outline" width={22} />
+                    </button>
                   </div>
                 </div>
               </div>
