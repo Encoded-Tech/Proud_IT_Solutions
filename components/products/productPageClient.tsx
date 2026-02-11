@@ -154,7 +154,7 @@ export default function ProductPageClient({
   <Link
     href={{
       pathname: "/shop",
-      query: { category: category?.categoryName },
+      query: { category: category?.slug },
     }}
     className="text-lighttext hover:underline"
   >
