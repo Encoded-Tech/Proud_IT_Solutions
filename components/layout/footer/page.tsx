@@ -45,18 +45,34 @@ export default function Footer() {
             {/* Social Media & App Downloads */}
             <div className="mt-12 ">
                 {/* Social Media */}
-                <div className="flex  justify-start space-x-4">
-                  <Link href="#">
-                    <Icon icon="logos:facebook" width="30" height="30" />{" "}
-                  </Link>
+                <div className="flex justify-start space-x-4">
+  {/* Facebook */}
+  <Link href="https://www.facebook.com/proudnepal" target="_blank">
+    <Icon icon="logos:facebook" width="30" height="30" />
+  </Link>
 
-                  <Link href="#">
-                    <Icon icon="skill-icons:instagram" width="30" height="30" />{" "}
-                  </Link>
-                  <Link href="#">
-                    <Icon icon="logos:whatsapp-icon" width="30" height="30" />
-                  </Link>
-                </div>
+  {/* Instagram */}
+  <Link href="https://www.instagram.com/proudnepalit" target="_blank">
+    <Icon icon="skill-icons:instagram" width="30" height="30" />
+  </Link>
+
+  {/* WhatsApp */}
+  <Link
+    href="https://wa.me/9779867174242" // 👉 Replace with your WhatsApp number
+    target="_blank"
+  >
+    <Icon icon="logos:whatsapp-icon" width="30" height="30" />
+  </Link>
+
+  {/* YouTube */}
+  <Link
+    href="https://www.youtube.com/@proudnepalitsupplierspvtltd"
+    target="_blank"
+  >
+    <Icon icon="logos:youtube-icon" width="30" height="30" />
+  </Link>
+</div>
+
             </div>
           </div>
 
@@ -66,7 +82,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link
-                  href="/shop"
+                  href="/shop?category=headset"
                   className="text-sm hover:text-primary transition-colors"
                 >
                   Headsets
@@ -74,28 +90,21 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/shop"
+                  href="/shop?category=monitor"
                   className="text-sm hover:text-primary transition-colors"
                 >
-                  Keyboards
+                  Monitors
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/shop"
+                  href="/shop?category=printers"
                   className="text-sm hover:text-primary transition-colors"
                 >
-                  Mouse
+                    Printers
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/shop"
-                  className="text-sm hover:text-primary transition-colors"
-                >
-                  Accessories
-                </Link>
-              </li>
+              
             </ul>
           </div>
 
@@ -117,18 +126,11 @@ export default function Footer() {
                   href="/build-my-pc"
                   className="text-sm hover:text-primary transition-colors"
                 >
-                  Build My Pc
+                  Build My PC
                 </Link>
               </li>
 
-              <li>
-                <Link
-                  href="#"
-                  className="text-sm hover:text-primary transition-colors"
-                >
-                  FAQ
-                </Link>
-              </li>
+              
             </ul>
           </div>
 
@@ -145,14 +147,7 @@ export default function Footer() {
                 </Link>
               </li>
 
-              <li>
-                <Link
-                  href="/blogs"
-                  className="text-sm hover:text-primary transition-colors"
-                >
-                  Blogs
-                </Link>
-              </li>
+              
             </ul>
           </div>
         </div>
