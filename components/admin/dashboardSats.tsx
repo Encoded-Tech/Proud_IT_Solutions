@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import React from "react";
 import {
   BarChart,
@@ -46,6 +47,7 @@ interface StatCardProps {
   iconBg: string;
   trend?: "up" | "down";
   trendValue?: string;
+  link: string;
 }
 
 interface ChartDataItem {
@@ -75,8 +77,10 @@ const StatCard: React.FC<StatCardProps> = ({
   gradient,
   iconBg,
   trend,
-  trendValue
+  trendValue,
+  link
 }) => (
+    <Link href={link}>
   <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
     <div className="p-6">
       <div className="flex items-start justify-between mb-4">
@@ -102,6 +106,7 @@ const StatCard: React.FC<StatCardProps> = ({
     </div>
     <div className={`h-1 ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
   </div>
+  </Link>
 );
 
 // ---------- Admin Dashboard Component ----------
@@ -154,7 +159,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
     gradient: "bg-gradient-to-r from-red-500 to-red-600",
     iconBg: "bg-red-50",
     trend: stats.productTrend >= 0 ? "up" : "down",
-    trendValue: Math.abs(stats.productTrend).toFixed(1)
+    trendValue: Math.abs(stats.productTrend).toFixed(1),
+    link: "/admin/product"
   },
   {
     title: "Total Categories",
@@ -167,7 +173,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
     gradient: "bg-gradient-to-r from-blue-500 to-blue-600",
     iconBg: "bg-blue-50",
     trend: stats.categoryTrend >= 0 ? "up" : "down",
-    trendValue: Math.abs(stats.categoryTrend).toFixed(1)
+    trendValue: Math.abs(stats.categoryTrend).toFixed(1),
+    link: "/admin/category"
   },
   {
     title: "Product Variants",
@@ -180,7 +187,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
     gradient: "bg-gradient-to-r from-yellow-500 to-yellow-600",
     iconBg: "bg-yellow-50",
     trend: stats.variantTrend >= 0 ? "up" : "down",
-    trendValue: Math.abs(stats.variantTrend).toFixed(1)
+    trendValue: Math.abs(stats.variantTrend).toFixed(1),
+    link: "/admin/variants"
   },
   {
     title: "Total Users",
@@ -193,7 +201,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
     gradient: "bg-gradient-to-r from-green-500 to-green-600",
     iconBg: "bg-green-50",
     trend: stats.userTrend >= 0 ? "up" : "down",
-    trendValue: Math.abs(stats.userTrend).toFixed(1)
+    trendValue: Math.abs(stats.userTrend).toFixed(1),
+    link: "/admin/users"
   },
   {
     title: "Build Requests",
@@ -206,7 +215,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
     gradient: "bg-gradient-to-r from-amber-500 to-amber-600",
     iconBg: "bg-amber-50",
     trend: stats.buildRequestTrend >= 0 ? "up" : "down",
-    trendValue: Math.abs(stats.buildRequestTrend).toFixed(1)
+    trendValue: Math.abs(stats.buildRequestTrend).toFixed(1),
+    link: "/admin/build-requests"
   },
   {
     title: "Inbox Messages",
@@ -219,7 +229,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
     gradient: "bg-gradient-to-r from-rose-500 to-rose-600",
     iconBg: "bg-rose-50",
     trend: stats.inboxTrend >= 0 ? "up" : "down",
-    trendValue: Math.abs(stats.inboxTrend).toFixed(1)
+    trendValue: Math.abs(stats.inboxTrend).toFixed(1),
+    link: "/admin/inbox"
   },
   {
     title: "Total Orders",
@@ -232,7 +243,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
     gradient: "bg-gradient-to-r from-indigo-500 to-indigo-600",
     iconBg: "bg-indigo-50",
     trend: stats.orderTrend >= 0 ? "up" : "down",
-    trendValue: Math.abs(stats.orderTrend).toFixed(1)
+    trendValue: Math.abs(stats.orderTrend).toFixed(1),
+    link: "/admin/orders"
   },
   {
     title: "Build Parts Available",
@@ -245,7 +257,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ stats }) => {
     gradient: "bg-gradient-to-r from-teal-500 to-teal-600",
     iconBg: "bg-teal-50",
     trend: stats.buildPartsTrend >= 0 ? "up" : "down",
-    trendValue: Math.abs(stats.buildPartsTrend).toFixed(1)
+    trendValue: Math.abs(stats.buildPartsTrend).toFixed(1),
+    link: "admin/build-user-pc/parts-table"
   }
 ];
 

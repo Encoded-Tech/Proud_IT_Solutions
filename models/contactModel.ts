@@ -13,6 +13,10 @@ export interface ContactType {
   subject?: string;
   createdAt?: Date;
   updatedAt?: Date;
+  replied?: boolean;
+  repliedAt?: Date;
+  read?: boolean;
+  readAt?: Date;
 }
 
 
@@ -58,6 +62,26 @@ const contactSchema: Schema<IContact> = new Schema<IContact>(
       trim: true,
       maxlength: [100, "Organization name must be at most 100 characters"],
     },
+
+    replied: {
+  type: Boolean,
+  default: false,
+},
+
+repliedAt: {
+  type: Date,
+},
+
+read: {
+  type: Boolean,
+  default: false,
+},
+
+readAt: {
+  type: Date,
+},
+
+
   },
   {
     timestamps: true, // adds createdAt and updatedAt

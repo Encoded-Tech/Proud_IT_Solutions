@@ -177,7 +177,36 @@
    ================================ */
 
 /* Chrome, Edge, Safari */
+/* Add this to your global CSS or create a separate sidebar.css file */
 
+/* Custom scrollbar for sidebar navigation */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f3f4f6;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Smooth scrolling */
+.sidebar-scroll {
+  scroll-behavior: smooth;
+}
 
 ::-webkit-scrollbar {
   width: 4px;
