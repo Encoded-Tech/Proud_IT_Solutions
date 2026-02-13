@@ -521,7 +521,15 @@ export default function UsersTable({ initialData }: UsersTableProps) {
       {/* ── user detail sheet ────────────────────────────────────────────────── */}
       {selectedUser !== null && (
         <Sheet open onOpenChange={() => setSelectedUser(null)}>
-       
+          {/*
+           * SCROLL FIX ARCHITECTURE:
+           * SheetContent = flex column, h-full, overflow-hidden (clips nothing escapes)
+           *   ├── Hero header  → flex-shrink-0  (fixed height, never squishes)
+           *   └── Body wrapper → flex-1, min-h-0, overflow-y-auto  (scrolls independently)
+           *
+           * min-h-0 is critical — without it, flex children won't shrink below
+           * their intrinsic content size, causing the body to overflow the sheet.
+           */}
           <SheetContent
             className="
               w-full sm:max-w-[480px]
@@ -659,16 +667,18 @@ export default function UsersTable({ initialData }: UsersTableProps) {
                             Suspicious
                           </span>
                         )}
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-                          <p className="text-slate-600 text-[12px]">
-                            <span className="font-semibold">IP: </span>
-                            {log.ip}
-                          </p>
-                          <p className="text-slate-600 text-[12px]">
-                            <span className="font-semibold">Device: </span>
-                            {log.device || "—"}
-                          </p>
-                          <p className="col-span-2 text-slate-400 text-[11px] mt-0.5">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                            <p className="text-slate-600 text-[12px] min-w-0">
+                              <span className="font-semibold">IP: </span>
+                              <span className="break-all">{log.ip}</span>
+                            </p>
+                            <p className="text-slate-600 text-[12px] shrink-0">
+                              <span className="font-semibold">Device: </span>
+                              {log.device || "—"}
+                            </p>
+                          </div>
+                          <p className="text-slate-400 text-[11px]">
                             {fmtDateTime(log.at)}
                           </p>
                         </div>
