@@ -21,7 +21,7 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="min-h-screen bg-slate-50/50">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+      <div className="mx-auto container px-4 py-8 sm:px-6 lg:px-8 space-y-6">
 
         {/* ── page header ── */}
         <div className="flex items-start justify-between gap-4">

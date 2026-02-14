@@ -532,7 +532,7 @@ export default function UsersTable({ initialData }: UsersTableProps) {
            */}
           <SheetContent
             className="
-              w-full sm:max-w-[480px]
+              w-full sm:max-w-2xl
               flex flex-col
               h-full
               p-0
