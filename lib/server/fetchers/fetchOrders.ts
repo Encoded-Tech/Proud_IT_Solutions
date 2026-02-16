@@ -63,6 +63,7 @@ export interface OrderResponse {
   totalPrice: number;
   paymentStatus: PaymentStatus;
   orderStatus: OrderStatus;
+  paymentProof?: string;
   paymentMethod: PaymentMethod;
   deliveryInfo: CheckoutDeliveryInput;
   createdAt: string;
