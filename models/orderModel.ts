@@ -1,3 +1,7 @@
+
+
+
+
 import { Schema, Document, model, models, Types } from "mongoose";
 
 export interface IOrderItem {
@@ -32,6 +36,9 @@ export interface IOrder extends Document {
   totalSalesUpdated: boolean;
   createdAt: Date;
   updatedAt: Date;
+  codAdvance?: number;       // 5000 if COD
+outsideKathmanduCharge?: number; // 1000 if city != Kathmandu
+
 
   // inside IOrder
 buildRequest?: Types.ObjectId | null;
@@ -121,6 +128,8 @@ const orderSchema = new Schema<IOrder>(
       default: "pending",
     },
     deliveryInfo: deliveryInfoSchema,
+     codAdvance: { type: Number, default: 0 },
+    outsideKathmanduCharge: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

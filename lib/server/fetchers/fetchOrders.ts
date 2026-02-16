@@ -102,6 +102,8 @@ export async function getMyOrders(): Promise<GetMyOrdersResult> {
       })
       .sort({ createdAt: -1 }).lean<PopulatedOrder[]>();
 
+      
+
     if (!orders || orders.length === 0) {
       return {
         success: false,
@@ -111,7 +113,14 @@ export async function getMyOrders(): Promise<GetMyOrdersResult> {
     }
 
     // Map Mongo orders -> OrderResponse
-      const data = orders.map(orderToOrderResponse);
+    const data = orders.map(order => {
+  order.orderItems = order.orderItems.map(i => ({
+    ...i,
+    product: i.product || { _id: "", name: "Deleted Product", price: 0, slug: "", images: [] },
+  }));
+  return orderToOrderResponse(order);
+});
+
 
 
     return {

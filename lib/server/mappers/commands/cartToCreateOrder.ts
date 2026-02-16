@@ -12,6 +12,7 @@ interface MapCheckoutArgsSimplified {
   paymentMethod: CreateOrderInput["paymentMethod"];
   source: CreateOrderInput["source"];
  buildId?: string; 
+  paymentProof?: File | null;
 }
 
 export function cartToCreateOrderSimplified({
@@ -20,6 +21,7 @@ export function cartToCreateOrderSimplified({
   paymentMethod,
   source,
   buildId,
+  paymentProof,
 }: MapCheckoutArgsSimplified): CreateOrderInput {
   return {
     items: cartItems.map((item) => ({
@@ -31,5 +33,7 @@ export function cartToCreateOrderSimplified({
     paymentMethod,
     source,
     buildId,
+    paymentProof,
+
   };
 }

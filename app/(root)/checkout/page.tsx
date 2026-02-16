@@ -133,7 +133,7 @@ if (source === "build") {
             country: "",
             instructions: "",
           }}
-          paymentMethod="COD"
+      
           source={source}
           buildId={source === "build" ? buildId : undefined}
         />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createOrderAction } from "@/lib/server/actions/public/order/orderActions";
 import { cartToCreateOrderSimplified } from "@/lib/server/mappers/commands/cartToCreateOrder";
 import { PaymentMethod } from "@/lib/server/fetchers/fetchOrders";
@@ -14,6 +14,11 @@ import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/redux/hooks";
 import { persistor } from "@/redux/store";
 import { ProgressBar, ProgressStep } from "@/app/(root)/checkout/progressBar";
+
+/* ================= CONSTANTS ================= */
+
+const COD_ADVANCE = 5000;
+const OUTSIDE_KATHMANDU_CHARGE = 1000;
 
 /* ================= TYPES ================= */
 
@@ -38,14 +43,12 @@ export interface CheckoutCartItem {
 }
 type CheckoutSource = "cart" | "buy_now" | "build";
 
-
-
 interface CheckoutFormProps {
   user: AuthUser | null;
   cartItems: CheckoutCartItem[];
   deliveryInfo: CheckoutDeliveryInfo;
   paymentMethod?: PaymentMethod;
-    buildId?: string;
+  buildId?: string;
   source: CheckoutSource;
 }
 
@@ -83,28 +86,52 @@ export default function CheckoutForm({
 
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
 
-
   /* ---------------- VALIDATION ---------------- */
 
   const isDeliveryComplete = Boolean(
     deliveryInfo.name &&
-    deliveryInfo.phone &&
-    deliveryInfo.address &&
-    deliveryInfo.city &&
-    deliveryInfo.postalCode &&
-    deliveryInfo.country
+      deliveryInfo.phone &&
+      deliveryInfo.address &&
+      deliveryInfo.city &&
+      deliveryInfo.postalCode &&
+      deliveryInfo.country
   );
 
-
-
   const isPaymentComplete = Boolean(
-    paymentMethod && // ← Check if exists first!
-    (paymentMethod === "COD" || (paymentMethod === "OnlineUpload" && receipt !== null))
+    paymentMethod && receipt !== null
   );
 
   const canPlaceOrder = isDeliveryComplete && isPaymentComplete;
 
-  const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  /* ---------------- PRICE CALCULATIONS ---------------- */
+
+  const subtotal = useMemo(
+    () => cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0),
+    [cartItems]
+  );
+
+  const isOutsideKathmandu = useMemo(() => {
+    if (!deliveryInfo.city) return false;
+
+    const ktmValleyCities = ["kathmandu", "bhaktapur", "lalitpur"];
+    return !ktmValleyCities.includes(deliveryInfo.city.toLowerCase().trim());
+  }, [deliveryInfo.city]);
+
+  const deliveryCharge = useMemo(() => {
+    return isOutsideKathmandu ? OUTSIDE_KATHMANDU_CHARGE : 0;
+  }, [isOutsideKathmandu]);
+
+  const codAdvance = useMemo(() => {
+    return paymentMethod === "COD" ? COD_ADVANCE : 0;
+  }, [paymentMethod]);
+
+  const totalPrice = useMemo(() => {
+    return subtotal + deliveryCharge;
+  }, [subtotal, deliveryCharge]);
+
+  const remainingBalance = useMemo(() => {
+    return totalPrice - codAdvance;
+  }, [totalPrice, codAdvance]);
 
   const progressSteps: ProgressStep[] = [
     { number: 1, title: "Delivery Details", subtitle: "Enter your address" },
@@ -112,12 +139,10 @@ export default function CheckoutForm({
     { number: 3, title: "Review Order", subtitle: "Confirm and place order" },
   ];
 
-
   /* ---------------- SUBMIT ---------------- */
 
   const handleSubmit = async () => {
     if (!canPlaceOrder || !paymentMethod) return;
-
 
     setLoading(true);
     setMessage("");
@@ -132,69 +157,80 @@ export default function CheckoutForm({
         deliveryInfo,
         paymentMethod: paymentMethod as PaymentMethod,
         source,
-          buildId,
-   
+        buildId,
+        paymentProof: receipt,
       });
 
       const res = await createOrderAction(payload);
 
-
       if (!res.success) {
-        const errorMessage = res.message || "Something went wrong. Please try again.";
+        const errorMessage =
+          res.message || "Something went wrong. Please try again.";
         setMessage(errorMessage);
         toast.error(errorMessage);
         return;
       }
 
       if (res.success) {
-  const successMessage = res.message || "Order placed successfully! 🎉";
-  setMessage(successMessage);
-  toast.success(successMessage);
+        const successMessage = res.message || "Order placed successfully! 🎉";
+        setMessage(successMessage);
+        toast.success(successMessage);
 
-  // Only clear cart if the order came from the cart
-  if (source === "cart") {
-    dispatch(clearCart());
-    await persistor.flush();
-  }
+        // Only clear cart if the order came from the cart
+        if (source === "cart") {
+          dispatch(clearCart());
+          await persistor.flush();
+        }
 
-  router.push("/account/orders");
-}
-
-
-
+        router.push("/account/orders");
+      }
     } catch {
-      setMessage("Something went wrong. Please try again.");
+      const errorMsg = "Something went wrong. Please try again.";
+      setMessage(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeliveryContinue = () => {
-    if (isDeliveryComplete) {
-      setOpenSection(2);
+    if (!isDeliveryComplete) {
+      toast.error("Please fill in all delivery information");
+      return;
     }
+    setOpenSection(2);
   };
 
   const handlePaymentContinue = () => {
-    if (isPaymentComplete) {
-      setOpenSection(3);
+    if (!paymentMethod) {
+      toast.error("Please select a payment method");
+      return;
     }
+
+    if (!receipt) {
+      toast.error(
+        paymentMethod === "COD"
+          ? "Please upload your COD advance payment receipt"
+          : "Please upload your payment receipt"
+      );
+      return;
+    }
+
+    setOpenSection(3);
   };
 
   /* ================= UI ================= */
 
   return (
-    <section className="bg-gray-50  py-8">
+    <section className="bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
         <ProgressBar currentStep={openSection} steps={progressSteps} />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* LEFT - Accordion Sections */}
           <div className="lg:col-span-2 space-y-4">
-
-
             {/* SECTION 1: Delivery Information */}
             <AccordionSection
-              icon={<MapPin className="w-5  h-5" />}
+              icon={<MapPin className="w-5 h-5" />}
               title="Delivery Information"
               isOpen={openSection === 1}
               isComplete={isDeliveryComplete}
@@ -207,18 +243,23 @@ export default function CheckoutForm({
                   value={deliveryInfo.name}
                   onChange={(v) => setDeliveryInfo({ ...deliveryInfo, name: v })}
                   placeholder="John Doe"
+                  required
                 />
                 <Input
                   label="Phone Number"
                   value={deliveryInfo.phone}
-                  onChange={(v) => setDeliveryInfo({ ...deliveryInfo, phone: v })}
+                  onChange={(v) =>
+                    setDeliveryInfo({ ...deliveryInfo, phone: v })
+                  }
                   placeholder="+977 9812345678"
+                  required
                 />
                 <Input
                   label="City"
                   value={deliveryInfo.city}
                   onChange={(v) => setDeliveryInfo({ ...deliveryInfo, city: v })}
                   placeholder="Kathmandu"
+                  required
                 />
                 <Input
                   label="Postal Code"
@@ -227,6 +268,7 @@ export default function CheckoutForm({
                     setDeliveryInfo({ ...deliveryInfo, postalCode: v })
                   }
                   placeholder="44600"
+                  required
                 />
                 <div className="md:col-span-2">
                   <Input
@@ -236,6 +278,7 @@ export default function CheckoutForm({
                       setDeliveryInfo({ ...deliveryInfo, address: v })
                     }
                     placeholder="Street address, building, apartment"
+                    required
                   />
                 </div>
                 <Input
@@ -245,6 +288,7 @@ export default function CheckoutForm({
                     setDeliveryInfo({ ...deliveryInfo, country: v })
                   }
                   placeholder="Nepal"
+                  required
                 />
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -265,6 +309,16 @@ export default function CheckoutForm({
                 </div>
               </div>
 
+              {isOutsideKathmandu && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                  <p className="font-medium">📦 Delivery Charge Applied</p>
+                  <p className="mt-1">
+                    Rs. {OUTSIDE_KATHMANDU_CHARGE} will be added for delivery
+                    outside Kathmandu valley.
+                  </p>
+                </div>
+              )}
+
               <button
                 className="mt-6 w-full bg-primary text-white py-3 rounded-lg font-medium hover:bg-red-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
                 disabled={!isDeliveryComplete}
@@ -283,107 +337,247 @@ export default function CheckoutForm({
               onClick={() => {
                 if (isDeliveryComplete) {
                   setOpenSection(2);
+                } else {
+                  toast.error("Please complete delivery information first");
                 }
               }}
               disabled={!isDeliveryComplete}
             >
               <div className="space-y-3 mt-6">
-
-
-                <p className="text-sm text-gray-600 mb-4">
-                  Please select your preferred payment method
+                <p className="text-sm font-medium text-gray-700 mb-4">
+                  Select a payment method that suits you
                 </p>
-
-
 
                 {(["COD", "OnlineUpload"] as PaymentMethod[]).map((method) => (
                   <label
                     key={method}
-                    className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition ${paymentMethod === method
-                      ? "border-primary bg-red-50 ring-2 ring-red-200"  // ✅ Proper styling
-                      : "border-gray-200 hover:border-gray-300"
-                      }`}
+                    className={`flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition ${
+                      paymentMethod === method
+                        ? "border-primary bg-red-50 ring-2 ring-red-200"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
                   >
                     <input
                       type="radio"
                       name="paymentMethod"
                       checked={paymentMethod === method}
-                      onChange={() => setPaymentMethod(method)}
+                      onChange={() => {
+                        setPaymentMethod(method);
+                        // Clear receipt when switching methods
+                        setReceipt(null);
+                        setReceiptPreview(null);
+                      }}
                       className="mt-1 w-4 h-4 text-primary"
                     />
                     <div className="flex-1">
                       <div className="font-medium">
                         {method === "COD"
                           ? "Cash on Delivery"
-                          : "Online Payment (Upload Receipt)"}
+                          : "Online Payment (Full Amount)"}
                       </div>
                       <div className="text-sm text-gray-600 mt-1">
                         {method === "COD"
-                          ? "Pay when your order arrives"
-                          : "Upload your payment receipt after completing the transaction"}
+                          ? `Pay Rs. ${COD_ADVANCE} advance now, remaining on delivery`
+                          : "Upload your full payment receipt"}
                       </div>
                     </div>
                   </label>
                 ))}
 
-                {paymentMethod === "OnlineUpload" && (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Upload Payment Receipt
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        setReceipt(file);
-
-                        if (file && file.type.startsWith("image/")) {
-                          const url = URL.createObjectURL(file);
-                          setReceiptPreview(url);
-                        } else {
-                          setReceiptPreview(null);
-                        }
-                      }}
-                      className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-                    />
-
-                    {receipt && (
-                      <div className="mt-4 rounded-lg border border-gray-200 bg-white p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center justify-center gap-2 text-sm text-green-600">
-                            <Check className="w-4 h-4" />
-                            Receipt uploaded successfully
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReceipt(null);
-                              setReceiptPreview(null);
-                            }}
-                            className="text-sm bg-primary px-2 rounded-lg text-white hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            Remove
-                          </button>
+                {/* COD ADVANCE PAYMENT UPLOAD */}
+                {paymentMethod === "COD" && (
+                  <div className="mt-4 space-y-4">
+                    {/* Info Box */}
+                    <div className="p-4  border-2 border-yellow-300 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold text-lg">💰</span>
                         </div>
-
-                        {receiptPreview ? (
-                          <div className="relative w-full max-w-xs">
-                            <Image
-                              src={receiptPreview}
-                              alt="Receipt preview"
-                              width={400}
-                              height={400}
-                              className="rounded-lg border object-contain bg-gray-50"
-                            />
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-yellow-900 mb-1">
+                            COD Advance Payment Required
+                          </p>
+                          <p className="text-sm text-yellow-800 mb-2">
+                            Please pay Rs. {COD_ADVANCE} advance now to confirm your order.
+                            You&apos;ll pay the remaining Rs. {remainingBalance} when your order is delivered.
+                          </p>
+                          <div className="text-xs text-yellow-700 bg-yellow-50 px-3 py-2 rounded-md">
+                            <p className="font-semibold mb-1">Payment Instructions:</p>
+                            <ul className="list-disc  list-inside space-y-1">
+                              <li>Transfer Rs. {COD_ADVANCE} to our account</li>
+                              <li>Take a screenshot of the payment confirmation</li>
+                              <li>Upload the screenshot below</li>
+                            </ul>
                           </div>
-                        ) : (
-                          <div className="text-sm text-gray-600">
-                            Uploaded file: <span className="font-medium">{receipt.name}</span>
-                          </div>
-                        )}
+                        </div>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Upload Section */}
+                    <div className="p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Upload COD Advance Payment Receipt{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setReceipt(file);
+
+                          if (file && file.type.startsWith("image/")) {
+                            const url = URL.createObjectURL(file);
+                            setReceiptPreview(url);
+                          } else {
+                            setReceiptPreview(null);
+                          }
+                        }}
+                        className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-white hover:file:bg-red-700 file:cursor-pointer"
+                      />
+
+                      {receipt && (
+                        <div className="mt-4 rounded-lg border-2 border-green-200 bg-green-50 p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2 text-sm text-green-700 font-medium">
+                              <Check className="w-5 h-5" />
+                              Advance payment receipt uploaded
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setReceipt(null);
+                                setReceiptPreview(null);
+                              }}
+                              className="text-sm bg-red-500 px-3 py-1 rounded-lg text-white hover:bg-red-600 transition"
+                            >
+                              Remove
+                            </button>
+                          </div>
+
+                          {receiptPreview ? (
+                            <div className="relative w-full max-w-xs mx-auto">
+                              <Image
+                                src={receiptPreview}
+                                alt="COD advance receipt preview"
+                                width={400}
+                                height={400}
+                                className="rounded-lg border-2 border-gray-300 object-contain bg-white"
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-sm text-gray-600">
+                              Uploaded file:{" "}
+                              <span className="font-medium">{receipt.name}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {!receipt && (
+                        <p className="mt-2 text-xs text-red-600 font-medium">
+                          ⚠️ COD advance payment receipt is required to proceed
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ONLINE UPLOAD FULL PAYMENT */}
+                {paymentMethod === "OnlineUpload" && (
+                  <div className="mt-4 space-y-4">
+                    {/* Info Box */}
+                    <div className="p-4  border-2 border-blue-300 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold text-lg">💳</span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-blue-900 mb-1">
+                            Full Payment Required
+                          </p>
+                          <p className="text-sm text-blue-800 mb-2">
+                            Please pay the full amount of Rs. {totalPrice} now to confirm your order.
+                          </p>
+                          <div className="text-xs  text-blue-700 bg-blue-50 px-3 py-2 rounded-md">
+                            <p className="mb-1 font-semibold">Payment Instructions:</p>
+                            <ul className="list-disc list-inside space-y-1">
+                              <li>Transfer Rs. {totalPrice} to our account</li>
+                              <li>Take a screenshot of the payment confirmation</li>
+                              <li>Upload the screenshot below</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Upload Section */}
+                    <div className="p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Upload Payment Receipt{" "}
+                        <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setReceipt(file);
+
+                          if (file && file.type.startsWith("image/")) {
+                            const url = URL.createObjectURL(file);
+                            setReceiptPreview(url);
+                          } else {
+                            setReceiptPreview(null);
+                          }
+                        }}
+                        className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary file:text-white hover:file:bg-red-700 file:cursor-pointer"
+                      />
+
+                      {receipt && (
+                        <div className="mt-4 rounded-lg border-2 border-green-200 bg-green-50 p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2 text-sm text-green-700 font-medium">
+                              <Check className="w-5 h-5" />
+                              Payment receipt uploaded
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setReceipt(null);
+                                setReceiptPreview(null);
+                              }}
+                              className="text-sm bg-red-500 px-3 py-1 rounded-lg text-white hover:bg-red-600 transition"
+                            >
+                              Remove
+                            </button>
+                          </div>
+
+                          {receiptPreview ? (
+                            <div className="relative w-full max-w-xs mx-auto">
+                              <Image
+                                src={receiptPreview}
+                                alt="Payment receipt preview"
+                                width={400}
+                                height={400}
+                                className="rounded-lg border-2 border-gray-300 object-contain bg-white"
+                              />
+                            </div>
+                          ) : (
+                            <div className="text-sm text-gray-600">
+                              Uploaded file:{" "}
+                              <span className="font-medium">{receipt.name}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {!receipt && (
+                        <p className="mt-2 text-xs text-red-600 font-medium">
+                          ⚠️ Payment receipt is required to proceed
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -406,6 +600,10 @@ export default function CheckoutForm({
               onClick={() => {
                 if (isDeliveryComplete && isPaymentComplete) {
                   setOpenSection(3);
+                } else if (!isDeliveryComplete) {
+                  toast.error("Please complete delivery information first");
+                } else if (!isPaymentComplete) {
+                  toast.error("Please complete payment method selection");
                 }
               }}
               disabled={!isDeliveryComplete || !isPaymentComplete}
@@ -418,18 +616,38 @@ export default function CheckoutForm({
                   </p>
                   <p className="text-sm text-gray-600">
                     {deliveryInfo.address}, {deliveryInfo.city}{" "}
-                    {deliveryInfo.postalCode}
+                    {deliveryInfo.postalCode}, {deliveryInfo.country}
                   </p>
+                  {deliveryInfo.instructions && (
+                    <p className="text-sm text-gray-500 mt-2 italic">
+                      Instructions: {deliveryInfo.instructions}
+                    </p>
+                  )}
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h4 className="font-medium mb-2">Payment Method</h4>
                   <p className="text-sm text-gray-600">
                     {paymentMethod === "COD"
-                      ? "Cash on Delivery"
-                      : `Online Payment - Receipt: ${receipt?.name || "Uploaded"}`}
+                      ? `Cash on Delivery (Advance Paid: Rs. ${COD_ADVANCE})`
+                      : `Online Payment (Full Amount Paid: Rs. ${totalPrice})`}
                   </p>
                 </div>
+
+                {receiptPreview && (
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Payment Receipt Preview</h4>
+                    <div className="relative w-full max-w-xs mx-auto">
+                      <Image
+                        src={receiptPreview}
+                        alt="Payment receipt"
+                        width={400}
+                        height={400}
+                        className="rounded-lg border object-contain bg-white"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <button
                   onClick={handleSubmit}
@@ -441,10 +659,11 @@ export default function CheckoutForm({
 
                 {message && (
                   <div
-                    className={`p-4 rounded-lg text-center font-medium ${message.includes("success")
-                      ? "bg-green-50 text-green-700 border border-green-200"
-                      : "bg-red-50 text-red-700 border border-red-200"
-                      }`}
+                    className={`p-4 rounded-lg text-center font-medium ${
+                      message.includes("success")
+                        ? "bg-green-50 text-green-700 border border-green-200"
+                        : "bg-red-50 text-red-700 border border-red-200"
+                    }`}
                   >
                     {message}
                   </div>
@@ -453,52 +672,100 @@ export default function CheckoutForm({
             </AccordionSection>
           </div>
 
-          {/* RIGHT - Order Summary */}
+          {/* RIGHT - Order Summary - SIMPLIFIED & ELEGANT */}
           <div className="lg:col-span-1">
-            <div className="bg-white border-2 border-gray-200 p-6 rounded-lg shadow-sm sticky top-4">
-              <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+            <div className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm sticky top-4">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">Order Summary</h3>
 
-              <div className="space-y-4 mb-4">
-                {cartItems.map((item) => (
-                  <div key={item.productId} className="flex gap-3">
+              {/* Items List */}
+              <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
+                {cartItems.map((item, index) => (
+                  <div key={`${item.productId}-${index}`} className="flex gap-3 pb-3 border-b border-gray-100 last:border-0">
                     {item.image && (
                       <Image
-                        width={1000}
-                        height={1000}
+                        width={60}
+                        height={60}
                         src={item.image}
                         alt={item.productName}
-                        className="w-16 h-16 object-cover rounded border"
+                        className="w-14 h-14 object-cover rounded border"
                       />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
+                      <p className="font-medium text-sm text-gray-800 truncate">
                         {item.productName}
                       </p>
                       {item.variantName && (
                         <p className="text-xs text-gray-500">{item.variantName}</p>
                       )}
-                      <p className="text-sm text-gray-600">
-                        Qty: {item.quantity} × Rs.{item.price}
+                      <p className="text-xs text-gray-600 mt-1">
+                        {item.quantity} × Rs.{item.price}
                       </p>
                     </div>
-                    <div className="font-medium text-sm">
+                    <div className="font-medium text-sm text-gray-800">
                       Rs.{item.price * item.quantity}
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t pt-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Subtotal (including tax)</span>
-                  <span>Rs.{subtotal}</span>
+              {/* Price Breakdown */}
+              <div className="border-t border-gray-200 pt-4 space-y-2.5">
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Subtotal</span>
+                  <span className="font-medium">Rs.{subtotal}</span>
                 </div>
 
-                <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                {deliveryCharge > 0 && (
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Delivery Charge</span>
+                    <span className="font-medium">Rs.{deliveryCharge}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-base font-semibold text-gray-800 pt-2 border-t border-gray-200">
                   <span>Total</span>
-                  <span>Rs.{subtotal}</span>
+                  <span>Rs.{totalPrice}</span>
                 </div>
+
+                {/* COD Payment Breakdown */}
+                {paymentMethod === "COD" && (
+                  <>
+                    <div className="flex justify-between text-sm text-gray-600 pt-2 border-t border-gray-100">
+                      <span>Advance Payment</span>
+                      <span className="font-medium">Rs.{codAdvance}</span>
+                    </div>
+
+                    <div className="flex justify-between text-base font-bold text-primary pt-2 border-t border-primary">
+                      <span>Pay on Delivery</span>
+                      <span>Rs.{remainingBalance}</span>
+                    </div>
+
+                    <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                      <p className="text-xs text-gray-600">
+                        You&apos;ll pay <span className="font-semibold">Rs.{remainingBalance}</span> in cash when your order arrives
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {/* Online Payment Note */}
+                {paymentMethod === "OnlineUpload" && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                    <p className="text-xs text-gray-600">
+                      Full payment of <span className="font-semibold">Rs.{totalPrice}</span> is required
+                    </p>
+                  </div>
+                )}
               </div>
+
+              {/* Delivery Note */}
+              {deliveryCharge > 0 && (
+                <div className="mt-4 p-2.5 bg-blue-50 rounded-md border border-blue-100">
+                  <p className="text-xs text-blue-700">
+                    Delivery charge applies for addresses outside Kathmandu Valley
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -528,7 +795,9 @@ function AccordionSection({
 }) {
   return (
     <div
-      className={`bg-white rounded-lg shadow-sm border-2 border-gray-200 transition  ${disabled ? "opacity-50" : ""}`}
+      className={`bg-white rounded-lg shadow-sm border-2 border-gray-200 transition ${
+        disabled ? "opacity-50" : ""
+      }`}
     >
       <button
         onClick={onClick}
@@ -536,12 +805,13 @@ function AccordionSection({
         className="w-full p-4 flex items-center gap-4 text-left hover:bg-gray-50 transition disabled:cursor-not-allowed"
       >
         <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isComplete
-            ? "bg-green-500 text-white"
-            : isOpen
+          className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+            isComplete
+              ? "bg-green-500 text-white"
+              : isOpen
               ? "bg-red-600 text-white"
               : "bg-gray-200 text-gray-600"
-            }`}
+          }`}
         >
           {isComplete ? <Check className="w-5 h-5" /> : icon}
         </div>
@@ -558,8 +828,9 @@ function AccordionSection({
         </div>
 
         <ChevronDown
-          className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? "rotate-180" : ""
-            }`}
+          className={`w-5 h-5 text-gray-400 transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
         />
       </button>
 
@@ -575,16 +846,19 @@ function Input({
   value,
   onChange,
   placeholder,
+  required = false,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  required?: boolean;
 }) {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
       <input
         value={value}
