@@ -58,7 +58,7 @@ export default function Footer() {
 
   {/* WhatsApp */}
   <Link
-    href="https://wa.me/9779867174242" // 👉 Replace with your WhatsApp number
+    href="https://wa.me/9779867174242" 
     target="_blank"
   >
     <Icon icon="logos:whatsapp-icon" width="30" height="30" />
@@ -71,6 +71,17 @@ export default function Footer() {
   >
     <Icon icon="logos:youtube-icon" width="30" height="30" />
   </Link>
+
+
+
+    <Link
+    href="  https://www.tiktok.com/@shyamlalregmi5?lang=en"
+    target="_blank"
+  >
+    <Icon icon="logos:tiktok-icon" width="30" height="30" />
+  </Link>
+
+
 </div>
 
             </div>
