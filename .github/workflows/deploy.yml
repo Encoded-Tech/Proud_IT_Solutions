@@ -30,9 +30,9 @@ jobs:
 
       - name: Restarting Application using PM2
         run: |
-          echo "pm2 restart"
-          cd /home/Proud_IT_Solutions/website_pn
-          pm2 restart pn
+             sudo -u actionsrunner bash -c 
+             "export HOME=/home/actionsrunner 
+             && pm2 restart pn || pm2 start npm --name pn -- start"
 
       - name: Showing PM2 Status
         run: pm2 status
