@@ -12,36 +12,28 @@ jobs:
     steps:
       - name: Pulling new code
         run: |
-          sudo -u actionsrunner bash -c "
           cd /home/Proud_IT_Solutions/website_pn
           git pull origin master
-          "
 
       - name: Install packages
         run: |
-          sudo -u actionsrunner bash -c "
+          echo "npm installing"
           cd /home/Proud_IT_Solutions/website_pn
-          echo 'Installing npm packages...'
-          npm ci
-          "
+          npm install
+
 
       - name: Building Project
         run: |
-          sudo -u actionsrunner bash -c "
+          echo "building project"
           cd /home/Proud_IT_Solutions/website_pn
-          echo 'Building project...'
           npm run build
-          "
 
       - name: Restarting Application using PM2
         run: |
-          sudo -u actionsrunner bash -c "
+          echo "pm2 restart"
           cd /home/Proud_IT_Solutions/website_pn
-          echo 'Restarting PM2 process...'
-          pm2 restart pn || pm2 start npm --name 'pn' -- start
-          pm2 save
-          "
+          pm2 restart pn
 
       - name: Showing PM2 Status
-        run: |
-          sudo -u actionsrunner bash -c "pm2 status"
+        run: pm2 status
+  
