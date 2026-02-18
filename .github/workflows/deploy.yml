@@ -29,10 +29,7 @@ jobs:
           npm run build
 
       - name: Restarting Application using PM2
-        run: |
-             sudo -u actionsrunner bash -c 
-             "export HOME=/home/actionsrunner 
-             && pm2 restart pn || pm2 start npm --name pn -- start"
+        run: sudo -u actionsrunner bash -c "export HOME=/home/actionsrunner && pm2 restart pn || pm2 start npm --name pn -- start"
 
       - name: Showing PM2 Status
         run: pm2 status
