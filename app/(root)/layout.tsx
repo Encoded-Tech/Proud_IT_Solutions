@@ -1,6 +1,6 @@
 import Footer from "@/components/layout/footer/page";
 import Header from "@/components/layout/header/page";
-
+import LaunchNotice from "@/components/layout/launchNotice";
 import { APP_DESCRIPTION, APP_NAME, SERVER_PRODUCTION_URL } from "@/config/env";
 import { RootLayoutProps } from "@/types/layout";
 import { Metadata } from "next";
@@ -70,7 +70,7 @@ export default function RootLayout({
         />
       </head>
       <body className="flex flex-col min-h-screen">
-      
+        <LaunchNotice />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

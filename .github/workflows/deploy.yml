@@ -9,11 +9,31 @@ jobs:
   deploy: 
     runs-on: self-hosted
 
-    steps: 
-      - name: Checkout code
-        uses: actions/checkout@v4
+    steps:
+      - name: Pulling new code
+        run: |
+          cd /home/Proud_IT_Solutions/website_pn
+          git pull origin master
 
-      - name: Testing Runner Connection
-        run: echo "Testing Runner Connection by Devops Engineer Sanjeev Adhikari"
+      - name: Install packages
+        run: |
+          echo "npm installing"
+          cd /home/Proud_IT_Solutions/website_pn
+          npm install
 
+
+      - name: Building Project
+        run: |
+          echo "building project"
+          cd /home/Proud_IT_Solutions/website_pn
+          npm run build
+
+      - name: Restarting Application using PM2
+        run: |
+          echo "pm2 restart"
+          cd /home/Proud_IT_Solutions/website_pn
+          pm2 restart pn
+
+      - name: Showing PM2 Status
+        run: pm2 status
   
