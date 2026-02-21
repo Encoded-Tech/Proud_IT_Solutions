@@ -6,7 +6,7 @@ import { Toaster } from "react-hot-toast";
 import StoreProvider from "./storeProvider";
 import StoreHydration from "@/redux/hydration/storeHydration";
 
-export const Providers = ({ children }: { children: ReactNode }) => {
+export const      Providers = ({ children }: { children: ReactNode }) => {
   return (
     <StoreProvider>
       
@@ -17,4 +17,4 @@ export const Providers = ({ children }: { children: ReactNode }) => {
       </SessionWrapper>
     </StoreProvider>
   );
-};
+};  
