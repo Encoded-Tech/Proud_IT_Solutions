@@ -64,9 +64,10 @@ export function withAuth(
   providerId: token.providerId as string | undefined,
 };
     
-    return handler(
-      ...(context ? [req, context] : [req])
-    );
+    if (context) {
+  return handler(req, context);
+}
+return handler(req);
   };
 }
 

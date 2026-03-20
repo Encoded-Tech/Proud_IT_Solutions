@@ -102,7 +102,7 @@ export async function createCategory(fd: FormData) {
  // 👇 Aggressive revalidation
     revalidatePath("/admin/category");
     revalidatePath("/admin", "layout");
-    revalidateTag("categories");
+    revalidateTag("categories", "page");
     revalidatePath("/");
 
   return {
@@ -138,7 +138,7 @@ export async function updateCategory(id: string, fd: FormData) {
  // 👇 Aggressive revalidation
     revalidatePath("/admin/category");
     revalidatePath("/admin", "layout");
-    revalidateTag("categories");
+    revalidateTag("categories", "page");
     revalidatePath("/");
 
   return {
@@ -163,7 +163,7 @@ export async function deleteCategory(id: string) {
  // 👇 Aggressive revalidation
     revalidatePath("/admin/category");
     revalidatePath("/admin", "layout");
-    revalidateTag("categories");
+    revalidateTag("categories", "page");
     revalidatePath("/");
 
   return { success: true, message: "Category deleted successfully" };

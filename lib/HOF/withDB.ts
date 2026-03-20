@@ -25,11 +25,7 @@ export function withDB(
     }
 
     // 3️⃣ Call the original handler
-    if (context) {
-      return (handler as (req: NextRequest, context: ContextWithParams) => Promise<NextResponse>)(req, context);
-    } else {
-      return (handler as (req: NextRequest) => Promise<NextResponse>)(req);
-    }
+    return handler(req, context);
   };
 
   // 4️⃣ Wrap in error handler to catch all errors (Mongo, Mongoose, Email, etc.)

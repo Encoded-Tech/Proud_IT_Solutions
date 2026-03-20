@@ -141,7 +141,7 @@ export const PUT = withAuth(
 
 // review-delete- api/product/[slug]/reviews
 export const DELETE = withAuth(withDB(async (req: NextRequest, _context?) => {
-  const params =  _context?.params;
+  const params = await _context?.params;
   const slug = params?.slug;
   const userId = await getAuthUserId(req);
 

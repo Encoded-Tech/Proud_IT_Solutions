@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export type ContextWithParams = {
-  params?: Record<string, string | string[]>;
+  params: Promise<Record<string, string>>;
 };
-
 
 export type RouteHandler<Req extends NextRequest = NextRequest> = (
   req: Req,
