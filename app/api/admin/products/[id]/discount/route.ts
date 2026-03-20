@@ -53,7 +53,7 @@ export const PUT = withAuth(
 // ✅ DELETE: Remove discount from product
 export const DELETE = withAuth(
   withDB(async (req: NextRequest, context) => {
-    const params = context?.params as { id: string } | undefined;
+    const params = await context?.params as { id: string } | undefined;
     const productId = params?.id;
 
     if (!productId) {
