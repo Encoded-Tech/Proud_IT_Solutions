@@ -8,34 +8,26 @@ interface DiscountBody {
   isOfferedPriceActive?: boolean;    // optional, default true
 }
 
+// ✅ PUT: Apply discount to product
 export const PUT = withAuth(
-  withDB(async (req: NextRequest, _context?) => {
-    const params = await _context?.params;
+  withDB(async (req: NextRequest, context) => {
+    const params = context?.params as { id: string } | undefined;
     const productId = params?.id;
 
     if (!productId) {
-      return NextResponse.json({
-        success: false,
-        message: "Product ID is required"
-      }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });
     }
 
     const product = await Product.findById(productId);
     if (!product) {
-      return NextResponse.json({
-        success: false,
-        message: "Product not found"
-      }, { status: 404 });
+      return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }
 
     const body: DiscountBody = await req.json().catch(() => ({}));
     const { discountPercent, isOfferedPriceActive } = body;
 
     if (discountPercent === undefined || discountPercent < 0 || discountPercent > 100) {
-      return NextResponse.json({
-        success: false,
-        message: "Valid discountPercent (0-100) is required"
-      }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Valid discountPercent (0-100) is required" }, { status: 400 });
     }
 
     // Calculate offeredPrice
@@ -43,7 +35,7 @@ export const PUT = withAuth(
     product.offeredPrice = Math.round(product.price - discountAmount);
 
     // Activate/deactivate offered price
-    product.isOfferedPriceActive = isOfferedPriceActive !== undefined ? isOfferedPriceActive : true;
+    product.isOfferedPriceActive = isOfferedPriceActive ?? true;
     product.discountPercent = discountPercent;
 
     await product.save();
@@ -58,33 +50,23 @@ export const PUT = withAuth(
   { roles: ["admin"] }
 );
 
-
+// ✅ DELETE: Remove discount from product
 export const DELETE = withAuth(
-  withDB(async (req: NextRequest, _context?) => {
-    const params = await _context?.params;
+  withDB(async (req: NextRequest, context) => {
+    const params = context?.params as { id: string } | undefined;
     const productId = params?.id;
 
     if (!productId) {
-      return NextResponse.json({
-        success: false,
-        message: "Product ID is required"
-      }, { status: 400 });
+      return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });
     }
 
     const product = await Product.findById(productId);
     if (!product) {
-      return NextResponse.json({
-        success: false,
-        message: "Product not found"
-      }, { status: 404 });
+      return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }
 
-    // If no discount currently active
     if (!product.isOfferedPriceActive) {
-      return NextResponse.json({
-        success: true,
-        message: "No active discount to remove",
-      }, { status: 200 });
+      return NextResponse.json({ success: true, message: "No active discount to remove" }, { status: 200 });
     }
 
     // Remove discount

@@ -6,11 +6,9 @@ export type ContextWithParams = {
 
 
 export type RouteHandler<Req extends NextRequest = NextRequest> = (
-  ...args:
-    | [req: Req]
-    | [req: Req, context: ContextWithParams]
+  req: Req,
+  context?: ContextWithParams
 ) => Promise<NextResponse>;
-
 
 export type WithDBOptions = {
   maxRetries?: number;
