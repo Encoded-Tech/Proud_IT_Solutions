@@ -4,7 +4,7 @@ import { connectDB } from "@/db";
 import { requireAdmin } from "@/lib/auth/requireSession";
 import { AdminPopulatedOrder, orderToAdminOrderResponse } from "@/lib/server/mappers/MapOrdersForAdmin";
 import { Product } from "@/models";
-import { IOrder, Order } from "@/models/orderModel";
+import { IOrder, IOrderItem, Order } from "@/models/orderModel";
 import userModel from "@/models/userModel";
 
 import { FilterQuery, isValidObjectId, Types } from "mongoose";
@@ -168,40 +168,41 @@ export async function adminUpdateOrderAction(
        PAYMENT STATUS UPDATE
     ========================== */
 
-    if (paymentStatus && paymentStatus !== order.paymentStatus) {
-      if (order.paymentStatus === "paid") {
-        return { success: false, message: "Paid orders cannot change payment status" };
-      }
+    const validTransitions: Record<string, string[]> = {
+      pending: ["submitted", "failed"],
+      submitted: ["paid", "failed"],
+      failed: [],
+      paid: [],
+    };
 
-      if (order.paymentStatus === "submitted" && paymentStatus === "paid") {
+    if (paymentStatus && paymentStatus !== order.paymentStatus) {
+      const currentStatus = order.paymentStatus;
+
+      // Auto mark COD paid on delivery
+      if (order.paymentMethod === "COD" && paymentStatus === "paid") {
         order.paymentStatus = "paid";
-      } else if (order.paymentStatus === "submitted" && paymentStatus === "failed") {
-        order.paymentStatus = "failed";
-      } else if (order.paymentMethod === "COD" && paymentStatus === "paid") {
-        order.paymentStatus = "paid";
+      }
+      else if (!validTransitions[currentStatus].includes(paymentStatus)) {
+        return { success: false, message: `Invalid payment transition from ${currentStatus} → ${paymentStatus}` };
       } else {
-        return { success: false, message: "Invalid payment transition" };
+        order.paymentStatus = paymentStatus;
       }
     }
 
     /* ==========================
        ORDER STATUS UPDATE
     ========================== */
-
     if (orderStatus && orderStatus !== order.orderStatus) {
       if (orderStatus === "cancelled") {
-        // Release reserved stock
-        for (const item of order.orderItems) {
-          const product = await Product.findById(item.product);
-          if (!product) continue;
-
-          product.reservedStock = Math.max(
-            0,
-            (product.reservedStock || 0) - item.quantity
-          );
-
-          await product.save();
-        }
+        // Release reserved stock using bulkWrite
+        await Product.bulkWrite(
+          order.orderItems.map((item: IOrderItem) => ({
+            updateOne: {
+              filter: { _id: item.product },
+              update: { $inc: { reservedStock: -item.quantity } },
+            },
+          }))
+        );
 
         order.orderStatus = "cancelled";
         order.cancelledAt = new Date();
@@ -216,18 +217,21 @@ export async function adminUpdateOrderAction(
           return { success: false, message: "Stock already processed" };
         }
 
-        for (const item of order.orderItems) {
-          const product = await Product.findById(item.product);
-          if (!product) continue;
-
-          product.stock -= item.quantity;
-          product.reservedStock = Math.max(
-            0,
-            (product.reservedStock || 0) - item.quantity
-          );
-
-          await product.save();
-        }
+        // Update stock, reservedStock, and totalSales in bulk
+        await Product.bulkWrite(
+          order.orderItems.map((item: IOrderItem) => ({
+            updateOne: {
+              filter: { _id: item.product },
+              update: {
+                $inc: {
+                  stock: -item.quantity,
+                  reservedStock: -item.quantity,
+                  totalSales: item.quantity, // ✅ update sales here
+                },
+              },
+            },
+          }))
+        );
 
         order.stockProcessed = true;
         order.deliveredAt = new Date();
@@ -259,6 +263,128 @@ export async function adminUpdateOrderAction(
     };
   }
 }
+
+// export async function adminUpdateOrderAction(
+//   input: AdminUpdateOrderInput
+// ): Promise<AdminUpdateOrderResult> {
+//   try {
+//     await requireAdmin();
+
+//     const { orderId, paymentStatus, orderStatus } = input;
+
+//     if (!isValidObjectId(orderId)) {
+//       return { success: false, message: "Invalid order ID" };
+//     }
+
+//     const order = await Order.findById(orderId);
+
+//     if (!order) {
+//       return { success: false, message: "Order not found" };
+//     }
+
+//     if (order.orderStatus === "cancelled") {
+//       return { success: false, message: "Cannot modify cancelled order" };
+//     }
+
+//     if (order.orderStatus === "delivered" && orderStatus === "cancelled") {
+//       return { success: false, message: "Delivered order cannot be cancelled" };
+//     }
+
+//     /* ==========================
+//        PAYMENT STATUS UPDATE
+//     ========================== */
+
+//     if (paymentStatus && paymentStatus !== order.paymentStatus) {
+//       if (order.paymentStatus === "paid") {
+//         return { success: false, message: "Paid orders cannot change payment status" };
+//       }
+
+//       if (order.paymentStatus === "submitted" && paymentStatus === "paid") {
+//         order.paymentStatus = "paid";
+//       } else if (order.paymentStatus === "submitted" && paymentStatus === "failed") {
+//         order.paymentStatus = "failed";
+//       } else if (order.paymentMethod === "COD" && paymentStatus === "paid") {
+//         order.paymentStatus = "paid";
+//       } else {
+//         return { success: false, message: "Invalid payment transition" };
+//       }
+//     }
+
+//     /* ==========================
+//        ORDER STATUS UPDATE
+//     ========================== */
+
+//     if (orderStatus && orderStatus !== order.orderStatus) {
+//       if (orderStatus === "cancelled") {
+//         // Release reserved stock
+//         for (const item of order.orderItems) {
+//           const product = await Product.findById(item.product);
+//           if (!product) continue;
+
+//           product.reservedStock = Math.max(
+//             0,
+//             (product.reservedStock || 0) - item.quantity
+//           );
+
+//           await product.save();
+//         }
+
+//         order.orderStatus = "cancelled";
+//         order.cancelledAt = new Date();
+//       }
+
+//       else if (orderStatus === "processing") {
+//         order.orderStatus = "processing";
+//       }
+
+//       else if (orderStatus === "delivered") {
+//         if (order.stockProcessed) {
+//           return { success: false, message: "Stock already processed" };
+//         }
+
+//         for (const item of order.orderItems) {
+//           const product = await Product.findById(item.product);
+//           if (!product) continue;
+
+//           product.stock -= item.quantity;
+//           product.reservedStock = Math.max(
+//             0,
+//             (product.reservedStock || 0) - item.quantity
+//           );
+
+//           await product.save();
+//         }
+
+//         order.stockProcessed = true;
+//         order.deliveredAt = new Date();
+//         order.orderStatus = "delivered";
+
+//         // Auto mark COD paid on delivery
+//         if (order.paymentMethod === "COD") {
+//           order.paymentStatus = "paid";
+//         }
+//       }
+
+//       else {
+//         return { success: false, message: "Invalid order status transition" };
+//       }
+//     }
+
+//     await order.save();
+
+//     return {
+//       success: true,
+//       message: "Order updated successfully",
+//     };
+
+//   } catch (error) {
+//     console.error("ADMIN UPDATE ORDER ERROR:", error);
+//     return {
+//       success: false,
+//       message: "Failed to update order",
+//     };
+//   }
+// }
 
 
 
