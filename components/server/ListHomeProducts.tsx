@@ -33,6 +33,8 @@ export default async function HomeProducts({
   const mediaItems = media.data || [];
 
   const bestSellers = bestRes.data || [];
+
+  
   const hotDeals = hotRes.data || [];
   const newArrivals = newRes.data || [];
 

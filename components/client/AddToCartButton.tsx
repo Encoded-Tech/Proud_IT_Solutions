@@ -28,7 +28,7 @@ export async function addToCartApi({
   quantity?: number;
   variantId?: string;
 }) {
-  const res = await fetch("/api/users/cart", {
+  const res = await fetch("/api/users/me/cart", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include", // 
