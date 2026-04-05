@@ -27,16 +27,16 @@ interface TimeLeft {
 }
 
 // ── constants ─────────────────────────────────────────────────────────────────
-const TARGET_DATE     = new Date("2026-05-14T23:59:59");
+const TARGET_DATE = new Date("2026-05-14T23:59:59");
 const OFFER_END_LABEL = "Last Day of Baisakh 2083 - May 14, 2026";
 
 const OFFER_ITEMS = [
-  { icon: Monitor,  label: "Gaming PCs"      },
-  { icon: Laptop,   label: "Gaming Laptops"  },
-  { icon: Tv2,      label: "Monitors"        },
-  { icon: Camera,   label: "CCTV Cameras"    },
-  { icon: Printer,  label: "Printers"        },
-  { icon: Package,  label: "IT Accessories"  },
+  { icon: Monitor, label: "Gaming PCs" },
+  { icon: Laptop, label: "Gaming Laptops" },
+  { icon: Tv2, label: "Monitors" },
+  { icon: Camera, label: "CCTV Cameras" },
+  { icon: Printer, label: "Printers" },
+  { icon: Package, label: "IT Accessories" },
 ];
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -44,8 +44,8 @@ function getTimeLeft(): TimeLeft {
   const diff = TARGET_DATE.getTime() - Date.now();
   if (diff <= 0) return { days: 0, hours: 0, minutes: 0, seconds: 0 };
   return {
-    days:    Math.floor(diff / 86_400_000),
-    hours:   Math.floor((diff % 86_400_000) / 3_600_000),
+    days: Math.floor(diff / 86_400_000),
+    hours: Math.floor((diff % 86_400_000) / 3_600_000),
     minutes: Math.floor((diff % 3_600_000) / 60_000),
     seconds: Math.floor((diff % 60_000) / 1_000),
   };
@@ -108,7 +108,7 @@ function OfferTicker() {
     <div
       className="w-full overflow-hidden"
       style={{
-        borderTop:    "0.5px solid rgba(255,255,255,0.07)",
+        borderTop: "0.5px solid rgba(255,255,255,0.07)",
         borderBottom: "0.5px solid rgba(255,255,255,0.07)",
         padding: "10px 0",
         background: "rgba(0,0,0,0.18)",
@@ -159,9 +159,9 @@ function OfferTicker() {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function NewYearOfferModal() {
-  const [isOpen,   setIsOpen]   = useState<boolean>(false);
-  const [mounted,  setMounted]  = useState<boolean>(false);
-  const [visible,  setVisible]  = useState<boolean>(false);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [mounted, setMounted] = useState<boolean>(false);
+  const [visible, setVisible] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<TimeLeft>(getTimeLeft());
 
   useEffect(() => {
@@ -209,7 +209,7 @@ export default function NewYearOfferModal() {
           }}
         >
           <span className="flex items-center gap-2 min-w-0 truncate">
-          
+
             <span className="font-semibold truncate">
               🎉 Proud IT Suppliers New Year Offer - Naya Barsha 2083!
             </span>
@@ -359,19 +359,22 @@ export default function NewYearOfferModal() {
                     Offer ends in
                   </div>
                   <div className="flex justify-center gap-2 sm:gap-3">
-                    <CountUnit value={timeLeft.days}    label="Days"  />
+                    <CountUnit value={timeLeft.days} label="Days" />
                     <div className="text-white/25 font-black text-2xl self-center mb-5">:</div>
-                    <CountUnit value={timeLeft.hours}   label="Hours" />
+                    <CountUnit value={timeLeft.hours} label="Hours" />
                     <div className="text-white/25 font-black text-2xl self-center mb-5">:</div>
-                    <CountUnit value={timeLeft.minutes} label="Mins"  />
+                    <CountUnit value={timeLeft.minutes} label="Mins" />
                     <div className="text-white/25 font-black text-2xl self-center mb-5">:</div>
-                    <CountUnit value={timeLeft.seconds} label="Secs"  />
+                    <CountUnit value={timeLeft.seconds} label="Secs" />
                   </div>
                 </div>
 
                 {/* CTA */}
                 <Link
                   href="/shop"
+                  onClick={() => {
+                    handleClose();
+                  }}
                   className="group relative w-full max-w-xs inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl text-white font-black text-base tracking-wide transition-all duration-200 hover:scale-[1.03] active:scale-[0.98] overflow-hidden"
                   style={{
                     background: "linear-gradient(135deg, #991b1b 0%, #cc0000 50%, #b91c1c 100%)",
