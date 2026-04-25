@@ -514,11 +514,14 @@ export default function ProductPageClient({
       </section>
 
      {/* Description */}
+{/* Description */}
 <div className="space-y-4">
   <h2 className="text-2xl font-medium">Description</h2>
-
-  <div className="h-max text-sm md:p-4 p-2 bg-zinc-100 rounded-md whitespace-pre-line">
-    {description}
+  <div className="h-max text-sm md:p-4 p-2 bg-zinc-100 rounded-md">
+    <div
+      className="prose max-w-none"
+      dangerouslySetInnerHTML={{ __html: description ?? "" }}
+    />
   </div>
 </div>
 

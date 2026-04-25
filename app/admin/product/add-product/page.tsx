@@ -319,7 +319,7 @@ export default async function AddProductPage() {
 
   return (
      <div className=" bg-gray-50 py-10 px-4">
-       <div className="max-w-6xl mx-auto mb-4">
+       <div className="w-full mx-auto mb-4">
       <Link href="/admin/product">
       <button
          

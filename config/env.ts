@@ -1,4 +1,4 @@
-export const MONGODB_URI = process.env.NEXT_PUBLIC_MONGODB_URI as string;
+export const MONGODB_URI = process.env.MONGODB_URI as string;
 
 export const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL as string;
 export const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME as string;
