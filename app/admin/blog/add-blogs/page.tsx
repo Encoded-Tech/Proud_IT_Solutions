@@ -1,9 +1,12 @@
 // app/admin/blogs/add-blogs/page.tsx
 
 import { BlogForm } from "../blog-form";
+import { connection } from "next/server";
 
 
-export default function AddBlogPage() {
+export default async function AddBlogPage() {
+  await connection();
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-8">

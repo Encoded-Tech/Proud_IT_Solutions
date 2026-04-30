@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Search, Package, X, AlertCircle, CheckCircle2, Clock, Loader2 } from "lucide-react";
 import Pagination from "../shared/Pagination";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 /* ================= TYPES ================= */
 interface OrderResponse {
@@ -261,30 +262,27 @@ const filteredOrders = useMemo(() => {
         </div>
       </div>
 
-      {/* CONFIRMATION DIALOG */}
-      {confirmDialog.open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
-            <div className="flex items-start gap-4">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${confirmDialog.type === "delete" ? "bg-red-100" : "bg-orange-100"}`}>
-                <AlertCircle className={`w-6 h-6 ${confirmDialog.type === "delete" ? "text-red-600" : "text-orange-600"}`} />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900">{confirmDialog.type === "delete" ? "Delete Order" : "Cancel Order"}</h3>
-                <p className="text-sm text-gray-600 mt-1">{confirmDialog.type === "delete" ? "Are you sure you want to delete this order? This action cannot be undone." : "Are you sure you want to cancel this order? You can place a new order anytime."}</p>
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end pt-2">
-              <button onClick={() => setConfirmDialog({ open: false, type: "cancel", orderId: "" })} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition">
-                No, Keep It
-              </button>
-              <button onClick={() => confirmDialog.type === "delete" ? handleDelete(confirmDialog.orderId) : handleCancel(confirmDialog.orderId)} disabled={loadingStates[confirmDialog.orderId]} className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${confirmDialog.type === "delete" ? "bg-red-600 hover:bg-red-700" : "bg-orange-600 hover:bg-orange-700"}`}>
-                {loadingStates[confirmDialog.orderId] ? <Loader2 className="w-4 h-4 animate-spin" /> : `Yes, ${confirmDialog.type === "delete" ? "Delete" : "Cancel"}`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDialog({ open: false, type: "cancel", orderId: "" });
+        }}
+        title={confirmDialog.type === "delete" ? "Delete order?" : "Cancel order?"}
+        description={
+          confirmDialog.type === "delete"
+            ? "Are you sure you want to delete this order? This action cannot be undone."
+            : "Are you sure you want to cancel this order? You can place a new order anytime."
+        }
+        cancelLabel="Keep Order"
+        confirmLabel={confirmDialog.type === "delete" ? "Delete" : "Cancel Order"}
+        onConfirm={() =>
+          confirmDialog.type === "delete"
+            ? handleDelete(confirmDialog.orderId)
+            : handleCancel(confirmDialog.orderId)
+        }
+        pending={!!loadingStates[confirmDialog.orderId]}
+        tone={confirmDialog.type === "delete" ? "danger" : "default"}
+      />
 
       {/* PAGINATION */}
       {totalPages > 1 && <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />}

@@ -60,6 +60,7 @@ export const PUT = withAuth(
     const name = formData.get("name")?.toString();
     const phone = formData.get("phone")?.toString();
     const imageFile = formData.get("image") as File | null;
+    const newsletterSubscribed = formData.get("newsletterSubscribed") === "true";
 
       // Address comes as JSON string
     const addressRaw = formData.get("address")?.toString();
@@ -76,6 +77,16 @@ export const PUT = withAuth(
 
     if (name) user.name = name;
     if (phone) user.phone = phone;
+    user.newsletter = {
+      subscribed: newsletterSubscribed,
+      source: newsletterSubscribed ? "account" : user.newsletter?.source ?? "account",
+      subscribedAt: newsletterSubscribed
+        ? user.newsletter?.subscribedAt ?? new Date()
+        : user.newsletter?.subscribedAt ?? null,
+      unsubscribedAt: newsletterSubscribed ? null : new Date(),
+      lastCampaignSentAt: user.newsletter?.lastCampaignSentAt ?? null,
+      lastCampaignSubject: user.newsletter?.lastCampaignSubject ?? null,
+    };
 
      /* ---------------- ADDRESS (MERGE, NOT REPLACE) ---------------- */
     if (parsedAddress && typeof parsedAddress === "object") {

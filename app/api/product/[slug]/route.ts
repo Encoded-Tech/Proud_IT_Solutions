@@ -5,11 +5,24 @@ import { withAuth } from "@/lib/HOF/withAuth";
 import { IProduct, Product } from "@/models/productModel";
 import { ApiResponse } from "@/types/api";
 import { NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 //total apis
 //product-get-by-slug api/product/[slug]
 //product-update-by-slug api/product/[slug]
 //product-delete-by-slug api/product/[slug]
+
+function revalidateProductCaches(slug?: string) {
+    revalidatePath("/");
+    revalidatePath("/shop");
+    revalidatePath("/admin/product");
+    revalidateTag("products", "max");
+    revalidateTag("homepage", "max");
+    if (slug) {
+        revalidateTag(`product:${slug}`, "max");
+        revalidatePath(`/products/${slug}`);
+    }
+}
 
 // product-get-by-slug api/product/[slug]
 export const GET = withDB(async (req, _context?) => {
@@ -111,6 +124,7 @@ const stock = rawStock ? parseInt(rawStock, 10) : undefined;
 }
 
         await productToUpdate.save();
+        revalidateProductCaches(productToUpdate.slug);
 
         return NextResponse.json({
             success: true,
@@ -152,6 +166,7 @@ export const DELETE = withAuth(
         }
 
         await productToDelete.deleteOne();
+        revalidateProductCaches(slug);
 
         return NextResponse.json({
             success: true,

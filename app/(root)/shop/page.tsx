@@ -10,6 +10,7 @@ import HomeProducts from "@/components/server/ListHomeProducts";
 import ListProducts from "@/components/server/ListProducts";
 import { Metadata } from "next";
 import { APP_NAME, SERVER_PRODUCTION_URL } from "@/config/env";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: {
@@ -65,7 +66,7 @@ const page = () => {
   return (
     <main className="max-w-7xl xl:mx-auto mx-4 my-10 md:space-y-12 space-y-8">
       {/* Seo section */}
-      <div className="sr-only">
+<div className="sr-only">
   {/* H1 for SEO */}
   <h1>Shop Laptops, PCs, and Accessories Online in Nepal</h1>
 
@@ -85,9 +86,15 @@ const page = () => {
       <h2 className="font-medium text-lighttext">
         Home / <span className="text-black "> Shop</span>
       </h2>
-<ListCategories page="shop" />
-     <ListProducts />
-     <HomeProducts showHotDeals={true} showNewArrivals={false} showBestSellers={false} />
+      <Suspense fallback={<div className="h-28 rounded-3xl border border-slate-200 bg-slate-50" />}>
+        <ListCategories page="shop" />
+      </Suspense>
+      <Suspense fallback={<div className="grid gap-6 md:grid-cols-3"><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /></div>}>
+        <ListProducts />
+      </Suspense>
+      <Suspense fallback={<div className="grid gap-6 md:grid-cols-3"><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /></div>}>
+        <HomeProducts showHotDeals={true} showNewArrivals={false} showBestSellers={false} />
+      </Suspense>
     </main>
   );
 };

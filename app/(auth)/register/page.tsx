@@ -1,5 +1,5 @@
 import React from "react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import Link from "next/link";
 import RegisterForm from "./register-form";
 

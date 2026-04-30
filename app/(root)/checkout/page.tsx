@@ -1,10 +1,17 @@
 // app/checkout/page.tsx
 import CheckoutForm from "@/components/client/CheckoutForm";
+import { buildNoIndexMetadata } from "@/app/seo/utils/metadata";
 import { getCartAction } from "@/lib/server/fetchers/fetchCart";
 import { getCurrentUserAction } from "@/lib/server/fetchers/fetchUser";
 import CheckoutInstructions from "./checkoutInstruction";
 import { Product } from "@/models/productModel";
 import { fetchBuildRequestById } from "@/lib/server/fetchers/fetchBuildRequest";
+
+export const metadata = buildNoIndexMetadata({
+  title: "Checkout",
+  description: "Secure checkout for orders placed with Proud Nepal.",
+  path: "/checkout",
+});
 
 /* ---------------- TYPES ---------------- */
 type CheckoutSource = "cart" | "buy_now" | "build";

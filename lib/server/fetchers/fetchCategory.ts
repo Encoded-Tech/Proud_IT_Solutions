@@ -4,7 +4,7 @@ import { ICategoryWithCountPlain, mapCategoryToFrontend } from "../mappers/MapCa
 import { CategoryType } from "@/types/product";
 import {ICategory } from "@/models/categoryModel";
 import { connectDB } from "@/db";
-import { unstable_noStore  as noStore} from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 
 
 
@@ -22,23 +22,78 @@ export interface ApiSingleCategoryResponse {
   error?: string | null;
 }
 
+async function queryPublicCategories(): Promise<ApiCategoryResponse> {
+  await connectDB();
+
+  const categories: ICategory[] = await Category.find({ isActive: true })
+    .select("categoryName categoryImage slug parentId isActive createdAt updatedAt")
+    .lean<ICategory[]>()
+    .sort({ createdAt: -1 });
+
+  const counts = await Product.aggregate([
+    {
+      $match: {
+        isActive: true,
+      },
+    },
+    { $group: { _id: "$category", count: { $sum: 1 } } },
+  ]);
+
+  const countMap = new Map<string, number>();
+  counts.forEach((c) => countMap.set(c._id.toString(), c.count));
+
+  const categoriesWithCount: ICategoryWithCountPlain[] = categories.map((cat) => ({
+    _id: cat._id.toString(),
+    categoryName: cat.categoryName,
+    categoryImage: cat.categoryImage || "",
+    slug: cat.slug,
+    parentId: cat.parentId?.toString() || null,
+    isActive: cat.isActive,
+    createdAt: cat.createdAt,
+    updatedAt: cat.updatedAt,
+    productCount: countMap.get(cat._id.toString()) || 0,
+  }));
+
+  return {
+    success: true,
+    message: "Categories fetched successfully",
+    data: categoriesWithCount.map(mapCategoryToFrontend),
+    error: null,
+  };
+}
+
+export async function fetchPublicCategories(): Promise<ApiCategoryResponse> {
+  "use cache";
+
+  cacheLife("hours");
+  cacheTag("categories");
+  cacheTag("homepage");
+
+  try {
+    return await queryPublicCategories();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unexpected server error";
+    console.error("Fetch Public Categories Error:", errorMessage);
+
+    return {
+      success: false,
+      message: "Failed to fetch categories",
+      data: null,
+      error: errorMessage,
+    };
+  }
+}
+
 export async function fetchCategories(): Promise<ApiCategoryResponse> {
 
   try {
-    noStore();
     await connectDB();
-    // 1) Fetch categories from DB
-     const categories: ICategory[] = await Category.find().lean<ICategory[]>().sort({createdAt : -1});
-
-    // 2) Fetch product counts grouped by category
-    const counts = await Product.aggregate([
-      { $group: { _id: "$category", count: { $sum: 1 } } },
-    ]);
-
+    const categories: ICategory[] = await Category.find()
+      .lean<ICategory[]>()
+      .sort({ createdAt: -1 });
+    const counts = await Product.aggregate([{ $group: { _id: "$category", count: { $sum: 1 } } }]);
     const countMap = new Map<string, number>();
     counts.forEach((c) => countMap.set(c._id.toString(), c.count));
-
-    // 3) Merge counts into categories
     const categoriesWithCount: ICategoryWithCountPlain[] = categories.map((cat) => ({
       _id: cat._id.toString(),
       categoryName: cat.categoryName,
@@ -51,7 +106,6 @@ export async function fetchCategories(): Promise<ApiCategoryResponse> {
       productCount: countMap.get(cat._id.toString()) || 0,
     }));
 
-    // 4) Map to frontend type
     const frontendCategories = categoriesWithCount.map(mapCategoryToFrontend);
 
     return {

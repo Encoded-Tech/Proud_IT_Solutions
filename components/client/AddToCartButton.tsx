@@ -84,7 +84,6 @@ const AddToCartButton = ({ productId, variantId,  productSlug, variant = "page",
     try {
    
       const result = await addToCartApi({ productId, quantity, variantId });
-      console.log(result);
 
       if (result.success) {
         // Update Redux slice

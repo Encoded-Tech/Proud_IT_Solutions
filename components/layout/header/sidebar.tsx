@@ -14,8 +14,9 @@ import {
   ShoppingCart,
   ComputerIcon,
   Wrench,
+  MailPlus,
 } from "lucide-react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 
 interface AdminProps {
   collapsed: boolean;
@@ -359,6 +360,18 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
 
           <li>
             <Link
+              href="/admin/newsletter"
+              className={`flex items-center p-2 rounded-lg hover:bg-gray-100 transition ${
+                collapsed ? "justify-center" : "gap-3"
+              }`}
+            >
+              <MailPlus className="w-5 h-5 text-gray-600" />
+              {!collapsed && <span className="text-gray-900">Newsletter</span>}
+            </Link>
+          </li>
+
+          <li>
+            <Link
               href="/admin/orders"
               className={`flex items-center p-2 rounded-lg hover:bg-gray-100 transition ${
                 collapsed ? "justify-center" : "gap-3"
@@ -366,6 +379,18 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
             >
               <ShoppingCart className="w-5 h-5 text-gray-600" />
               {!collapsed && <span className="text-gray-900">Orders</span>}
+            </Link>
+          </li>
+
+          <li>
+            <Link
+              href="/admin/quotations"
+              className={`flex items-center p-2 rounded-lg hover:bg-gray-100 transition ${
+                collapsed ? "justify-center" : "gap-3"
+              }`}
+            >
+              <FileText className="w-5 h-5 text-gray-600" />
+              {!collapsed && <span className="text-gray-900">Quotations</span>}
             </Link>
           </li>
 

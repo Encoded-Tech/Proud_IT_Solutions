@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import { 
   Loader2, 
   Check, 
@@ -44,6 +44,17 @@ export function sanitizeDescription(html: string) {
     .replace(/color:\s*lab\([^)]+\)/g, "color: #1e293b")
     .replace(/color:\s*oklch\([^)]+\)/g, "color: #1e293b")
     .replace(/color:\s*color\([^)]+\)/g, "color: #1e293b");
+}
+
+function parseBulkTags(value: string) {
+  return value
+    .split(/[\s,]+/)
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function normalizeAdminLabel(value: string) {
+  return value.trim().toUpperCase();
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -172,11 +183,25 @@ export function AddProductForm({
   };
 
   const addTag = () => {
-    const val = tagInput.trim();
-    if (val && !tagsList.includes(val)) {
-      setTagsList([...tagsList, val]);
-      setTagInput("");
-    }
+    const incomingTags = parseBulkTags(tagInput);
+    if (incomingTags.length === 0) return;
+
+    setTagsList((current) => {
+      const existing = new Set(current.map((tag) => tag.toLowerCase()));
+      const next = [...current];
+
+      incomingTags.forEach((tag) => {
+        const normalized = tag.toLowerCase();
+        if (!existing.has(normalized)) {
+          existing.add(normalized);
+          next.push(tag);
+        }
+      });
+
+      return next;
+    });
+
+    setTagInput("");
   };
 
   const onSubmit = async (data: ProductFormData) => {
@@ -191,7 +216,7 @@ export function AddProductForm({
       formData.append("description", sanitizeDescription(data.description || ""));
       formData.append("category", data.category);
       formData.append("tags", JSON.stringify(tagsList.map(t => ({ name: t }))));
-      formData.append("brandName", data.brandName || "");
+      formData.append("brandName", normalizeAdminLabel(data.brandName || ""));
       formData.append("discountPercent", String(data.discountPercent));
       formData.append("offerStartDate", data.offerStartDate || "");
       formData.append("offerEndDate", data.offerEndDate || "");
@@ -270,7 +295,11 @@ export function AddProductForm({
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700">Brand Name <span className="text-red-500">*</span></label>
               <Input 
-                {...register("brandName")} 
+                {...register("brandName", {
+                  onChange: (event) => {
+                    event.target.value = normalizeAdminLabel(event.target.value);
+                  },
+                })} 
                 placeholder="Enter brand name"
                 className="h-12 border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl"
               />
@@ -335,6 +364,7 @@ export function AddProductForm({
                 type="number" 
                 {...register("stock")}
                 placeholder="50"
+                onWheel={(event) => event.currentTarget.blur()}
                 className="h-12 border-2 border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 rounded-xl"
               />
             </div>
@@ -346,6 +376,7 @@ export function AddProductForm({
                 placeholder="15"
                 min="0"
                 max="100"
+                onWheel={(event) => event.currentTarget.blur()}
                 className="h-12 border-2 border-emerald-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 rounded-xl"
               />
             </div>
@@ -449,8 +480,13 @@ export function AddProductForm({
               <Input
                 value={tagInput}
                 onChange={e => setTagInput(e.target.value)}
-                placeholder="Add tag and press Enter"
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+                placeholder="Type one or many tags, separated by spaces"
+                onKeyDown={e => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTag();
+                  }
+                }}
                 className="h-12 border-2 border-amber-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-100 rounded-xl"
               />
               <Button type="button" onClick={addTag}

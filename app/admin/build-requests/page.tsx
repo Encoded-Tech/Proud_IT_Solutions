@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { AdminBuildFilters, adminGetAllBuildRequests } from "@/lib/server/actions/admin/BuildMyPc/buildMyPcAction";
 import BuildRequestsTable from "./build_request_table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { connection } from "next/server";
 
 interface AdminBuildsPageProps {
   searchParams: Promise<{
@@ -16,6 +17,7 @@ interface AdminBuildsPageProps {
 export default async function AdminBuildRequestsPage({ 
   searchParams 
 }: AdminBuildsPageProps) {
+  await connection();
   // Await searchParams for Next.js 15+
   const params = await searchParams;
   

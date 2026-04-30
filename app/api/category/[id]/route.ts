@@ -6,12 +6,22 @@ import { Category } from "@/models";
 import { ICategory } from "@/models/categoryModel";
 import { ApiResponse } from "@/types/api";
 import { NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 
 //total apis
 //category-get-by-id api/category/[id]
 //category-update-by-id api/category/[id]
 //category-delete-by-id api/category/[id]
+
+function revalidateCategoryCaches() {
+  revalidatePath("/");
+  revalidatePath("/shop");
+  revalidatePath("/admin/category");
+  revalidateTag("categories", "max");
+  revalidateTag("products", "max");
+  revalidateTag("homepage", "max");
+}
 
 // category-get-by-id api/category/[id]
 export const GET = withDB(async (req, _context?) => {
@@ -71,6 +81,7 @@ export const PUT = withAuth(
       categoryToUpdate.parentId = parentId.trim() === "" ? null : parentId;
     }
     await categoryToUpdate.save();
+    revalidateCategoryCaches();
     return NextResponse.json({
       success: true,
       message: "category updated successfully",
@@ -93,6 +104,7 @@ export const DELETE = withAuth(
       await deleteFromCloudinary(categoryToDelete.categoryImage);
     }
     await categoryToDelete.deleteOne();
+    revalidateCategoryCaches();
     return NextResponse.json({
       success: true,
       message: "category deleted successfully",

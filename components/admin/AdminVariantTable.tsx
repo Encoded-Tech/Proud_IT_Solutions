@@ -248,7 +248,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import { Edit, Trash2, Search, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -256,6 +256,8 @@ import { useRouter } from "next/navigation";
 import { productType, ProductVariantType } from "@/types/product";
 import { deleteProductVariantAction } from "@/lib/server/actions/admin/variants/variantsActions";
 import { VariantForm } from "./AddVariantForm";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { AdminTableRevealStyles, getAdminRowReveal } from "@/components/admin/admin-table-reveal";
 
 export default function VariantTable({
   variants,
@@ -269,6 +271,8 @@ export default function VariantTable({
   const [page, setPage] = useState(1);
   const [editTarget, setEditTarget] = useState<ProductVariantType | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ProductVariantType | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const ITEMS_PER_PAGE = 6;
@@ -292,17 +296,49 @@ export default function VariantTable({
     page * ITEMS_PER_PAGE
   );
 
+  const allVisibleSelected =
+    paginated.length > 0 && paginated.every((variant) => selectedIds.includes(variant.id));
+
+  const toggleSelection = (variantId: string) => {
+    setSelectedIds((current) =>
+      current.includes(variantId)
+        ? current.filter((id) => id !== variantId)
+        : [...current, variantId]
+    );
+  };
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+      return;
+    }
+    setSelectedIds(paginated.map((variant) => variant.id));
+  };
+
   /* 🗑 DELETE */
   const confirmDelete = () => {
-    if (!deleteTarget) return;
+    const targets = deleteTarget
+      ? [deleteTarget]
+      : paginated.filter((variant) => selectedIds.includes(variant.id));
+
+    if (targets.length === 0) return;
 
     startTransition(async () => {
-      const res = await deleteProductVariantAction(deleteTarget.id);
-      if (!res.success) {
-        toast.error(res.message || "Failed to delete variant");
+      const results = await Promise.all(
+        targets.map((variant) => deleteProductVariantAction(variant.id))
+      );
+      const failed = results.find((result) => !result.success);
+      if (failed) {
+        toast.error(failed.message || "Failed to delete variant");
         return;
       }
-      toast.success("Variant deleted successfully");
+      toast.success(
+        targets.length === 1
+          ? "Variant deleted successfully"
+          : `${targets.length} variants deleted successfully`
+      );
+      setSelectedIds([]);
+      setBulkDeleteOpen(false);
       setDeleteTarget(null);
       router.refresh();
     });
@@ -310,6 +346,7 @@ export default function VariantTable({
 
   return (
     <>
+      <AdminTableRevealStyles />
       <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
         {/* HEADER */}
         <div className="p-6 border-b flex justify-between items-center">
@@ -320,17 +357,35 @@ export default function VariantTable({
             </p>
           </div>
 
-          <div className="relative">
-            <input
-              value={search}
-              onChange={e => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              placeholder="Search variant by name..."
-              className="border px-12 py-4 rounded-lg text-lg w-80"
-            />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className="flex items-center gap-3">
+            {selectedIds.length > 0 && (
+              <>
+                <button
+                  onClick={toggleSelectAllVisible}
+                  className="px-4 py-4 rounded-lg text-sm border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
+                >
+                  {allVisibleSelected ? "Clear Selection" : "Select All Visible"}
+                </button>
+                <button
+                  onClick={() => setBulkDeleteOpen(true)}
+                  className="px-4 py-4 rounded-lg text-sm border border-red-300 text-red-600 hover:bg-red-50 transition"
+                >
+                  Delete Selected ({selectedIds.length})
+                </button>
+              </>
+            )}
+            <div className="relative">
+              <input
+                value={search}
+                onChange={e => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search variant by name..."
+                className="border px-12 py-4 rounded-lg text-lg w-80"
+              />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            </div>
           </div>
         </div>
 
@@ -339,6 +394,15 @@ export default function VariantTable({
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
+                <th className="px-6 py-4 text-center text-xs font-semibold uppercase">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleSelectAllVisible}
+                    className="h-4 w-4"
+                    aria-label="Select all visible variants"
+                  />
+                </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Variant</th>
                 <th className="px-6 py-4 text-center text-xs font-semibold uppercase">Price (NPR)</th>
                 <th className="px-6 py-4 text-center text-xs font-semibold uppercase">Discount %</th>
@@ -351,8 +415,17 @@ export default function VariantTable({
             </thead>
 
             <tbody className="divide-y">
-              {paginated.map(v => (
-                <tr key={v.id} className="hover:bg-gray-50">
+              {paginated.map((v, index) => (
+                <tr key={v.id} className="hover:bg-gray-50" style={getAdminRowReveal(index)}>
+                  <td className="px-6 py-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(v.id)}
+                      onChange={() => toggleSelection(v.id)}
+                      className="h-4 w-4"
+                      aria-label={`Select ${v.sku}`}
+                    />
+                  </td>
                   {/* VARIANT */}
                   <td className="px-6 py-4 flex gap-3">
                     <div className="relative w-14 h-14 border rounded">
@@ -515,27 +588,25 @@ export default function VariantTable({
   </div>
 )}
 
-      {/* DELETE MODAL */}
-      {deleteTarget && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-2">Delete Variant?</h3>
-            <p className="text-sm text-gray-600 mb-6">
-              This will permanently delete <b>{deleteTarget.sku}</b>
-            </p>
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteTarget(null)}>Cancel</button>
-              <button
-                onClick={confirmDelete}
-                className="bg-red-600 text-white px-4 py-2 rounded flex items-center gap-2"
-              >
-                {isPending && <Loader2 className="animate-spin w-4 h-4" />}
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteTarget || bulkDeleteOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+            setBulkDeleteOpen(false);
+          }
+        }}
+        title={deleteTarget ? "Delete variant?" : "Delete selected variants?"}
+        description={
+          deleteTarget
+            ? `This will permanently delete ${deleteTarget.sku}. This action cannot be undone.`
+            : `This will permanently delete ${selectedIds.length} selected variants. This action cannot be undone.`
+        }
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        pending={isPending}
+        tone="danger"
+      />
     </>
   );
 }

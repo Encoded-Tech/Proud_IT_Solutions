@@ -2,7 +2,7 @@
 
 import React, { useRef } from "react";
 import PageHeader from "../text/page-header";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import Slider from "react-slick";
 import Link from "next/link";
 import { Icon } from "@iconify/react";

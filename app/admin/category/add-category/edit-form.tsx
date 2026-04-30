@@ -21,7 +21,7 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import { Upload, X, Loader2, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { CategoryType } from "@/types/product";
@@ -39,6 +39,10 @@ interface EditCategoryFormProps {
   categories: CategoryType[]; // parent dropdown
   onSubmit: (formData: FormData) => Promise<{ success: boolean; message: string }>;
   onCancel?: () => void;
+}
+
+function normalizeAdminLabel(value: string) {
+  return value.trim().toUpperCase();
 }
 
 export default function EditCategoryForm({
@@ -95,7 +99,7 @@ export default function EditCategoryForm({
     try {
       setButtonState("loading");
       const formData = new FormData();
-      formData.append("categoryName", values.categoryName);
+      formData.append("categoryName", normalizeAdminLabel(values.categoryName));
       formData.append("parentId", values.parentId || "");
       if (values.categoryImage) formData.append("categoryImage", values.categoryImage);
 
@@ -126,7 +130,13 @@ export default function EditCategoryForm({
               <FormItem>
                 <FormLabel>Category Name</FormLabel>
                 <FormControl>
-                  <Input {...field} className="h-12" />
+                  <Input
+                    {...field}
+                    onChange={(event) =>
+                      field.onChange(normalizeAdminLabel(event.target.value))
+                    }
+                    className="h-12"
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

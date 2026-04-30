@@ -19,7 +19,7 @@ export const GET = withAuth(
   withDB(async (req: NextRequest, _context?) => {
     const params = await _context?.params;
     const orderId = params?.id;
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
 
     if (!orderId) {
       return NextResponse.json({ success: false, message: "Order ID is required" }, { status: 400 });
@@ -69,7 +69,7 @@ export const PUT = withAuth(
   withDB(async (req: NextRequest, _context?) => {
     const params = await _context?.params;
     const orderId = params?.id;
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
 
     if (!orderId) {
       return NextResponse.json({ success: false, message: "Order ID is required" }, { status: 400 });
@@ -167,7 +167,7 @@ export const DELETE = withAuth(
   withDB(async (req: NextRequest, _context?) => {
     const params = await _context?.params;
     const orderId = params?.id;
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
 
     const user = await userModel.findById(userId).select("email name");
     if (!user) return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });

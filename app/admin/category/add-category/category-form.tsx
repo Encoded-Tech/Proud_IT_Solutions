@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 
 import { Check, Loader2, Upload, X, FolderTree, ImageIcon, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -38,6 +38,10 @@ export interface Category {
   } | null;
   createdAt?: string;
   updatedAt?: string;
+}
+
+function normalizeAdminLabel(value: string) {
+  return value.trim().toUpperCase();
 }
 
 const categorySchema = z.object({
@@ -95,7 +99,7 @@ const onSubmit = async (values: z.infer<typeof categorySchema>) => {
     setButtonState('loading');
 
     const formData = new FormData();
-    formData.append("categoryName", values.categoryName);
+    formData.append("categoryName", normalizeAdminLabel(values.categoryName));
     if (values.categoryImage) formData.append("categoryImage", values.categoryImage);
     if (values.parentId && values.parentId !== NO_PARENT) {
   formData.append("parentId", values.parentId);
@@ -231,6 +235,9 @@ const onSubmit = async (values: z.infer<typeof categorySchema>) => {
                             placeholder="e.g., Electronics, Fashion, Home & Garden"
                             className="h-12 border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl text-base"
                             {...field}
+                            onChange={(event) =>
+                              field.onChange(normalizeAdminLabel(event.target.value))
+                            }
                           />
                         </FormControl>
                         <FormMessage className="text-sm" />

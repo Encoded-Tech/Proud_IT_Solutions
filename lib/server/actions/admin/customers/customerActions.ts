@@ -12,6 +12,7 @@ export interface GetUsersFilters {
   role?: "user" | "admin";
   hardLock?: boolean;
   emailVerified?: boolean;
+  newsletterSubscribed?: boolean;
 }
 
 export interface GetUsersOptions {
@@ -62,6 +63,11 @@ export async function getAllUsersAdmin(
 
     // Email verified filter
     if (filters.emailVerified !== undefined) query.emailVerified = filters.emailVerified;
+
+    // Newsletter subscription filter
+    if (filters.newsletterSubscribed !== undefined) {
+      query["newsletter.subscribed"] = filters.newsletterSubscribed;
+    }
 
     // Pagination
     const page = options.page && options.page > 0 ? options.page : 1;

@@ -32,6 +32,7 @@ export async function updateProfileAction(
     const name = formData.get("name")?.toString();
     const phone = formData.get("phone")?.toString();
     const imageFile = formData.get("image") as File | null;
+    const newsletterSubscribed = formData.get("newsletterSubscribed") === "true";
 
     // ---------------- Name ----------------
  
@@ -60,7 +61,17 @@ export async function updateProfileAction(
     /* ---------------- BASIC FIELDS ---------------- */
     if (name) user.name = name;
     if (phone) user.phone = phone;
-      if (bio !== undefined) user.bio = bio;
+    if (bio !== undefined) user.bio = bio;
+    user.newsletter = {
+      subscribed: newsletterSubscribed,
+      source: newsletterSubscribed ? "account" : user.newsletter?.source ?? "account",
+      subscribedAt: newsletterSubscribed
+        ? user.newsletter?.subscribedAt ?? new Date()
+        : user.newsletter?.subscribedAt ?? null,
+      unsubscribedAt: newsletterSubscribed ? null : new Date(),
+      lastCampaignSentAt: user.newsletter?.lastCampaignSentAt ?? null,
+      lastCampaignSubject: user.newsletter?.lastCampaignSubject ?? null,
+    };
 
     /* ---------------- ADDRESS (MERGE) ---------------- */
     if (parsedAddress && typeof parsedAddress === "object") {

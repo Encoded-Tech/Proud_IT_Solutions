@@ -49,7 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 
 interface BuildRequestSheetProps {
   build: IBuildRequestMapped;

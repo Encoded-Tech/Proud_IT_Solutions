@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 import {
   Select,
   SelectTrigger,
@@ -16,6 +17,7 @@ import {
 
 import { OrderStatus, PaymentStatus } from "@/lib/server/fetchers/fetchOrders";
 import { AdminOrderResponse } from "@/lib/server/mappers/MapOrdersForAdmin";
+import { adminDeleteOrdersAction } from "@/lib/server/actions/admin/order/orderActionsAdmin";
 import EditOrderSheet from "./editsheet";
 import { 
   Search, 
@@ -49,6 +51,13 @@ export default function OrdersClient({
 
   const [search, setSearch] = useState<string>(params.get("search") ?? "");
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [initialData, page]);
 
   /* ---------------- FILTER ---------------- */
   const updateFilter = (key: string, value: string) => {
@@ -80,6 +89,46 @@ export default function OrdersClient({
     const newParams = new URLSearchParams(params.toString());
     newParams.set("page", String(p));
     router.push(`?${newParams.toString()}`);
+  };
+
+  const pendingOrders = initialData.filter((order) => order.paymentStatus === "pending");
+  const allVisibleSelected =
+    pendingOrders.length > 0 && pendingOrders.every((order) => selectedIds.includes(order._id));
+
+  const toggleSelection = (orderId: string) => {
+    setSelectedIds((current) =>
+      current.includes(orderId)
+        ? current.filter((id) => id !== orderId)
+        : [...current, orderId]
+    );
+  };
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+      return;
+    }
+    setSelectedIds(pendingOrders.map((order) => order._id));
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+
+    setBulkActionLoading(true);
+    try {
+      const result = await adminDeleteOrdersAction(selectedIds);
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+
+      toast.success(result.message);
+      setSelectedIds([]);
+      setBulkDeleteOpen(false);
+      router.refresh();
+    } finally {
+      setBulkActionLoading(false);
+    }
   };
 
   /* ---------------- STATUS BADGES ---------------- */
@@ -185,6 +234,21 @@ export default function OrdersClient({
           <span className="font-semibold text-gray-900">{total}</span> total orders
         </div>
       </div>
+
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={toggleSelectAllVisible}>
+            {allVisibleSelected ? "Clear Selection" : "Select All Pending"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setBulkDeleteOpen(true)}
+            className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+          >
+            Delete Selected ({selectedIds.length})
+          </Button>
+        </div>
+      )}
 
       {/* ---------------- SEARCH & FILTER BAR ---------------- */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
@@ -303,6 +367,15 @@ export default function OrdersClient({
           <table className="w-full">
             <thead>
               <tr className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleSelectAllVisible}
+                    className="h-4 w-4"
+                    aria-label="Select all pending visible orders"
+                  />
+                </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Order ID
                 </th>
@@ -336,7 +409,7 @@ export default function OrdersClient({
             <tbody className="divide-y divide-gray-100">
               {initialData.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-16 text-center">
+                  <td colSpan={10} className="px-6 py-16 text-center">
                     <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                     <p className="text-gray-500 font-medium">No orders found</p>
                     <p className="text-sm text-gray-400 mt-1">
@@ -348,11 +421,23 @@ export default function OrdersClient({
                 initialData.map((order, index) => (
                   <tr
                     key={order._id}
-                    className="hover:bg-gray-50 transition-colors"
+                    className={`hover:bg-gray-50 transition-colors ${
+                      selectedIds.includes(order._id) ? "bg-rose-50/60" : ""
+                    }`}
                     style={{
                       animation: `fadeIn 0.3s ease-in-out ${index * 0.05}s both`,
                     }}
                   >
+                    <td className="px-6 py-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(order._id)}
+                        onChange={() => toggleSelection(order._id)}
+                        disabled={order.paymentStatus !== "pending"}
+                        className="h-4 w-4 disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label={`Select order ${order._id}`}
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-primary"></div>
@@ -506,6 +591,16 @@ export default function OrdersClient({
           }
         }
       `}</style>
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title="Delete selected orders?"
+        description={`This will permanently delete ${selectedIds.length} selected pending orders. This action cannot be undone.`}
+        confirmLabel="Delete Orders"
+        onConfirm={handleBulkDelete}
+        pending={bulkActionLoading}
+        tone="danger"
+      />
     </div>
   );
 }

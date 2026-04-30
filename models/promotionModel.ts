@@ -1,4 +1,5 @@
 import { Schema, model, models, Document } from "mongoose";
+import { MEDIA_PLACEMENTS } from "@/types/media";
 
 /**
  * Media Types
@@ -16,7 +17,12 @@ export type MediaPlacement =
   | "build-user-pc"
   | "best_seller_video_1"
   | "best_seller_video_2"
-  | "hot_deals_video";
+  | "hot_deals_video"
+  | "home_top_banner"
+  | "home_split_left"
+  | "home_split_right"
+  | "home_mid_banner"
+  | "home_footer_banner";
 
 /**
  * Media Document Interface
@@ -70,16 +76,7 @@ const MediaSchema = new Schema<IMedia>(
 
     placement: {
       type: String,
-      enum: [
-        "hero_first",
-        "hero_second",
-        "hero_third",
-        "hero_fourth",
-        "build-user-pc",
-        "best_seller_video_1",
-        "best_seller_video_2",
-        "hot_deals_video",
-      ],
+      enum: [...MEDIA_PLACEMENTS],
       required: true,
       unique: true,
     },
@@ -94,5 +91,14 @@ const MediaSchema = new Schema<IMedia>(
   }
 );
 
-export const Media =
-  models.Media || model<IMedia>("Media", MediaSchema);
+MediaSchema.index({ isActive: 1, createdAt: 1 });
+
+const MediaModel = models.Media || model<IMedia>("Media", MediaSchema);
+
+const placementPath = MediaModel.schema.path("placement") as any;
+
+if (placementPath && "enumValues" in placementPath) {
+  (placementPath as { enumValues: string[] }).enumValues = [...MEDIA_PLACEMENTS];
+}
+
+export const Media = MediaModel;

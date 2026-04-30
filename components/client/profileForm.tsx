@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 
 
 import { AuthUser, IUserAddressFrontend, setUser } from "@/redux/features/auth/userSlice";
@@ -59,6 +59,7 @@ interface ProfileFormUser {
   phone?: string;
   bio?: string;
   image?: string;
+  newsletter?: AuthUser["newsletter"];
   address?: Partial<IUserAddressFrontend> | null;
 }
 
@@ -72,6 +73,9 @@ export default function ProfileForm({ user }: ProfileFormProps) {
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [previewImage, setPreviewImage] = useState(user.image ?? "/default-user.png");
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(
+    user.newsletter?.subscribed ?? true
+  );
 
    const [districtSearch, setDistrictSearch] = useState(user.address?.district ?? "");
    const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
@@ -108,10 +112,11 @@ export default function ProfileForm({ user }: ProfileFormProps) {
     e.preventDefault();
     setMessage(null);
 
-   
 
+    
 
     const formData = new FormData(e.currentTarget);
+    formData.set("newsletterSubscribed", newsletterSubscribed ? "true" : "false");
 
     // ---------------- PHONE VALIDATION ----------------
     const phone = formData.get("phone")?.toString().trim();
@@ -206,6 +211,29 @@ addressFields.forEach((field: keyof IUserAddressFrontend) => {
         onChange={handleImageChange}
       />
     </label>
+  </div>
+
+  <div className="md:col-span-2">
+    <h2 className="text-xl font-semibold mb-4 text-gray-800">Preferences</h2>
+    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-gray-800">Newsletter subscription</p>
+          <p className="text-sm text-gray-500">
+            Receive product launches, offers, and important updates by email.
+          </p>
+        </div>
+        <label className="inline-flex items-center gap-3 text-sm font-medium text-gray-700">
+          <input
+            type="checkbox"
+            checked={newsletterSubscribed}
+            onChange={(e) => setNewsletterSubscribed(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+          />
+          {newsletterSubscribed ? "Subscribed" : "Opted out"}
+        </label>
+      </div>
+    </div>
   </div>
 
   {/* ---------------- PERSONAL INFORMATION ---------------- */}

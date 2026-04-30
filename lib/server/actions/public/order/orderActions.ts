@@ -7,7 +7,13 @@ import userModel from "@/models/userModel";
 import { IProductVariant } from "@/models/productVariantsModel";
 
 import { sendEmail } from "@/lib/helpers/sendEmail";
-import { MIN_QTY_PER_ITEM, ORDER_EXPIRY_HOURS } from "@/config/env";
+import {
+  ALLOWED_EXT_FOR_PAYMENT_PROOF,
+  ALLOWED_MIME_TYPE_FOR_PAYMENT_PROOF,
+  MAX_SIZE_FOR_PAYMENT_PROOF,
+  MIN_QTY_PER_ITEM,
+  ORDER_EXPIRY_HOURS,
+} from "@/config/env";
 import { requireUser } from "@/lib/auth/requireSession";
 import { BuildRequest } from "@/models/buildMyPcModel";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
@@ -80,6 +86,36 @@ export interface CancelOrderResult {
   message: string;
 }
 
+function validatePaymentProof(file: File | null | undefined) {
+  if (!file) {
+    return { valid: false, message: "Payment screenshot is required" };
+  }
+
+  const ext = file.name.toLowerCase().split(".").pop();
+  if (!ext || !ALLOWED_EXT_FOR_PAYMENT_PROOF.includes(ext)) {
+    return {
+      valid: false,
+      message: `Invalid file type. Allowed: ${ALLOWED_EXT_FOR_PAYMENT_PROOF.join(", ")}`,
+    };
+  }
+
+  if (file.size > MAX_SIZE_FOR_PAYMENT_PROOF) {
+    return {
+      valid: false,
+      message: "File too large. Max size 5MB.",
+    };
+  }
+
+  if (!ALLOWED_MIME_TYPE_FOR_PAYMENT_PROOF.includes(file.type)) {
+    return {
+      valid: false,
+      message: "Invalid file format",
+    };
+  }
+
+  return { valid: true, message: "" };
+}
+
 /* -------------------------------------------------------------------------- */
 /*                            CREATE ORDER ACTION                             */
 /* -------------------------------------------------------------------------- */
@@ -113,13 +149,21 @@ export async function createOrderAction(
     }
 
     /* ---------- Payment screenshot required ---------- */
-    if (
-      paymentMethod === "OnlineUpload" &&
-      !paymentProof
-    ) {
+    if (!paymentProof) {
       return {
         success: false,
-        message: "Payment screenshot is required",
+        message:
+          paymentMethod === "COD"
+            ? "COD advance payment receipt is required"
+            : "Payment screenshot is required",
+      };
+    }
+
+    const paymentProofValidation = validatePaymentProof(paymentProof);
+    if (!paymentProofValidation.valid) {
+      return {
+        success: false,
+        message: paymentProofValidation.message,
       };
     }
 
@@ -332,17 +376,10 @@ export async function createOrderAction(
     /* -------------------- UPLOAD SCREENSHOT -------------------- */
 
 
-      if (!paymentProof) {
-        return {
-          success: false,
-          message: "Payment screenshot required",
-        };
-      }
-
-      uploadedProof = await uploadToCloudinary(
-        paymentProof,
-        "payment_proofs"
-      );
+    uploadedProof = await uploadToCloudinary(
+      paymentProof,
+      "payment_proofs"
+    );
     
 
     /* -------------------- CREATE ORDER -------------------- */
@@ -528,8 +565,12 @@ export async function updateOrderAction(
       }
 
       order.deliveryInfo = deliveryInfo;
-      order.outsideKathmanduCharge =
-        deliveryInfo.city.toLowerCase().trim() !== "kathmandu" ? 1000 : 0;
+      const ktmValleyCities = ["kathmandu", "bhaktapur", "lalitpur"];
+      order.outsideKathmanduCharge = ktmValleyCities.includes(
+        deliveryInfo.city.toLowerCase().trim()
+      )
+        ? 0
+        : 1000;
     }
 
     /* -------------------- UPDATE PAYMENT METHOD -------------------- */
@@ -543,8 +584,15 @@ export async function updateOrderAction(
     }
 
     /* -------------------- RECALCULATE TOTAL PRICE -------------------- */
-    const itemsTotal = order.orderItems.reduce((acc: number, i: IOrderItem) => acc + i.price * i.quantity, 0);
-    order.totalPrice = itemsTotal + order.codAdvance + order.outsideKathmanduCharge;
+    const itemsTotal = order.orderItems.reduce(
+      (acc: number, i: IOrderItem) => acc + i.price * i.quantity,
+      0
+    );
+    const grossTotal = itemsTotal + (order.outsideKathmanduCharge || 0);
+    order.totalPrice =
+      order.paymentMethod === "COD"
+        ? Math.max(0, grossTotal - (order.codAdvance || 0))
+        : grossTotal;
 
     await order.save();
 

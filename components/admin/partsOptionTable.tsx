@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { Edit, Search, Trash2 } from "lucide-react";
@@ -18,8 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 import PartForm from "./parts-option-form";
 import { PartType } from "@/constants/part";
+import { AdminTableRevealStyles, getAdminRowReveal } from "@/components/admin/admin-table-reveal";
 
 
 interface Props {
@@ -39,6 +41,8 @@ export default function PartsTable({ initialParts, partTypes }: Props) {
   const [showModal, setShowModal] = useState(false);
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
 
   // ================= FILTER =================
@@ -55,6 +59,25 @@ export default function PartsTable({ initialParts, partTypes }: Props) {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  const allVisibleSelected =
+    paginated.length > 0 && paginated.every((part) => selectedIds.includes(part._id || ""));
+
+  const toggleSelection = (partId: string) => {
+    setSelectedIds((current) =>
+      current.includes(partId)
+        ? current.filter((id) => id !== partId)
+        : [...current, partId]
+    );
+  };
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+      return;
+    }
+    setSelectedIds(paginated.map((part) => part._id!).filter(Boolean));
+  };
+
   // ================= EDIT =================
   const handleEdit = (part: (typeof initialParts)[0]) => {
     setEditingPart(part);
@@ -69,16 +92,25 @@ export default function PartsTable({ initialParts, partTypes }: Props) {
 
   // ================= DELETE =================
   const handleDeleteConfirm = async () => {
-    if (!confirmDeleteId) return;
+    const targetIds = confirmDeleteId
+      ? [confirmDeleteId]
+      : paginated.map((part) => part._id!).filter((id) => selectedIds.includes(id));
+
+    if (targetIds.length === 0) return;
     try {
       setLoadingDelete(true);
-      const res = await deletePartOption(confirmDeleteId);
-      if (!res.success) {
-        toast.error(res.message || "Failed to delete part");
+      const results = await Promise.all(targetIds.map((id) => deletePartOption(id)));
+      const failed = results.find((result) => !result.success);
+      if (failed) {
+        toast.error(failed.message || "Failed to delete part");
         return;
       }
-      setParts((prev) => prev.filter((p) => p._id !== confirmDeleteId));
-      toast.success("Part deleted");
+      setParts((prev) => prev.filter((p) => !targetIds.includes(p._id!)));
+      setSelectedIds([]);
+      setBulkDeleteOpen(false);
+      toast.success(
+        targetIds.length === 1 ? "Part deleted" : `${targetIds.length} parts deleted`
+      );
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unexpected error";
       toast.error(errorMessage);
@@ -90,6 +122,7 @@ export default function PartsTable({ initialParts, partTypes }: Props) {
 
   return (
     <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+      <AdminTableRevealStyles />
       {/* Header */}
       <div className="p-6 border-b flex flex-col md:flex-row gap-4 justify-between items-center">
         <div>
@@ -100,6 +133,22 @@ export default function PartsTable({ initialParts, partTypes }: Props) {
         </div>
 
       <div className="flex flex-wrap items-center gap-3">
+  {selectedIds.length > 0 && (
+    <>
+      <button
+        onClick={toggleSelectAllVisible}
+        className="px-4 py-2.5 rounded-lg text-sm border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
+      >
+        {allVisibleSelected ? "Clear Selection" : "Select All Visible"}
+      </button>
+      <button
+        onClick={() => setBulkDeleteOpen(true)}
+        className="px-4 py-2.5 rounded-lg text-sm border border-red-300 text-red-600 hover:bg-red-50 transition"
+      >
+        Delete Selected ({selectedIds.length})
+      </button>
+    </>
+  )}
   {/* Search */}
   <div className="relative">
             <input
@@ -159,37 +208,40 @@ export default function PartsTable({ initialParts, partTypes }: Props) {
         </div>
       )}
 
-      {/* Delete Modal */}
-      {confirmDeleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="text-lg font-semibold">Delete Part</h3>
-            <p className="text-sm text-gray-600">This action cannot be undone.</p>
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setConfirmDeleteId(null)}
-                className="px-4 py-2 rounded-lg bg-gray-100"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirm}
-                disabled={loadingDelete}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white disabled:opacity-50"
-              >
-                {loadingDelete ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!confirmDeleteId || bulkDeleteOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmDeleteId(null);
+            setBulkDeleteOpen(false);
+          }
+        }}
+        title={confirmDeleteId ? "Delete part?" : "Delete selected parts?"}
+        description={
+          confirmDeleteId
+            ? "This will permanently delete this part option. This action cannot be undone."
+            : `This will permanently delete ${selectedIds.length} selected parts. This action cannot be undone.`
+        }
+        confirmLabel="Delete"
+        onConfirm={handleDeleteConfirm}
+        pending={loadingDelete}
+        tone="danger"
+      />
 
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
+              <th className="px-6 py-4 text-center text-xs font-semibold uppercase">
+                <input
+                  type="checkbox"
+                  checked={allVisibleSelected}
+                  onChange={toggleSelectAllVisible}
+                  className="h-4 w-4"
+                  aria-label="Select all visible parts"
+                />
+              </th>
               <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Part</th>
               <th className="px-6 py-4 text-center text-xs font-semibold uppercase">Type</th>
               <th className="px-6 py-4 text-center text-xs font-semibold uppercase">Brand</th>
@@ -201,13 +253,22 @@ export default function PartsTable({ initialParts, partTypes }: Props) {
           <tbody className="divide-y">
             {paginated.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-12 text-center text-gray-500">
+                <td colSpan={6} className="py-12 text-center text-gray-500">
                   No parts found
                 </td>
               </tr>
             ) : (
-              paginated.map((part) => (
-                <tr key={part._id} className="hover:bg-gray-50">
+              paginated.map((part, index) => (
+                <tr key={part._id} className="hover:bg-gray-50" style={getAdminRowReveal(index)}>
+                  <td className="px-6 py-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(part._id!)}
+                      onChange={() => toggleSelection(part._id!)}
+                      className="h-4 w-4"
+                      aria-label={`Select ${part.name}`}
+                    />
+                  </td>
                   <td className="px-6 py-4 flex gap-3 items-center">
                     <div className="w-14 h-14 border rounded overflow-hidden relative">
                       {part.imageUrl ? (

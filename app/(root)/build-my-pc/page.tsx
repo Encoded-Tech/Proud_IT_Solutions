@@ -3,7 +3,7 @@
 import BuildClient from "@/components/client/BuildClient";
 import { APP_NAME } from "@/config/env";
 
-import { fetchPartOptions } from "@/lib/server/actions/admin/BuildMyPc/partsAction";
+import { fetchPublicPartOptions } from "@/lib/server/fetchers/fetchPartOptions";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
 
 
 export default async function BuildPage() {
-  const result = await fetchPartOptions(true);
+  const result = await fetchPublicPartOptions();
 
   if (!result.success) {
     return <div className="p-10 text-red-500">Failed to load parts</div>;

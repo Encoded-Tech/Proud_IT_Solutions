@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import BottomCategory from "./bottom-category";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import Link from "next/link";

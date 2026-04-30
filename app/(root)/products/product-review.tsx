@@ -272,7 +272,7 @@ import { Star } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import toast from "react-hot-toast";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import { useRouter } from "next/navigation";
 
 import { setReviews } from "@/redux/features/review/reviewSlice";

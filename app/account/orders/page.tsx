@@ -1,11 +1,11 @@
-export const dynamic = "force-dynamic";
-
 import OrdersClient from "@/components/client/OrderTable";
 import ContinueShoppingLink from "@/components/shared/ContinueShopping";
 import { cancelOrderAction, deleteOrderAction } from "@/lib/server/actions/public/order/orderActions";
 import { getMyOrders } from "@/lib/server/fetchers/fetchOrders";
+import { connection } from "next/server";
 
 export default async function OrdersPage() {
+  await connection();
   const res = await getMyOrders();
   const orders = res.success ? res.data : [];
 

@@ -1,3 +1,5 @@
+import "server-only";
+
 export const MONGODB_URI = process.env.MONGODB_URI as string;
 
 export const SERVER_URL = process.env.NEXT_PUBLIC_SERVER_URL as string;

@@ -6,13 +6,13 @@ import { cartToCreateOrderSimplified } from "@/lib/server/mappers/commands/cartT
 import { PaymentMethod } from "@/lib/server/fetchers/fetchOrders";
 import { AuthUser } from "@/redux/features/auth/userSlice";
 import { ChevronDown, Check, MapPin, CreditCard, Package } from "lucide-react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 
 import { clearCart } from "@/redux/features/cart/cartSlice";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/redux/hooks";
-import { persistor } from "@/redux/store";
+import { getOrCreatePersistor } from "@/redux/store";
 import { ProgressBar, ProgressStep } from "@/app/(root)/checkout/progressBar";
 
 /* ================= CONSTANTS ================= */
@@ -179,7 +179,7 @@ export default function CheckoutForm({
         // Only clear cart if the order came from the cart
         if (source === "cart") {
           dispatch(clearCart());
-          await persistor.flush();
+          await getOrCreatePersistor().flush();
         }
 
         router.push("/account/orders");

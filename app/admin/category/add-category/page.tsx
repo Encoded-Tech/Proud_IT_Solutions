@@ -3,10 +3,12 @@
 import Link from "next/link";
 import AddCategoryPage from "./category-form";
 import { ArrowLeft } from "lucide-react";
+import { connection } from "next/server";
 
 
 
 export default async function Page() {
+  await connection();
 
 
   return (

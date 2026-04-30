@@ -1,182 +1,136 @@
 import { Icon } from "@iconify/react/dist/iconify.js";
-import { Mail, Phone, MapPin } from "lucide-react";
-import Image from "next/image";
+import { Mail, MapPin, Phone } from "lucide-react";
+import Image from "@/components/ui/optimized-image";
 import Link from "next/link";
+import NewsletterSubscriptionForm from "@/components/client/NewsletterSubscriptionForm";
+
+const CURRENT_YEAR = new Date().getUTCFullYear();
 
 export default function Footer() {
   return (
-    <footer className="border-t border-zinc-200 shadow-sm">
-      {/* Main Footer Content */}
-      <div className="max-w-7xl xl:mx-auto mx-4  py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
-          {/* Company Info */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center mb-4">
+    <footer className="border-t border-zinc-200 bg-white shadow-sm">
+      <div className="mx-4 max-w-7xl py-12 xl:mx-auto">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+          <div className="lg:col-span-4">
+            <div className="mb-4 flex items-center">
               <figure>
                 <Image
                   src="/logo/logomain.png"
                   alt="logo"
                   width={1000}
                   height={1000}
-                  className="object-contain md:w-40 w-20"
+                  className="w-20 object-contain md:w-40"
                 />
               </figure>
             </div>
-            <p className=" mb-6 max-w-sm">
-              Your premier destination for accessories.
+            <p className="mb-6 max-w-sm text-sm leading-6 text-zinc-600">
+              Your premier destination for accessories, performance gear, and dependable support.
             </p>
 
-            {/* Contact Info */}
-            <div className="space-y-3">
+            <div className="space-y-3 text-sm text-zinc-700">
               <div className="flex items-center">
-                <Phone className="w-4 h-4 mr-3 " />
-                <span className="text-sm">+977-9867174242</span>
+                <Phone className="mr-3 h-4 w-4 text-red-500" />
+                <span>+977-9867174242</span>
               </div>
               <div className="flex items-center">
-                <Mail className="w-4 h-4 mr-3 " />
-                <span className="text-sm">proudnepalits@gmail.com</span>
+                <Mail className="mr-3 h-4 w-4 text-red-500" />
+                <span>proudnepalits@gmail.com</span>
               </div>
               <div className="flex items-center">
-                <MapPin className="w-4 h-4 mr-3 " />
-                <span className="text-sm">Kathmandu , Nepal</span>
+                <MapPin className="mr-3 h-4 w-4 text-red-500" />
+                <span>Kathmandu, Nepal</span>
               </div>
             </div>
 
-            {/* Social Media & App Downloads */}
-            <div className="mt-12 ">
-                {/* Social Media */}
-                <div className="flex justify-start space-x-4">
-  {/* Facebook */}
-  <Link href="https://www.facebook.com/proudnepal" target="_blank">
-    <Icon icon="logos:facebook" width="30" height="30" />
-  </Link>
-
-  {/* Instagram */}
-  <Link href="https://www.instagram.com/proudnepalit" target="_blank">
-    <Icon icon="skill-icons:instagram" width="30" height="30" />
-  </Link>
-
-  {/* WhatsApp */}
-  <Link
-    href="https://wa.me/9779867174242" 
-    target="_blank"
-  >
-    <Icon icon="logos:whatsapp-icon" width="30" height="30" />
-  </Link>
-
-  {/* YouTube */}
-  <Link
-    href="https://www.youtube.com/@proudnepalitsupplierspvtltd"
-    target="_blank"
-  >
-    <Icon icon="logos:youtube-icon" width="30" height="30" />
-  </Link>
-
-
-
-    <Link
-    href="  https://www.tiktok.com/@shyamlalregmi5?lang=en"
-    target="_blank"
-  >
-    <Icon icon="logos:tiktok-icon" width="30" height="30" />
-  </Link>
-
-
-</div>
-
+            <div className="mt-10 flex justify-start space-x-4">
+              <Link href="https://www.facebook.com/proudnepal" target="_blank">
+                <Icon icon="logos:facebook" width="30" height="30" />
+              </Link>
+              <Link href="https://www.instagram.com/proudnepalit" target="_blank">
+                <Icon icon="skill-icons:instagram" width="30" height="30" />
+              </Link>
+              <Link href="https://wa.me/9779867174242" target="_blank">
+                <Icon icon="logos:whatsapp-icon" width="30" height="30" />
+              </Link>
+              <Link
+                href="https://www.youtube.com/@proudnepalitsupplierspvtltd"
+                target="_blank"
+              >
+                <Icon icon="logos:youtube-icon" width="30" height="30" />
+              </Link>
+              <Link href="https://www.tiktok.com/@shyamlalregmi5?lang=en" target="_blank">
+                <Icon icon="logos:tiktok-icon" width="30" height="30" />
+              </Link>
             </div>
           </div>
 
-          {/* Shop Links */}
-          <div>
-            <h4 className=" font-semibold mb-4">Shop</h4>
+          <div className="lg:col-span-2">
+            <h4 className="mb-4 font-semibold">Shop</h4>
             <ul className="space-y-3">
               <li>
-                <Link
-                  href="/shop?category=headset"
-                  className="text-sm hover:text-primary transition-colors"
-                >
+                <Link href="/shop?category=headset" className="text-sm transition-colors hover:text-primary">
                   Headsets
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/shop?category=monitor"
-                  className="text-sm hover:text-primary transition-colors"
-                >
+                <Link href="/shop?category=monitor" className="text-sm transition-colors hover:text-primary">
                   Monitors
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/shop?category=printers"
-                  className="text-sm hover:text-primary transition-colors"
-                >
-                    Printers
+                <Link href="/shop?category=printers" className="text-sm transition-colors hover:text-primary">
+                  Printers
                 </Link>
               </li>
-              
             </ul>
           </div>
 
-          {/* Customer Service */}
-          <div>
-            <h4 className=" font-semibold mb-4">Customer Service</h4>
+          <div className="lg:col-span-2">
+            <h4 className="mb-4 font-semibold">Customer Service</h4>
             <ul className="space-y-3">
               <li>
-                <Link
-                  href="/contact"
-                  className="text-sm hover:text-primary transition-colors"
-                >
+                <Link href="/contact" className="text-sm transition-colors hover:text-primary">
                   Contact Us
                 </Link>
               </li>
-
               <li>
-                <Link
-                  href="/build-my-pc"
-                  className="text-sm hover:text-primary transition-colors"
-                >
+                <Link href="/build-my-pc" className="text-sm transition-colors hover:text-primary">
                   Build My PC
                 </Link>
               </li>
-
-              
             </ul>
           </div>
 
-          {/* Company */}
-          <div>
-            <h4 className=" font-semibold mb-4">Company</h4>
+          <div className="lg:col-span-1">
+            <h4 className="mb-4 font-semibold">Company</h4>
             <ul className="space-y-3">
               <li>
-                <Link
-                  href="/about"
-                  className="text-sm hover:text-primary transition-colors"
-                >
+                <Link href="/about" className="text-sm transition-colors hover:text-primary">
                   About Us
                 </Link>
               </li>
-
-              
+              <li>
+                <Link href="/promotions" className="text-sm transition-colors hover:text-primary">
+                  Promotions
+                </Link>
+              </li>
             </ul>
+          </div>
+
+          <div className="lg:col-span-3 lg:justify-self-end">
+            <NewsletterSubscriptionForm />
           </div>
         </div>
       </div>
 
-      {/* Bottom Bar */}
       <div className="border-t border-gray-200">
-        <div className="max-w-7xl xl:mx-auto mx-4  py-6">
-          <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
-            {/* Copyright */}
-            <div className="text-sm  text-center lg:text-left">
-              © {new Date().getFullYear()} Proud Nepal. All rights reserved.
+        <div className="mx-4 max-w-7xl py-6 xl:mx-auto">
+          <div className="flex flex-col items-center justify-between gap-4 lg:flex-row">
+            <div className="text-center text-sm lg:text-left">
+              &copy; {CURRENT_YEAR} Proud Nepal. All rights reserved.
             </div>
-
             <div className="flex items-center gap-2">
-              <span className="text-sm  mr-2">
-                Designed and Developed by EncodedTech
-              </span>
+              <span className="mr-2 text-sm">Designed and Developed by EncodedTech</span>
             </div>
           </div>
         </div>

@@ -9,6 +9,7 @@ import { sendEmail } from "@/lib/helpers/sendEmail";
 import { FRONTEND_URL } from "@/config/env";
 import { generateResetToken, hashToken } from "@/lib/helpers/genHashToken";
 import { isMongoDuplicateError } from "@/lib/errors";
+import { applyRateLimit, buildRateLimitKey } from "@/lib/security/rate-limit";
 
 //total apis
 //user-create api/auth/register
@@ -26,6 +27,31 @@ export const POST = withDB(async (req: NextRequest, context?) => {
   const requiredFields = { name, email, hashedPassword: rawPassword, phone };
   const missingFields = checkRequiredFields(requiredFields);
   if (missingFields) return missingFields;
+
+  const ip =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+
+  const rateLimit = applyRateLimit(
+    buildRateLimitKey(["auth-register", ip, email]),
+    { limit: 5, windowMs: 30 * 60 * 1000 }
+  );
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: `Too many registration attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.`,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+      }
+    );
+  }
 
   if (!isStrongPassword(rawPassword)) {
     return NextResponse.json({
@@ -55,6 +81,29 @@ export const POST = withDB(async (req: NextRequest, context?) => {
 
   let imageUrl: string | null = null;
   if (image && typeof image === "object") {
+    const allowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
+    const maxImageSize = 5 * 1024 * 1024;
+
+    if (!allowedImageTypes.includes(image.type)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Profile image must be a JPG, PNG, or WEBP file.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (image.size > maxImageSize) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Profile image must be smaller than 5MB.",
+        },
+        { status: 400 }
+      );
+    }
+
     imageUrl = await uploadToCloudinary(image);
   }
 

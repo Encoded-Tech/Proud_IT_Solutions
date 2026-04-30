@@ -1,17 +1,14 @@
-// 
 "use server";
 
+import { Types } from "mongoose";
+import mongoose from "mongoose";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { connectDB } from "@/db";
+import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
+import { requireAdmin } from "@/lib/auth/requireSession";
+import { mapCategoryToFrontend } from "@/lib/server/mappers/MapCategory";
 import { Category } from "@/models/categoryModel";
 
-
-import { revalidatePath, unstable_noStore as noStore, revalidateTag } from "next/cache";
-import { mapCategoryToFrontend } from "@/lib/server/mappers/MapCategory";
-import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
-import { connectDB } from "@/db";
-import { requireAdmin } from "@/lib/auth/requireSession";
-import mongoose from "mongoose";
-
-// lib/types/category-response.ts
 export interface CategoryResponse {
   _id: string;
   categoryName: string;
@@ -21,12 +18,24 @@ export interface CategoryResponse {
   } | null;
 }
 
-import { Types } from "mongoose";
-
 export interface CategoryLean {
   _id: Types.ObjectId;
   categoryName: string;
   parentId?: Types.ObjectId | null;
+}
+
+function revalidateCategoryCaches() {
+  revalidatePath("/admin/category");
+  revalidatePath("/admin", "layout");
+  revalidatePath("/");
+  revalidatePath("/shop");
+  revalidateTag("categories", "max");
+  revalidateTag("products", "max");
+  revalidateTag("homepage", "max");
+}
+
+function normalizeAdminLabel(value: string) {
+  return value.trim().toUpperCase();
 }
 
 export async function getCategories(): Promise<{
@@ -35,7 +44,6 @@ export async function getCategories(): Promise<{
   data: CategoryResponse[];
 }> {
   try {
-    noStore();
     await connectDB();
 
     const categories = await Category.find({})
@@ -45,12 +53,12 @@ export async function getCategories(): Promise<{
     return {
       success: true,
       message: "Categories fetched successfully",
-      data: categories.map((c) => ({
-        _id: c._id.toString(), // ✅ string
-        categoryName: c.categoryName,
-        parentId: c.parentId
+      data: categories.map((category) => ({
+        _id: category._id.toString(),
+        categoryName: category.categoryName,
+        parentId: category.parentId
           ? {
-              _id: c.parentId.toString(),
+              _id: category.parentId.toString(),
               categoryName: "",
             }
           : null,
@@ -62,15 +70,11 @@ export async function getCategories(): Promise<{
   }
 }
 
-
-
-
 export async function createCategory(fd: FormData) {
-  noStore();
   await connectDB();
   await requireAdmin();
 
-  const categoryName = fd.get("categoryName") as string;
+  const categoryName = normalizeAdminLabel((fd.get("categoryName") as string) || "");
   const parentIdRaw = fd.get("parentId") as string | null;
   const image = fd.get("categoryImage") as File | null;
 
@@ -81,9 +85,7 @@ export async function createCategory(fd: FormData) {
     };
   }
 
-  // ✅ SAFE ObjectId handling
   let parentId: mongoose.Types.ObjectId | null = null;
-
   if (parentIdRaw && mongoose.Types.ObjectId.isValid(parentIdRaw)) {
     parentId = new mongoose.Types.ObjectId(parentIdRaw);
   }
@@ -93,17 +95,21 @@ export async function createCategory(fd: FormData) {
     imageUrl = await uploadToCloudinary(image);
   }
 
+  const existingCategory = await Category.findOne({ categoryName });
+  if (existingCategory) {
+    return {
+      success: false,
+      message: "Category already exists",
+    };
+  }
+
   const category = await Category.create({
     categoryName: categoryName.trim(),
-    parentId, // ✅ ObjectId or null ONLY
+    parentId,
     categoryImage: imageUrl,
   });
 
- // 👇 Aggressive revalidation
-    revalidatePath("/admin/category");
-    revalidatePath("/admin", "layout");
-    revalidateTag("categories", "page");
-    revalidatePath("/");
+  revalidateCategoryCaches();
 
   return {
     success: true,
@@ -114,17 +120,29 @@ export async function createCategory(fd: FormData) {
 
 export async function updateCategory(id: string, fd: FormData) {
   await connectDB();
-
-    await requireAdmin();
+  await requireAdmin();
 
   const category = await Category.findById(id);
-  if (!category) return { success: false, message: "Category not found" };
+  if (!category) {
+    return { success: false, message: "Category not found" };
+  }
 
-  const name = fd.get("categoryName") as string;
+  const name = normalizeAdminLabel((fd.get("categoryName") as string) || "");
   const parentId = fd.get("parentId") as string;
   const image = fd.get("categoryImage") as File | null;
 
-  if (name) category.categoryName = name;
+  if (name) {
+    const duplicateCategory = await Category.findOne({
+      categoryName: name,
+      _id: { $ne: id },
+    });
+
+    if (duplicateCategory) {
+      return { success: false, message: "Category already exists" };
+    }
+
+    category.categoryName = name;
+  }
   category.parentId = parentId || null;
 
   if (image && image.size > 0) {
@@ -135,11 +153,7 @@ export async function updateCategory(id: string, fd: FormData) {
   }
 
   await category.save();
- // 👇 Aggressive revalidation
-    revalidatePath("/admin/category");
-    revalidatePath("/admin", "layout");
-    revalidateTag("categories", "page");
-    revalidatePath("/");
+  revalidateCategoryCaches();
 
   return {
     success: true,
@@ -150,7 +164,7 @@ export async function updateCategory(id: string, fd: FormData) {
 
 export async function deleteCategory(id: string) {
   await connectDB();
-    await requireAdmin();
+  await requireAdmin();
 
   const category = await Category.findById(id);
   if (!category) return { success: false };
@@ -160,11 +174,7 @@ export async function deleteCategory(id: string) {
   }
 
   await category.deleteOne();
- // 👇 Aggressive revalidation
-    revalidatePath("/admin/category");
-    revalidatePath("/admin", "layout");
-    revalidateTag("categories", "page");
-    revalidatePath("/");
+  revalidateCategoryCaches();
 
   return { success: true, message: "Category deleted successfully" };
 }

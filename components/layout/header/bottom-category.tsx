@@ -16,8 +16,7 @@ import {
 } from "@/redux/features/auth/userSlice";
 import { signOut } from "next-auth/react";
 import { selectWishlistCount } from "@/redux/features/wishlist/wishListSlice";
-import Image from "next/image";
-import { createPortal } from "react-dom";
+import Image from "@/components/ui/optimized-image";
 
 const BottomCategory = () => {
   const pathname = usePathname();
@@ -32,7 +31,6 @@ const BottomCategory = () => {
   const isAdmin = isLoggedIn && user?.role === "admin";
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -59,16 +57,9 @@ const BottomCategory = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dropdownOpen]);
 
-  // Update dropdown position
   useEffect(() => {
-    if (dropdownOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPos({ 
-        top: rect.bottom + window.scrollY + 4, 
-        left: rect.left + window.scrollX - 200 + rect.width // move left
-      });
-    }
-  }, [dropdownOpen]);
+    setDropdownOpen(false);
+  }, [pathname]);
 
   return (
     <div className="lg:bg-primary bg-blue-100 lg:p-4 p-2 text-white relative z-[50]">
@@ -136,53 +127,47 @@ const BottomCategory = () => {
                 />
               </button>
 
-              {dropdownOpen &&
-                createPortal(
-                  <div
-                    ref={dropdownRef}
-                    className="absolute w-56 bg-white text-black rounded-xl shadow-xl z-[9999] overflow-hidden"
-                    style={{ top: dropdownPos.top, left: dropdownPos.left }}
-                  >
-                    {/* USER INFO */}
-                    <div className="px-4 py-3 border-b">
-                      <p className="text-sm font-semibold truncate">{user?.name || "User"}</p>
-                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
-                    </div>
+              {dropdownOpen && (
+                <div
+                  ref={dropdownRef}
+                  className="absolute right-0 top-[calc(100%+0.75rem)] w-56 overflow-hidden rounded-xl bg-white text-black shadow-xl z-[9999]"
+                >
+                  <div className="px-4 py-3 border-b">
+                    <p className="text-sm font-semibold truncate">{user?.name || "User"}</p>
+                    <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  </div>
 
-                    {/* LINKS */}
-                    <div className="py-2">
-                      <Link
-                        href="/account"
-                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <Icon icon="mdi:account-outline" width="18" />
-                        Account
-                      </Link>
+                  <div className="py-2">
+                    <Link
+                      href="/account"
+                      className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <Icon icon="mdi:account-outline" width="18" />
+                      Account
+                    </Link>
 
-                      <Link
-                        href="/account/security"
-                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <Icon icon="mdi:cog-outline" width="18" />
-                        Security
-                      </Link>
-                    </div>
+                    <Link
+                      href="/account/security"
+                      className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      <Icon icon="mdi:cog-outline" width="18" />
+                      Security
+                    </Link>
+                  </div>
 
-                    {/* LOGOUT */}
-                    <div className="border-t">
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                      >
-                        <Icon icon="mdi:logout" width="18" />
-                        Logout
-                      </button>
-                    </div>
-                  </div>,
-                  document.body
-                )}
+                  <div className="border-t">
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <Icon icon="mdi:logout" width="18" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
 

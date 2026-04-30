@@ -16,7 +16,7 @@ import Review from "@/app/(root)/products/product-review";
 import { useState, useRef } from "react";
 import { selectIsAuthenticated } from "@/redux/features/auth/userSlice";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 
 type Tag = { id?: string; name?: string };
 

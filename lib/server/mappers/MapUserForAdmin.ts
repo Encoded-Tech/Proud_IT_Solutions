@@ -8,6 +8,14 @@ export const mapUserToAdminDTO = (user: IUser) => ({
   image: user.image,
   role: user.role,
   emailVerified: user.emailVerified,
+  newsletter: {
+    subscribed: user.newsletter?.subscribed ?? true,
+    source: user.newsletter?.source ?? "register",
+    subscribedAt: user.newsletter?.subscribedAt ?? user.createdAt ?? null,
+    unsubscribedAt: user.newsletter?.unsubscribedAt ?? null,
+    lastCampaignSentAt: user.newsletter?.lastCampaignSentAt ?? null,
+    lastCampaignSubject: user.newsletter?.lastCampaignSubject ?? null,
+  },
   address: user.address
     ? {
         fullName: user.address.fullName ?? "",

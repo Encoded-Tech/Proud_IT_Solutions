@@ -12,7 +12,7 @@ export const GET = withAuth(
         const params = await _context?.params;
         const id = params?.id;
 
-        const userId = getAuthUserId(req);
+        const userId = await getAuthUserId(req);
         const user = await userModel.findById(userId)
 
         if (!user) {
@@ -52,7 +52,7 @@ export const PUT = withAuth(
         const params = await _context?.params;
         const id = params?.id;
 
-        const userId = getAuthUserId(req);
+        const userId = await getAuthUserId(req);
         const user = await userModel.findById(userId)
 
         if (!user) {
@@ -141,7 +141,7 @@ export const DELETE = withAuth(
         const params = await _context?.params;
         const id = params?.id;
 
-        const userId = getAuthUserId(req);
+        const userId = await getAuthUserId(req);
         const user = await userModel.findById(userId)
 
         if (!user) {

@@ -5,6 +5,7 @@ import { AddProductForm } from "./addproductForm";
 import { ArrowLeft } from "lucide-react";
 
 import Link from "next/link";
+import { connection } from "next/server";
 
 
 // import { useState, useRef } from "react";
@@ -311,6 +312,7 @@ import Link from "next/link";
 
 
 export default async function AddProductPage() {
+  await connection();
 
   const res = await fetchCategories();
   const categories = res.data || [];

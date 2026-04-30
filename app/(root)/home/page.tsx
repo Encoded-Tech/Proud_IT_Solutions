@@ -1,15 +1,25 @@
 import React from "react";
-import Hero from "./hero";
 // import Article from "./article";
 
 import ListCategories from "@/components/server/ListCategories";
 import HomeProducts from "@/components/server/ListHomeProducts";
-import HeroBanners from "./hero-banners";
+import HomeLandingAds from "@/components/server/HomeLandingAds";
 
-import { getAllMedia } from "@/lib/server/actions/admin/media/mediaActions";
+import { getPublicMedia } from "@/lib/server/fetchers/fetchMedia";
 import { ImageMediaItem } from "@/types/media";
 
 import HomePromoLinks from "./homePromoLinks";
+import HomeNewsletter from "./home-newsletter";
+import HomeMarketplacePromos from "./home-marketplace-promos";
+import { buildNoIndexMetadata } from "@/app/seo/utils/metadata";
+import { Suspense } from "react";
+
+export const metadata = buildNoIndexMetadata({
+  title: "Home",
+  description:
+    "Duplicate homepage route used for navigation. Search engines should prefer the primary homepage.",
+  path: "/home",
+});
 
 
 type HeroBannerDTO = {
@@ -20,11 +30,12 @@ type HeroBannerDTO = {
 
 
 const HomeMain = async () => {
-  const mediaRes = await getAllMedia();
+  const mediaRes = await getPublicMedia();
+  const mediaItems = mediaRes.success && mediaRes.data ? mediaRes.data : [];
 
   const heroBanners: HeroBannerDTO[] =
-    mediaRes.success && mediaRes.data
-      ? mediaRes.data
+    mediaItems.length > 0
+      ? mediaItems
           .filter(
             (item): item is ImageMediaItem =>
               item.type === "image" &&
@@ -70,21 +81,22 @@ const HomeMain = async () => {
 </section>
 {/*Seo section*/}
 
-        {hasHeroBanners ? (
-        <div className="max-w-7xl xl:mx-auto mx-4 my-12">
-          <HeroBanners banners={heroBanners}  />
-        </div>
-      ) : (
-        <Hero />
-      )}
+      <HomeMarketplacePromos media={mediaItems} heroBanners={hasHeroBanners ? heroBanners : []} />
 
 
       {/* Rest of homepage */}
       <div className="max-w-7xl xl:mx-auto mx-4 my-20 space-y-20">
-        <ListCategories page="home" />
-        <HomeProducts showBestSellers />
+        <Suspense fallback={<div className="h-28 rounded-3xl border border-slate-200 bg-slate-50" />}>
+          <ListCategories page="home" />
+        </Suspense>
+        <HomeLandingAds media={mediaItems} variant="middle" />
+        <Suspense fallback={<div className="grid gap-6 md:grid-cols-3"><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /></div>}>
+          <HomeProducts showBestSellers media={mediaItems} />
+        </Suspense>
 
       </div>
+      <HomeLandingAds media={mediaItems} variant="footer" />
+      <HomeNewsletter />
       <HomePromoLinks />
       {/* <div className="max-w-7xl xl:mx-auto mx-4 my-20 space-y-20">
  <Article />

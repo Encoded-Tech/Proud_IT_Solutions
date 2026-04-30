@@ -4,7 +4,7 @@ import { useState, FormEvent, ChangeEvent, useRef } from "react";
 import { PartOptionInput } from "@/lib/server/actions/admin/BuildMyPc/partsAction";
 import { createPartOption, updatePartOption } from "@/lib/server/actions/admin/BuildMyPc/partsAction";
 import { mapPartOption } from "@/lib/server/mappers/MapPartsOption";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { 

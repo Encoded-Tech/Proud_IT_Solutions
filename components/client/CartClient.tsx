@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
 import { Icon } from "@iconify/react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import Link from "next/link";
 import { CartItem } from "@/types/product";
 import toast from "react-hot-toast";

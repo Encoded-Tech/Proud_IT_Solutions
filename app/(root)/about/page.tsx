@@ -3,7 +3,7 @@
 import { Heart, Users, Leaf } from "lucide-react";
 
 
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 
 import { Metadata } from "next";
 import { APP_NAME, SERVER_PRODUCTION_URL } from "@/config/env";
@@ -65,24 +65,22 @@ keywords: [
 export default function Component() {
   return (
     <>
-      <head>
-        <Script
-          id="organization-schema"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              name: "Proud Nepal",
-              url: SERVER_PRODUCTION_URL,
-              description:
-                "Proud Nepal is a trusted electronics store in Nepal offering genuine laptops, custom PCs, printers, monitors, and accessories.",
-              sameAs: [],
-            }),
-          }}
-        />
-
-      </head>
+      <Script
+        id="about-organization-schema"
+        type="application/ld+json"
+        strategy="beforeInteractive"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "Proud Nepal",
+            url: SERVER_PRODUCTION_URL,
+            description:
+              "Proud Nepal is a trusted electronics store in Nepal offering genuine laptops, custom PCs, printers, monitors, and accessories.",
+            sameAs: [],
+          }),
+        }}
+      />
       <div className="flex flex-col min-h-screen my-10 ">
         <main className="flex-1 space-y-16">
           <div className="sr-only">

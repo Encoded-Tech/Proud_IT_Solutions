@@ -1,4 +1,4 @@
-import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
+import { fetchPublicCategories } from "@/lib/server/fetchers/fetchCategory";
 import SliderClient from "../products/categories";
 import ShopCategories from "@/app/(root)/shop/shop-category";
 
@@ -8,7 +8,7 @@ type Props = {
 };
 
 export default async function ListCategories( { page }: Props) {
-  const res = await fetchCategories();
+  const res = await fetchPublicCategories();
 
   const categories = res.data || [];
 

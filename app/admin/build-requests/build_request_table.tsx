@@ -3,6 +3,7 @@
 import { useState, ChangeEvent, useTransition, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { IBuildRequestMapped } from "@/lib/server/mappers/MapBuildUserPc";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
@@ -25,6 +26,9 @@ import {
 } from "lucide-react";
 import BuildRequestSheet from "./build_request_sheet";
 import { cn } from "@/lib/utils";
+import { AdminTableRevealStyles, getAdminRowReveal } from "@/components/admin/admin-table-reveal";
+import { adminDeleteBuildRequests } from "@/lib/server/actions/admin/BuildMyPc/buildMyPcAction";
+import toast from "react-hot-toast";
 
 interface BuildRequestsTableProps {
   builds: IBuildRequestMapped[];
@@ -76,6 +80,9 @@ export default function BuildRequestsTable({
   const [compatibilityFilter, setCompatibilityFilter] = useState<string>(
     filters.compatibilityStatus || "all"
   );
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   // Sync local state with URL params when they change
   useEffect(() => {
@@ -83,6 +90,10 @@ export default function BuildRequestsTable({
     setStatusFilter(filters.status || "all");
     setCompatibilityFilter(filters.compatibilityStatus || "all");
   }, [filters.search, filters.status, filters.compatibilityStatus]);
+
+  useEffect(() => {
+    setSelectedIds([]);
+  }, [builds, page]);
 
   // Debounced search - FIXED: proper dependency array
   useEffect(() => {
@@ -183,8 +194,68 @@ export default function BuildRequestsTable({
     (compatibilityFilter && compatibilityFilter !== "all")
   );
 
+  const allVisibleSelected =
+    builds.length > 0 && builds.every((build) => selectedIds.includes(build.id));
+
+  const toggleSelection = (buildId: string): void => {
+    setSelectedIds((current) =>
+      current.includes(buildId)
+        ? current.filter((id) => id !== buildId)
+        : [...current, buildId]
+    );
+  };
+
+  const toggleSelectAllVisible = (): void => {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+      return;
+    }
+
+    setSelectedIds(builds.map((build) => build.id));
+  };
+
+  const handleBulkDelete = async (): Promise<void> => {
+    if (selectedIds.length === 0) return;
+
+    setBulkActionLoading(true);
+    try {
+      const result = await adminDeleteBuildRequests(selectedIds);
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+
+      toast.success(result.message);
+      setSelectedIds([]);
+      setBulkDeleteOpen(false);
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch (error) {
+      console.error("Failed to delete build requests:", error);
+      toast.error("Failed to delete build requests");
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <AdminTableRevealStyles />
+      {selectedIds.length > 0 && (
+        <div className="flex items-center gap-3 border-b border-slate-200 bg-rose-50 px-6 py-4">
+          <Button variant="outline" onClick={toggleSelectAllVisible}>
+            {allVisibleSelected ? "Clear Selection" : "Select All Visible"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setBulkDeleteOpen(true)}
+            className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+          >
+            Delete Selected ({selectedIds.length})
+          </Button>
+        </div>
+      )}
       {/* Filters Section */}
       <div className="p-6 border-b border-slate-200 bg-slate-50">
         <div className="flex flex-col gap-4">
@@ -287,6 +358,15 @@ export default function BuildRequestsTable({
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
+                <th className="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleSelectAllVisible}
+                    className="h-4 w-4"
+                    aria-label="Select all visible build requests"
+                  />
+                </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
                   Request ID
                 </th>
@@ -314,11 +394,23 @@ export default function BuildRequestsTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {builds.map((build) => (
+              {builds.map((build, index) => (
                 <tr 
                   key={build.id}
-                  className="hover:bg-slate-50 transition-colors duration-150"
+                  className={`hover:bg-slate-50 transition-colors duration-150 ${
+                    selectedIds.includes(build.id) ? "bg-rose-50/60" : ""
+                  }`}
+                  style={getAdminRowReveal(index)}
                 >
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(build.id)}
+                      onChange={() => toggleSelection(build.id)}
+                      className="h-4 w-4"
+                      aria-label={`Select build request ${build.id}`}
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mr-3">
@@ -510,6 +602,17 @@ export default function BuildRequestsTable({
           onClose={() => setSelectedBuild(null)}
         />
       )}
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title="Delete selected build requests?"
+        description={`This will permanently delete ${selectedIds.length} selected build request${selectedIds.length === 1 ? "" : "s"}. This action cannot be undone.`}
+        confirmLabel="Delete Requests"
+        onConfirm={handleBulkDelete}
+        pending={bulkActionLoading}
+        tone="danger"
+      />
     </div>
   );
 }

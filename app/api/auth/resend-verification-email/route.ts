@@ -2,6 +2,7 @@ import { FRONTEND_URL } from "@/config/env";
 import { generateResetToken, hashToken } from "@/lib/helpers/genHashToken";
 import { sendEmail } from "@/lib/helpers/sendEmail";
 import { withDB } from "@/lib/HOF";
+import { applyRateLimit, buildRateLimitKey } from "@/lib/security/rate-limit";
 import userModel from "@/models/userModel";
 import { NextResponse } from "next/server";
 
@@ -9,6 +10,12 @@ import { NextResponse } from "next/server";
 export const POST = withDB(async (req, context?) => {
     const body = await req.json();
     const email = body.email;
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const genericResponse = NextResponse.json({
+        success: true,
+        message: "If the account requires verification, a new verification email will be sent."
+    });
+
     if (!email) {
         return NextResponse.json({
             success: false,
@@ -16,20 +23,37 @@ export const POST = withDB(async (req, context?) => {
         }, { status: 400 });
     }
 
+    const rateLimit = applyRateLimit(
+        buildRateLimitKey(["auth-resend-verification", ip, email]),
+        {
+            limit: 5,
+            windowMs: 30 * 60 * 1000,
+        }
+    );
+
+    if (!rateLimit.allowed) {
+        return NextResponse.json(
+            {
+                success: false,
+                message: "Too many verification requests. Please try again later.",
+            },
+            {
+                status: 429,
+                headers: {
+                    "Retry-After": String(rateLimit.retryAfterSeconds),
+                },
+            }
+        );
+    }
+
     const user = await userModel.findOne({ email });
 
     if (!user) {
-        return NextResponse.json({
-            success: false,
-            message: "User not found"
-        }, { status: 404 });
+        return genericResponse;
     }
 
     if (user.emailVerified) {
-        return NextResponse.json({
-            success: false,
-            message: "Email is already verified"
-        }, { status: 400 });
+        return genericResponse;
     }
     // 1️⃣ Generate a NEW verification token
     const rawVerifyToken = generateResetToken();
@@ -76,7 +100,6 @@ export const POST = withDB(async (req, context?) => {
         message: "Verification email resent!",
         email: user.email,
         expiresAt: user.emailVerificationExpiry,
-
     });
 
 }, { resourceName: "user" });

@@ -5,7 +5,7 @@
 import { IBuildPartMapped, IBuildRequestMapped } from "@/lib/server/mappers/MapBuildMyPc";
 import { motion } from "framer-motion";
 import { CheckCircle, XCircle, Clock, ShoppingCart } from "lucide-react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import { useRouter } from "next/navigation";
 
 interface Props {

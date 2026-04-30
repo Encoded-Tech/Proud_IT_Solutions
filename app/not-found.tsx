@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 
 const NotFound = () => {
   return (

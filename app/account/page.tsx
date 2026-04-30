@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import Link from "next/link";
 import AccountStats from "@/components/client/AccountStats";
 import { AuthUser, IUserAddressFrontend } from "@/redux/features/auth/userSlice";
@@ -125,6 +125,9 @@ export default async function AccountOverviewPage() {
           {user.phone && (
             <p className="text-sm text-gray-500">{user.phone}</p>
           )}
+          <p className="text-sm text-gray-500">
+            Newsletter: {user.newsletter?.subscribed ? "Subscribed" : "Not subscribed"}
+          </p>
 
           {/* COMPLETION BAR */}
           <div className="mt-2 w-full">

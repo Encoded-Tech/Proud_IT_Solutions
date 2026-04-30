@@ -1,5 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { persistReducer, persistStore } from 'redux-persist'
+import type { Persistor } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
 import cartReducer from './features/cart/cartSlice'
 import userReducer from './features/auth/userSlice'
@@ -33,7 +34,24 @@ export const makeStore = () =>
       }),
   })
 
-export const persistor = persistStore(makeStore())
+let clientStore: AppStore | undefined
+let clientPersistor: Persistor | undefined
+
+export const getOrCreateStore = () => {
+  if (!clientStore) {
+    clientStore = makeStore()
+  }
+
+  return clientStore
+}
+
+export const getOrCreatePersistor = (store: AppStore = getOrCreateStore()) => {
+  if (!clientPersistor) {
+    clientPersistor = persistStore(store)
+  }
+
+  return clientPersistor
+}
 
 // Infer the type of makeStore
 export type AppStore = ReturnType<typeof makeStore>

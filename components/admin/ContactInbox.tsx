@@ -24,9 +24,12 @@ import {
   Building2,
   CheckCheck,
   Clock,
+  Trash2,
 } from "lucide-react";
 
 import MessageDetailSheet from "./MessageDetailSheet";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { deleteContactsAction } from "@/lib/server/actions/admin/inbox/inboxActions";
 
 interface ContactsInboxProps {
   initialContacts: ContactDTO[];
@@ -45,6 +48,8 @@ export default function ContactsInbox({ initialContacts }: ContactsInboxProps) {
   const [filterStatus, setFilterStatus] = useState<FilterStatus>("all");
   const [sortBy, setSortBy] = useState<SortBy>("newest");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   // Open message detail and mark as read
   const handleContactClick = (contact: ContactDTO) => {
@@ -162,6 +167,26 @@ export default function ContactsInbox({ initialContacts }: ContactsInboxProps) {
     currentPage * ITEMS_PER_PAGE
   );
 
+  const allVisibleSelected =
+    paginatedContacts.length > 0 &&
+    paginatedContacts.every((contact) => selectedIds.includes(contact.id));
+
+  const toggleSelection = (contactId: string) => {
+    setSelectedIds((current) =>
+      current.includes(contactId)
+        ? current.filter((id) => id !== contactId)
+        : [...current, contactId]
+    );
+  };
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+      return;
+    }
+    setSelectedIds(paginatedContacts.map((contact) => contact.id));
+  };
+
   // Stats
   const unreadCount = contacts.filter((c) => !c.read).length;
   const readCount = contacts.filter((c) => c.read && !c.replied).length;
@@ -185,6 +210,19 @@ export default function ContactsInbox({ initialContacts }: ContactsInboxProps) {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+
+    const response = await deleteContactsAction(selectedIds);
+    if (!response.success) {
+      return;
+    }
+
+    setContacts((prev) => prev.filter((contact) => !selectedIds.includes(contact.id)));
+    setSelectedIds([]);
+    setBulkDeleteOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="container mx-auto">
@@ -193,6 +231,22 @@ export default function ContactsInbox({ initialContacts }: ContactsInboxProps) {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Inbox</h1>
           <p className="text-gray-600">Manage and respond to contact messages</p>
         </div>
+
+        {selectedIds.length > 0 && (
+          <div className="mb-4 flex items-center gap-3">
+            <Button variant="outline" onClick={toggleSelectAllVisible}>
+              {allVisibleSelected ? "Clear Selection" : "Select All Visible"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setBulkDeleteOpen(true)}
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete Selected ({selectedIds.length})
+            </Button>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -314,14 +368,24 @@ export default function ContactsInbox({ initialContacts }: ContactsInboxProps) {
               {paginatedContacts.map((contact) => (
                 <div
                   key={contact.id}
-                  onClick={() => handleContactClick(contact)}
                   className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
                     !contact.read ? "bg-blue-50/30" : ""
                   }`}
                 >
                   <div className="flex items-start gap-4">
+                    <div className="pt-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(contact.id)}
+                        onChange={() => toggleSelection(contact.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-4 w-4"
+                        aria-label={`Select message from ${contact.name}`}
+                      />
+                    </div>
                     {/* Icon */}
                     <div
+                      onClick={() => handleContactClick(contact)}
                       className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${
                         contact.replied
                           ? "bg-green-100 text-green-600"
@@ -340,7 +404,7 @@ export default function ContactsInbox({ initialContacts }: ContactsInboxProps) {
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0" onClick={() => handleContactClick(contact)}>
                       <div className="flex items-start justify-between gap-4 mb-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3
@@ -472,7 +536,7 @@ export default function ContactsInbox({ initialContacts }: ContactsInboxProps) {
       </div>
 
       {/* Message Detail Sheet */}
-      {selectedContact && (
+        {selectedContact && (
         <MessageDetailSheet
           contact={selectedContact}
           open={sheetOpen}
@@ -480,6 +544,15 @@ export default function ContactsInbox({ initialContacts }: ContactsInboxProps) {
           onReplySuccess={handleReplySuccess}
         />
       )}
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title="Delete selected messages?"
+        description={`This will permanently delete ${selectedIds.length} selected inbox messages. This action cannot be undone.`}
+        confirmLabel="Delete Messages"
+        onConfirm={handleBulkDelete}
+        tone="danger"
+      />
     </div>
   );
 }

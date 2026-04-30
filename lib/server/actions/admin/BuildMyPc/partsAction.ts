@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/auth/requireSession";
 import { mapPartOption, mapPartOptionsArray } from "@/lib/server/mappers/MapPartsOption";
 import { IPartOption, PartOption, StorageType, } from "@/models/partsOption";
 import { Types } from "mongoose";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 
 export interface PartOptionInput {
@@ -108,6 +108,7 @@ if (!typeValue || !PART_TYPES.includes(typeValue as PartType)) {
     const part = await PartOption.create(partData);
 
     revalidatePath("/admin/build-user-pc/parts-table");
+    revalidateTag("build-parts", "max");
 
     return {
       success: true,
@@ -198,6 +199,7 @@ if (imageFile instanceof File && imageFile.size > 0) {
 
     await part.save();
     revalidatePath("/admin/build-user-pc/parts-table");
+    revalidateTag("build-parts", "max");
 
     return { success: true, message: "Part option updated successfully", data: mapPartOption(part) };
   } catch (error) {
@@ -225,6 +227,7 @@ export async function deletePartOption(id: string) {
 
     await part.deleteOne();
     revalidatePath("/admin/build-user-pc/parts-table");
+    revalidateTag("build-parts", "max");
 
 
     return {

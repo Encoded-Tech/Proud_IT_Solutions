@@ -4,8 +4,8 @@ import { requireAdmin } from "@/lib/auth/requireSession";
 import { mapMediaToFrontend } from "@/lib/server/mappers/MapMedia";
 import { Media } from "@/models/promotionModel";
 
-import { AnyMediaItem, MediaPlacement } from "@/types/media";
-import { revalidatePath } from "next/cache";
+import { AnyMediaItem, MediaPlacement, MEDIA_PLACEMENTS } from "@/types/media";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 
 interface ApiResponse<T = undefined> {
@@ -17,6 +17,18 @@ interface ApiResponse<T = undefined> {
 interface MediaParams {
   file?: File;
   placement: MediaPlacement;
+}
+
+function isValidPlacement(value: string): value is MediaPlacement {
+  return (MEDIA_PLACEMENTS as readonly string[]).includes(value);
+}
+
+function revalidateMediaTags() {
+  revalidatePath("/admin/posts");
+  revalidatePath("/");
+  revalidateTag("homepage", "max");
+  revalidateTag("promotions", "max");
+  revalidateTag("media", "max");
 }
 
 /* ------------------------------------------------------------------ */
@@ -32,7 +44,20 @@ export const addMedia = async ({
     return { success: false, message: "No file provided" };
   }
 
+  if (!isValidPlacement(placement)) {
+    return { success: false, message: "Invalid media placement selected." };
+  }
+
   const isImageFile = file.type.startsWith("image/");
+  const isVideoFile = file.type.startsWith("video/");
+
+  if (!isImageFile && !isVideoFile) {
+    return {
+      success: false,
+      message: "Unsupported media type. Please upload an image or video file.",
+    };
+  }
+
   const type: "image" | "video" = isImageFile ? "image" : "video";
 
   let uploadedImageUrl: string | null = null;
@@ -67,7 +92,7 @@ export const addMedia = async ({
         : {}),
     });
 
-    revalidatePath("/admin/posts");
+    revalidateMediaTags();
 
     return {
       success: true,
@@ -97,8 +122,9 @@ export const updateMedia = async ({
 }: MediaParams): Promise<ApiResponse<AnyMediaItem>> => {
   await requireAdmin();
 
-  const isImage = placement.startsWith("hero");
-  const type: "image" | "video" = isImage ? "image" : "video";
+  if (!isValidPlacement(placement)) {
+    return { success: false, message: "Invalid media placement selected." };
+  }
 
   let uploadedImageUrl: string | null = null;
   let uploadedVideo: { videoUrl: string; publicId: string } | null = null;
@@ -107,14 +133,36 @@ export const updateMedia = async ({
     const existing = await Media.findOne({ placement });
     if (!existing) return { success: false, message: "No media found for this placement" };
 
+    const uploadedType = file
+      ? file.type.startsWith("image/")
+        ? "image"
+        : file.type.startsWith("video/")
+          ? "video"
+          : null
+      : null;
+
+    if (file && !uploadedType) {
+      return {
+        success: false,
+        message: "Unsupported media type. Please upload an image or video file.",
+      };
+    }
+
+    if (uploadedType && uploadedType !== existing.type) {
+      return {
+        success: false,
+        message: "Media type cannot be changed for an existing placement. Upload the same file type.",
+      };
+    }
+
     // Upload new file first
- if (file) {
-  if (file.type.startsWith("image/")) {
-    uploadedImageUrl = await uploadToCloudinary(file);
-  } else {
-    uploadedVideo = await uploadVideoToCloudinary(file);
-  }
-}
+    if (file) {
+      if (uploadedType === "image") {
+        uploadedImageUrl = await uploadToCloudinary(file);
+      } else if (uploadedType === "video") {
+        uploadedVideo = await uploadVideoToCloudinary(file);
+      }
+    }
 
 
     // Delete old Cloudinary file
@@ -123,15 +171,22 @@ export const updateMedia = async ({
       await deleteFromCloudinaryByPublicId(existing.publicId, "video");
 
     // Update DB
-    existing.type = type;
-    if (type === "image") existing.imageUrl = uploadedImageUrl;
-    if (type === "video") {
-      existing.videoUrl = uploadedVideo!.videoUrl;
-      existing.publicId = uploadedVideo!.publicId;
+    if (existing.type === "image") {
+      existing.imageUrl = uploadedImageUrl ?? existing.imageUrl;
+      existing.videoUrl = undefined;
+      existing.publicId = undefined;
+    }
+
+    if (existing.type === "video") {
+      if (uploadedVideo) {
+        existing.videoUrl = uploadedVideo.videoUrl;
+        existing.publicId = uploadedVideo.publicId;
+      }
+      existing.imageUrl = undefined;
     }
 
     await existing.save();
-    revalidatePath("/admin/posts");
+    revalidateMediaTags();
 
     return {
       success: true,
@@ -168,7 +223,7 @@ export const deleteMediaByPlacement = async (
 
     // Delete from MongoDB
     await Media.deleteOne({ _id: media._id });
-    revalidatePath("/admin/posts");
+    revalidateMediaTags();
 
     return { success: true, message: "Media deleted successfully" };
   } catch (err) {

@@ -264,6 +264,62 @@ export async function adminUpdateOrderAction(
   }
 }
 
+export async function adminDeleteOrdersAction(orderIds: string[]) {
+  try {
+    await connectDB();
+    await requireAdmin();
+
+    const normalizedIds = Array.from(
+      new Set(orderIds.filter((id) => Types.ObjectId.isValid(id)))
+    );
+
+    if (normalizedIds.length === 0) {
+      return { success: false, message: "No valid orders selected." };
+    }
+
+    const orders = await Order.find({ _id: { $in: normalizedIds } });
+    if (orders.length === 0) {
+      return { success: false, message: "Selected orders were not found." };
+    }
+
+    for (const order of orders) {
+      if (order.paymentStatus !== "pending") {
+        return {
+          success: false,
+          message: "Only pending orders can be deleted.",
+        };
+      }
+    }
+
+    for (const order of orders) {
+      for (const item of order.orderItems) {
+        const product = await Product.findById(item.product);
+        if (!product) continue;
+
+        product.reservedStock = Math.max(0, (product.reservedStock || 0) - item.quantity);
+        await product.save();
+      }
+    }
+
+    await Order.deleteMany({ _id: { $in: orders.map((order) => order._id) } });
+
+    return {
+      success: true,
+      message:
+        orders.length === 1
+          ? "Order deleted successfully."
+          : `${orders.length} orders deleted successfully.`,
+      deletedIds: orders.map((order) => order._id.toString()),
+    };
+  } catch (error) {
+    console.error("ADMIN DELETE ORDERS ERROR:", error);
+    return {
+      success: false,
+      message: "Failed to delete selected orders.",
+    };
+  }
+}
+
 // export async function adminUpdateOrderAction(
 //   input: AdminUpdateOrderInput
 // ): Promise<AdminUpdateOrderResult> {

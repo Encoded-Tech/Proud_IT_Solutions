@@ -3,8 +3,10 @@ import { VariantForm } from "@/components/admin/AddVariantForm";
 import { fetchAllProductsNoPagination } from "@/lib/server/actions/admin/product/productActions";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { connection } from "next/server";
 
 export default async function  AddVariantPage() {
+await connection();
 const res = await fetchAllProductsNoPagination();
 const products = res.data || [];
   return (

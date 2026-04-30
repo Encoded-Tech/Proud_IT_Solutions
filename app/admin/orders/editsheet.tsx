@@ -38,7 +38,7 @@ import {
   Loader2,
   ExternalLink,
 } from "lucide-react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 
 interface Props {
   order: AdminOrderResponse;

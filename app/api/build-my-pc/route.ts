@@ -12,7 +12,7 @@ export const GET = withAuth(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     withDB(async (req, context?) => {
 
-        const userId = getAuthUserId(req)
+        const userId = await getAuthUserId(req)
 
         const user = await userModel.findById(userId)
 
@@ -46,7 +46,7 @@ export const POST = withAuth(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req, context?) => {
 
-    const userId = getAuthUserId(req)
+    const userId = await getAuthUserId(req)
 
     const user = await userModel.findById(userId)
 

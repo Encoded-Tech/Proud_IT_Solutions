@@ -1,6 +1,61 @@
 import { buildProductSchema } from "@/app/seo/builders/product";
+import { buildMetadata } from "@/app/seo/utils/metadata";
 import ListSingleProduct from "@/components/server/ListSingleProduct";
-import { fetchProductBySlug } from "@/lib/server/fetchers/fetchProducts";
+import {
+  fetchPublicProductBySlug,
+  fetchPublicProductSlugs,
+} from "@/lib/server/fetchers/fetchPublicProducts";
+import { APP_NAME } from "@/config/env";
+import type { Metadata } from "next";
+import Script from "next/script";
+import { Suspense } from "react";
+
+export async function generateStaticParams() {
+  const slugs = await fetchPublicProductSlugs();
+  return slugs.map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const res = await fetchPublicProductBySlug(slug);
+  const product = res.data;
+
+  if (!product) {
+    return buildMetadata({
+      title: `Product Not Found | ${APP_NAME}`,
+      description: "The requested product could not be found.",
+      path: `/products/${slug}`,
+      index: false,
+    });
+  }
+
+  const descriptionSource =
+    product.seoMeta?.metaDescription ||
+    product.description ||
+    `${product.name} from ${APP_NAME}. View pricing, specifications, stock, and purchase details.`;
+
+  const cleanDescription = descriptionSource.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+  return buildMetadata({
+    title: product.seoMeta?.metaTitle || `${product.name} in Nepal`,
+    description: cleanDescription.slice(0, 160),
+    path: `/products/${product.slug}`,
+    keywords: product.seoMeta?.metaKeywords
+      ? product.seoMeta.metaKeywords.split(",").map((item) => item.trim()).filter(Boolean)
+      : [
+          product.name,
+          product.brandName,
+          product.category?.categoryName,
+          `${product.name} in Nepal`,
+          `Buy ${product.name} online Nepal`,
+        ].filter(Boolean) as string[],
+    image: product.images?.[0],
+  });
+}
 
 
 export default async function ProductPage({
@@ -10,8 +65,7 @@ export default async function ProductPage({
 }) {
   const { slug } = await params;
 
-  // Fetch product for JSON-LD schema
-  const res = await fetchProductBySlug(slug);
+  const res = await fetchPublicProductBySlug(slug);
   const product = res.data;
 
 
@@ -23,18 +77,18 @@ export default async function ProductPage({
 
   return (
     <>
-      {/* Inject Product JSON-LD into <head> */}
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(productSchema),
-          }}
-        />
-      </head>
+      <Script
+        id={`product-schema-${product.slug}`}
+        type="application/ld+json"
+        strategy="beforeInteractive"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(productSchema),
+        }}
+      />
 
-      {/* Render your product UI */}
-      <ListSingleProduct slug={slug} />
+      <Suspense fallback={<div className="mx-auto max-w-7xl px-4 py-12 text-sm text-slate-500">Loading product details...</div>}>
+        <ListSingleProduct slug={slug} initialProduct={product} />
+      </Suspense>
     </>
   );
 }

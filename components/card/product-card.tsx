@@ -1,7 +1,6 @@
-
 import { productType } from "@/types/product";
 import { Icon } from "@iconify/react/dist/iconify.js";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import Link from "next/link";
 import React from "react";
 import AddToCartButton from "../client/AddToCartButton";
@@ -26,10 +25,6 @@ const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
     offeredPrice = 0,
     isOfferedPriceActive = false,
   } = product || {};
-
-  console.log(product);
-
-  
   const availableStock = stock;
   const resolvedAvgRating = avgRating ?? product?.avgRating ?? 0;
 
@@ -65,7 +60,7 @@ const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
       alt={name}
       width={1000}
       height={500}
-      priority
+      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
       className="sm:h-[15em] h-[8em] object-cover hover:scale-110 hover:brightness-75 ease-in-out duration-300"
     />
   </figure>

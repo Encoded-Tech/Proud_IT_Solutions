@@ -7,10 +7,23 @@ import { IProduct } from "@/models/productModel";
 import { ApiResponse } from "@/types/api";
 import { Types } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 //total apis
 //product-get-all api/product 
 //product-create api/product
+
+function revalidateProductCaches(slug?: string) {
+  revalidatePath("/");
+  revalidatePath("/shop");
+  revalidatePath("/admin/product");
+  revalidateTag("products", "max");
+  revalidateTag("homepage", "max");
+  if (slug) {
+    revalidateTag(`product:${slug}`, "max");
+    revalidatePath(`/products/${slug}`);
+  }
+}
 
 // product-get-all api/product
 export const GET = withDB(async () => {
@@ -115,15 +128,47 @@ export const POST = withAuth(
       /*                              VALIDATIONS                                   */
       /* -------------------------------------------------------------------------- */
 
-     const missingFields = checkRequiredFields({
+      const missingFields = checkRequiredFields({
         name,
-        price:
+        price: priceRaw,
         category,
         stock,
         brandName
       });
 
       if (missingFields) return missingFields;
+
+      if (!Number.isFinite(priceNumber) || priceNumber < 0) {
+        return NextResponse.json(
+          { success: false, message: "Price must be a valid non-negative number" },
+          { status: 400 }
+        );
+      }
+
+      if (!category || !Types.ObjectId.isValid(category)) {
+        return NextResponse.json(
+          { success: false, message: "A valid category is required" },
+          { status: 400 }
+        );
+      }
+
+      const invalidImage = images.find(
+        (image) =>
+          image.size > 0 &&
+          (!["image/jpeg", "image/png", "image/webp"].includes(image.type) ||
+            image.size > 10 * 1024 * 1024)
+      );
+
+      if (invalidImage) {
+        return NextResponse.json(
+          {
+            success: false,
+            message:
+              "Product images must be JPG, PNG, or WebP and no larger than 10MB each",
+          },
+          { status: 400 }
+        );
+      }
 
       /* -------------------------------------------------------------------------- */
       /*                                   SLUG                                     */
@@ -187,6 +232,8 @@ export const POST = withAuth(
         isActive,
       });
 
+      revalidateProductCaches(product.slug);
+
       return NextResponse.json({
         success: true,
         message: "Product created successfully",
@@ -198,7 +245,6 @@ export const POST = withAuth(
         {
           success: false,
           message: "Failed to create product",
-          error: err instanceof Error ? err.message : null,
         },
         { status: 500 }
       );

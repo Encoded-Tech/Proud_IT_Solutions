@@ -2,11 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { withDB } from "@/lib/HOF";
 import { withAuth } from "@/lib/HOF/withAuth";
 import { Product } from "@/models/productModel";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 interface BulkDiscountBody {
   productIds: string[];
   discountPercent: number;
   isOfferedPriceActive?: boolean;
+}
+
+function revalidateProductCaches(slugs: string[]) {
+  revalidatePath("/");
+  revalidatePath("/shop");
+  revalidatePath("/admin/product");
+  revalidateTag("products", "max");
+  revalidateTag("homepage", "max");
+  slugs.forEach((slug) => {
+    revalidateTag(`product:${slug}`, "max");
+    revalidatePath(`/products/${slug}`);
+  });
 }
 
 export const PUT = withAuth(
@@ -54,6 +67,7 @@ export const PUT = withAuth(
     await Product.bulkWrite(bulkOps);
 
     const updatedProducts = await Product.find({ _id: { $in: productIds } });
+    revalidateProductCaches(updatedProducts.map((product) => product.slug).filter(Boolean));
 
     return NextResponse.json({
       success: true,
@@ -108,6 +122,7 @@ export const DELETE = withAuth(
     await Product.bulkWrite(bulkOps);
 
     const updatedProducts = await Product.find({ _id: { $in: productIds } });
+    revalidateProductCaches(updatedProducts.map((product) => product.slug).filter(Boolean));
 
     return NextResponse.json({
       success: true,

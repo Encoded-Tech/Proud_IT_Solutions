@@ -10,7 +10,7 @@ export const POST = withAuth(
   withDB(async (req: NextRequest, _context?) => {
     const params = await _context?.params;
     const orderId = params?.id;
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
 
     if (!orderId) {
       return NextResponse.json(

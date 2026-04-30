@@ -138,6 +138,42 @@ export async function adminGetBuildRequestById(
   }
 }
 
+export async function adminDeleteBuildRequests(
+  buildIds: string[]
+): Promise<{ success: boolean; message: string; deletedIds?: string[] }> {
+  await requireAdmin();
+  await connectDB();
+
+  try {
+    const uniqueIds = [...new Set(buildIds.filter((id) => Types.ObjectId.isValid(id)))];
+
+    if (uniqueIds.length === 0) {
+      return {
+        success: false,
+        message: "No valid build requests were selected",
+      };
+    }
+
+    const result = await BuildRequest.deleteMany({
+      _id: { $in: uniqueIds.map((id) => new Types.ObjectId(id)) },
+    });
+
+    revalidatePath("/admin/build-requests");
+
+    return {
+      success: true,
+      message: `${result.deletedCount || 0} build request${(result.deletedCount || 0) === 1 ? "" : "s"} deleted successfully`,
+      deletedIds: uniqueIds,
+    };
+  } catch (error) {
+    console.error("ADMIN_DELETE_BUILDS_ERROR:", error);
+    return {
+      success: false,
+      message: "Failed to delete build requests",
+    };
+  }
+}
+
 
 type BuildStatus =
   | "submitted"

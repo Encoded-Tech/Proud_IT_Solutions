@@ -2,7 +2,7 @@
 
 import { navitems } from "@/constants";
 import { Icon } from "@iconify/react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useEffect } from "react";

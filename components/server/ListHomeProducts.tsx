@@ -1,9 +1,13 @@
-
-import { fetchBestSellers, fetchHotDeals, fetchNewArrivals } from "@/lib/server/fetchers/fetchProducts";
+import {
+  fetchPublicBestSellers,
+  fetchPublicHotDeals,
+  fetchPublicNewArrivals,
+} from "@/lib/server/fetchers/fetchPublicProducts";
 import BestSellers from "../products/best-seller";
 import Sale from "../products/sale";
 import HotDeals from "@/app/(root)/home/hot-deals";
-import { getAllMedia } from "@/lib/server/actions/admin/media/mediaActions";
+import { getPublicMedia } from "@/lib/server/fetchers/fetchMedia";
+import { AnyMediaItem } from "@/types/media";
 
 export const revalidate = 60;
 
@@ -11,26 +15,25 @@ interface HomeProductsProps {
   showBestSellers?: boolean;
   showHotDeals?: boolean;
   showNewArrivals?: boolean;
+  media?: AnyMediaItem[];
 }
 
 export default async function HomeProducts({
   showBestSellers = true,
   showHotDeals = true,
   showNewArrivals = true,
+  media,
   
 }: HomeProductsProps) {
   // fetch all 3 categories in parallel
 
     const [bestRes, hotRes, newRes] = await Promise.all([
-    fetchBestSellers(),
-    fetchHotDeals(),
-    fetchNewArrivals()
+    fetchPublicBestSellers(),
+    fetchPublicHotDeals(),
+    fetchPublicNewArrivals()
   ]);
 
-
-  const media = await getAllMedia();
-
-  const mediaItems = media.data || [];
+  const mediaItems = media ?? ((await getPublicMedia()).data || []);
 
   const bestSellers = bestRes.data || [];
 

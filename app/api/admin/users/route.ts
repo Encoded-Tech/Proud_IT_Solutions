@@ -19,10 +19,21 @@ export interface AdminUser {
     at: Date;
   }[];
   isLocked: boolean;
+  hardLock: boolean;
+  lockCount: number;
+  lastLockTime: Date | null;
   lastLogin: Date | null;
   signupIP: string | null;
   createdAt: Date;
   provider: string;
+  newsletter: {
+    subscribed: boolean;
+    source: string;
+    subscribedAt: Date | null;
+    unsubscribedAt: Date | null;
+    lastCampaignSentAt: Date | null;
+    lastCampaignSubject: string | null;
+  };
 }
 
 //total apis
@@ -51,6 +62,14 @@ export const GET = withAuth(
       hardLock: u.hardLock,
       lockCount: u.lockCount,
       lastLockTime: u.lastLockTime,
+      newsletter: {
+        subscribed: u.newsletter?.subscribed ?? true,
+        source: u.newsletter?.source ?? "register",
+        subscribedAt: u.newsletter?.subscribedAt ?? u.createdAt ?? null,
+        unsubscribedAt: u.newsletter?.unsubscribedAt ?? null,
+        lastCampaignSentAt: u.newsletter?.lastCampaignSentAt ?? null,
+        lastCampaignSubject: u.newsletter?.lastCampaignSubject ?? null,
+      },
       loginHistory: u.loginHistory,
       lastLogin: u.lastLogin,
       signupIP: u.signupIP,

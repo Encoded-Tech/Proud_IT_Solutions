@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import {
   Loader2,
   Check,

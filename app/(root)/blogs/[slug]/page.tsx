@@ -1,6 +1,8 @@
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
+import { buildMetadata } from "@/app/seo/utils/metadata";
+import { Metadata } from "next";
 import React from "react";
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { mockblogs } from "@/data/blog-mock";
 import Link from "next/link";
 import { Icon } from "@iconify/react/dist/iconify.js";
@@ -11,12 +13,36 @@ type BlogPageProps = {
   }>;
 };
 
+export async function generateStaticParams() {
+  return mockblogs.map((blog) => ({ slug: blog.slug }));
+}
+
+export async function generateMetadata({ params }: BlogPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const blogItem = mockblogs.find((blog) => blog.slug === slug);
+
+  if (!blogItem) {
+    return buildMetadata({
+      title: "Blog",
+      description: "Read the latest articles from Proud Nepal.",
+      path: `/blogs/${slug}`,
+    });
+  }
+
+  return buildMetadata({
+    title: blogItem.title,
+    description: `Read ${blogItem.title} by ${blogItem.author}.`,
+    path: `/blogs/${blogItem.slug}`,
+    images: [blogItem.image],
+  });
+}
+
 export default async function BlogDetailPage({ params }: BlogPageProps) {
   const { slug } = await params;
   const blogItem = mockblogs.find((blog) => blog.slug === slug);
 
   if (!blogItem) {
-    redirect("/blogs");
+    notFound();
   }
 
   return (

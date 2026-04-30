@@ -176,6 +176,7 @@
 import ProductTable from "@/components/admin/AdminProductTable";
 import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
 import { fetchAllProducts } from "@/lib/server/fetchers/fetchProducts";
+import { connection } from "next/server";
 
 export default async function ProductPage({
   searchParams,
@@ -189,6 +190,7 @@ export default async function ProductPage({
     brandName?: string;
   }>;
 }) {
+  await connection();
   // Await the searchParams promise
   const params = await searchParams;
   

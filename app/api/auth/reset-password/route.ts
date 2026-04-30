@@ -6,6 +6,7 @@ import { hashToken } from "@/lib/helpers/genHashToken";
 import { isStrongPassword } from "@/lib/helpers/isStrongPw";
 import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
 import { sendEmail } from "@/lib/helpers/sendEmail";
+import { applyRateLimit, buildRateLimitKey } from "@/lib/security/rate-limit";
 
 
 //total apis
@@ -18,10 +19,34 @@ export const POST = withDB(async (req: NextRequest, context?) => {
   const token = (body.token || "").toString();
   const email = (body.email || "").toString().trim().toLowerCase();
   const password = (body.password || "").toString();
+  const ip =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
 
   const requiredFields = { token, email, password };
   const missingFields = checkRequiredFields(requiredFields);
   if (missingFields) return missingFields;
+
+  const rateLimit = applyRateLimit(
+    buildRateLimitKey(["auth-reset-password", ip, email]),
+    { limit: 5, windowMs: 30 * 60 * 1000 }
+  );
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: `Too many password reset attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.`,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+      }
+    );
+  }
 
   if (!isStrongPassword(password)) {
     return NextResponse.json({

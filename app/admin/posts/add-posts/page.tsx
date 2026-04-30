@@ -2,9 +2,12 @@ import React from "react";
 import PostForm from "../../../../components/admin/AddPostForm";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { connection } from "next/server";
 
 
-export default function AddPostPage() {
+export default async function AddPostPage() {
+  await connection();
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="max-w-5xl mx-auto">

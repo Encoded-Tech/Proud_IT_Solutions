@@ -6,6 +6,7 @@ import { encode } from "next-auth/jwt";
 import User from "@/models/userModel";
 import { withDB } from "@/lib/HOF";
 import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
+import { applyRateLimit, buildRateLimitKey } from "@/lib/security/rate-limit";
 import { SecurityLogData } from "@/types/api";
 import { HARDLOCK_THRESHOLD, HARDLOCK_WINDOW, MAX_ATTEMPTS, TEMP_LOCK_TIME } from "@/config/env";
 
@@ -32,6 +33,26 @@ export const POST = withDB(async (req: NextRequest, context?) => {
     req.headers.get("x-real-ip") ||
     "unknown"
   );
+
+  const rateLimit = applyRateLimit(
+    buildRateLimitKey(["auth-login", ip, email]),
+    { limit: 10, windowMs: 10 * 60 * 1000 }
+  );
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: `Too many login attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.`,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+      }
+    );
+  }
 
   // get user-agent
   const userAgent = req.headers.get("user-agent") || "unknown";

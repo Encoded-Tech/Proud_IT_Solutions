@@ -1,16 +1,15 @@
 import ShopGrid from "@/app/(root)/shop/shop-grid";
-import { fetchCategories } from "@/lib/server/fetchers/fetchCategory";
-import { fetchAllProducts } from "@/lib/server/fetchers/fetchProducts";
+import { fetchPublicCategories } from "@/lib/server/fetchers/fetchCategory";
+import { fetchPublicAllProducts } from "@/lib/server/fetchers/fetchPublicProducts";
 
 export const revalidate = 60;
 
 export default async function ListProducts({ page = 1, limit = 6 }: { page?: number; limit?: number }) {
-  // Direct DB fetch
-  const res = await fetchAllProducts(page, limit);
+  const res = await fetchPublicAllProducts(page, limit);
   const products = res.data || [];
 
 
-  const categoriesRes = await fetchCategories();
+  const categoriesRes = await fetchPublicCategories();
 const categories = categoriesRes.data || [];
 
 

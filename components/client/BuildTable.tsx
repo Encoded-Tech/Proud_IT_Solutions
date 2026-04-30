@@ -7,6 +7,7 @@ import { IBuildRequestMapped } from "@/lib/server/mappers/MapBuildMyPc";
 import Pagination from "@/components/shared/Pagination";
 import { deleteBuildRequest } from "@/lib/server/actions/public/build-my-pc/buildMyPcactions";
 import Link from "next/link";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
 /* ================= TYPES ================= */
 interface BuildRequestsClientProps {
@@ -350,43 +351,18 @@ export default function BuildRequestsClient({
         </div>
       </div>
 
-      {/* CONFIRM DELETE MODAL */}
-      {confirmDelete.open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-100">
-                <X className="w-6 h-6 text-red-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900">Delete Build Request</h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  Are you sure you want to delete this build request? This action cannot be undone.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end pt-2">
-              <button
-                onClick={() => setConfirmDelete({ open: false, id: "" })}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(confirmDelete.id)}
-                disabled={loadingStates[confirmDelete.id]}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {loadingStates[confirmDelete.id] ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  "Delete"
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={confirmDelete.open}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDelete({ open: false, id: "" });
+        }}
+        title="Delete build request?"
+        description="Are you sure you want to delete this build request? This action cannot be undone."
+        confirmLabel="Delete"
+        onConfirm={() => handleDelete(confirmDelete.id)}
+        pending={!!loadingStates[confirmDelete.id]}
+        tone="danger"
+      />
 
       {/* PAGINATION */}
       {totalPages > 1 && (

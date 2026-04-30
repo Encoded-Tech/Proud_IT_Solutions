@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import React, { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2, Search, Edit, FileImage, AlertTriangle, Video, ImageIcon, MapPin } from "lucide-react";
@@ -9,6 +9,8 @@ import toast from "react-hot-toast";
 import { MediaPlacement, MediaType } from "@/types/media";
 import { deleteMediaByPlacement } from "@/lib/server/actions/admin/media/mediaActions";
 import MediaForm from "./AddPostForm";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { AdminTableRevealStyles, getAdminRowReveal } from "@/components/admin/admin-table-reveal";
 
 export interface MediaItem {
   _id: string;
@@ -32,11 +34,16 @@ export default function AdminMediaTable({
   const [isPending, startTransition] = useTransition();
   const [editTarget, setEditTarget] = useState<MediaItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MediaItem | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const itemsPerPage = 12;
 
   const formatPlacementLabel = (placement: string) => {
-    return placement.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+    return placement
+      .replace(/-/g, " ")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   // 🔍 Search & Filter
@@ -66,19 +73,50 @@ export default function AdminMediaTable({
     page * itemsPerPage
   );
 
+  const allVisibleSelected =
+    paginated.length > 0 && paginated.every((item) => selectedIds.includes(item._id));
+
+  const toggleSelection = (mediaId: string) => {
+    setSelectedIds((current) =>
+      current.includes(mediaId)
+        ? current.filter((id) => id !== mediaId)
+        : [...current, mediaId]
+    );
+  };
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+      return;
+    }
+    setSelectedIds(paginated.map((item) => item._id));
+  };
+
   // 🗑 Confirm delete
   const confirmDelete = () => {
-    if (!deleteTarget) return;
+    const targets = deleteTarget
+      ? [deleteTarget]
+      : paginated.filter((item) => selectedIds.includes(item._id));
+
+    if (targets.length === 0) return;
 
     startTransition(async () => {
-      const res = await deleteMediaByPlacement(deleteTarget.placement);
-
-      if (!res.success) {
+      const results = await Promise.all(
+        targets.map((item) => deleteMediaByPlacement(item.placement))
+      );
+      const failed = results.find((result) => !result.success);
+      if (failed) {
         toast.error("Failed to delete media");
         return;
       }
 
-      toast.success("Media deleted successfully");
+      toast.success(
+        targets.length === 1
+          ? "Media deleted successfully"
+          : `${targets.length} media items deleted successfully`
+      );
+      setSelectedIds([]);
+      setBulkDeleteOpen(false);
       setDeleteTarget(null);
       router.refresh();
     });
@@ -92,33 +130,52 @@ export default function AdminMediaTable({
 
   return (
     <>
+      <AdminTableRevealStyles />
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
         
         {/* Header */}
         <div className="bg-white px-8 py-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex items-center gap-3">
               
               <div>
-                <h2 className="text-3xl font-bold ">Media Library</h2>
+                <h2 className="text-3xl font-bold ">Ads & Media Library</h2>
                 <p className="text-gray-500 text-sm mt-1">
-                  Manage website images and videos • {stats.total} total ({stats.images} images, {stats.videos} videos)
+                  Manage homepage ads, hero banners, and product-section media • {stats.total} total ({stats.images} images, {stats.videos} videos)
                 </p>
               </div>
             </div>
 
             {/* Search */}
-            <div className="relative">
-              <input
-                placeholder="Search by placement..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-                 className="border px-12 py-4 rounded-lg text-lg w-80"
-              />
-              <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <div className="flex items-center gap-3">
+              {selectedIds.length > 0 && (
+                <>
+                  <button
+                    onClick={toggleSelectAllVisible}
+                    className="px-4 py-4 rounded-lg text-sm border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    {allVisibleSelected ? "Clear Selection" : "Select All Visible"}
+                  </button>
+                  <button
+                    onClick={() => setBulkDeleteOpen(true)}
+                    className="px-4 py-4 rounded-lg text-sm border border-red-300 text-red-600 hover:bg-red-50 transition"
+                  >
+                    Delete Selected ({selectedIds.length})
+                  </button>
+                </>
+              )}
+              <div className="relative">
+                <input
+                  placeholder="Search by placement..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
+                    setPage(1);
+                  }}
+                   className="border px-12 py-4 rounded-lg text-lg w-80"
+                />
+                <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              </div>
             </div>
           </div>
         </div>
@@ -175,6 +232,15 @@ export default function AdminMediaTable({
           <table className="w-full">
             <thead className="bg-gray-50 border-b-2 border-gray-200">
               <tr>
+                <th className="px-8 py-4 text-center">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleSelectAllVisible}
+                    className="h-4 w-4"
+                    aria-label="Select all visible media"
+                  />
+                </th>
                 <th className="px-8 py-4 text-left">
                   <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Preview
@@ -222,8 +288,21 @@ export default function AdminMediaTable({
                   </td>
                 </tr>
               ) : (
-                paginated.map((item) => (
-                  <tr key={item._id} className="hover:bg-gray-50 transition-colors group">
+                paginated.map((item, index) => (
+                  <tr
+                    key={item._id}
+                    className="hover:bg-gray-50 transition-colors group"
+                    style={getAdminRowReveal(index)}
+                  >
+                    <td className="px-8 py-5 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(item._id)}
+                        onChange={() => toggleSelection(item._id)}
+                        className="h-4 w-4"
+                        aria-label={`Select ${formatPlacementLabel(item.placement)}`}
+                      />
+                    </td>
                     
                     {/* Preview */}
                 
@@ -362,8 +441,28 @@ export default function AdminMediaTable({
         />
       )}
 
+      <ConfirmDialog
+        open={!!deleteTarget || bulkDeleteOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+            setBulkDeleteOpen(false);
+          }
+        }}
+        title={deleteTarget ? "Delete media?" : "Delete selected media?"}
+        description={
+          deleteTarget
+            ? `This will permanently delete ${formatPlacementLabel(deleteTarget.placement)}. This action cannot be undone.`
+            : `This will permanently delete ${selectedIds.length} selected media items. This action cannot be undone.`
+        }
+        confirmLabel="Delete Media"
+        onConfirm={confirmDelete}
+        pending={isPending}
+        tone="danger"
+      />
+
       {/* Delete Confirmation Dialog */}
-      {deleteTarget && (
+      {deleteTarget && false && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
             
@@ -381,16 +480,16 @@ export default function AdminMediaTable({
             <div className="p-6">
               <div className="flex items-start gap-4 mb-6">
                 <div className="w-24 h-24 relative rounded-xl overflow-hidden border-2 border-gray-200 flex-shrink-0">
-                  {deleteTarget.type === 'image' ? (
+                  {deleteTarget!.type === 'image' ? (
                     <Image
-                      src={deleteTarget.url}
-                      alt={formatPlacementLabel(deleteTarget.placement)}
+                      src={deleteTarget!.url}
+                      alt={formatPlacementLabel(deleteTarget!.placement)}
                       fill
                       className="object-cover"
                     />
                   ) : (
                     <div className="relative w-full h-full bg-gray-900 flex items-center justify-center">
-                      <video src={deleteTarget.url} className="w-full h-full object-cover" muted />
+                      <video src={deleteTarget!.url} className="w-full h-full object-cover" muted />
                       <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
                         <Video className="w-8 h-8 text-white" />
                       </div>
@@ -399,19 +498,19 @@ export default function AdminMediaTable({
                 </div>
                 <div>
                   <p className="text-gray-900 font-semibold text-lg mb-1">
-                    {formatPlacementLabel(deleteTarget.placement)}
+                    {formatPlacementLabel(deleteTarget!.placement)}
                   </p>
                   <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold mb-2 ${
-                    deleteTarget.type === 'image'
+                    deleteTarget!.type === 'image'
                       ? 'bg-blue-100 text-blue-700'
                       : 'bg-purple-100 text-purple-700'
                   }`}>
-                    {deleteTarget.type === 'image' ? (
+                    {deleteTarget!.type === 'image' ? (
                       <ImageIcon className="w-3 h-3" />
                     ) : (
                       <Video className="w-3 h-3" />
                     )}
-                    {deleteTarget.type.toUpperCase()}
+                    {deleteTarget!.type.toUpperCase()}
                   </span>
                   <p className="text-sm text-gray-600">
                     This action cannot be undone. This will permanently delete this media file.

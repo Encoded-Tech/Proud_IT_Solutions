@@ -119,6 +119,12 @@ discountPercent: { type: Number, default: 0 },
   }
     next();
   });
+
+  productSchema.index({ isActive: 1, createdAt: -1 });
+  productSchema.index({ category: 1, isActive: 1, createdAt: -1 });
+  productSchema.index({ brandName: 1, isActive: 1 });
+  productSchema.index({ totalSales: -1, isActive: 1 });
+  productSchema.index({ discountPercent: -1, isActive: 1 });
   
   export const Product =
     models.Product || model<IProduct>("Product", productSchema);

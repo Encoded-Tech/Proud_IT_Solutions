@@ -59,6 +59,9 @@ categorySchema.pre("save", function (next) {
   next();
 });
 
+categorySchema.index({ isActive: 1, createdAt: -1 });
+categorySchema.index({ parentId: 1, isActive: 1 });
+
 
 export const Category =
   models.Category || model<ICategory>("Category", categorySchema);

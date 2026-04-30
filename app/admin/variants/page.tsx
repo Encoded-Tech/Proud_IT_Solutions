@@ -1,9 +1,10 @@
 import VariantTable from "@/components/admin/AdminVariantTable";
 import { fetchAllProductsNoPagination } from "@/lib/server/actions/admin/product/productActions";
 import { getAllProductVariants } from "@/lib/server/actions/admin/variants/variantsActions";
-
+import { connection } from "next/server";
 
 export default async function AdminVariantsPage() {
+  await connection();
   const res = await getAllProductVariants();
   const resProducts = await fetchAllProductsNoPagination();
   const variants = res.data || [];

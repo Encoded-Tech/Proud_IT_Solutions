@@ -3,7 +3,7 @@
 
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CategoryType, productType } from "@/types/product";
@@ -11,6 +11,8 @@ import { Search, Edit, Trash2, ArrowUpDown } from "lucide-react";
 import { deleteProductAction } from "@/lib/server/actions/admin/product/productActions";
 import toast from "react-hot-toast";
 import { AddProductForm, Product } from "@/app/admin/product/add-product/addproductForm";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { AdminTableRevealStyles, getAdminRowReveal } from "@/components/admin/admin-table-reveal";
 
 import {
   Select,
@@ -53,6 +55,8 @@ export default function ProductTable({
 
   const [editingProduct, setEditingProduct] = useState<productType | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<productType | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
   /* ---------------- LIVE SEARCH (DEBOUNCED) ---------------- */
@@ -99,21 +103,55 @@ export default function ProductTable({
     router.push(`?${params.toString()}`);
   };
 
+  const allVisibleSelected =
+    products.length > 0 && products.every((product) => selectedIds.includes(product.id));
+
+  const toggleSelection = (productId: string) => {
+    setSelectedIds((current) =>
+      current.includes(productId)
+        ? current.filter((id) => id !== productId)
+        : [...current, productId]
+    );
+  };
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+      return;
+    }
+
+    setSelectedIds(products.map((product) => product.id));
+  };
+
   /* ---------------- DELETE ---------------- */
   const confirmDelete = async () => {
-    if (!deleteTarget) return;
+    const targets = deleteTarget
+      ? [deleteTarget]
+      : products.filter((product) => selectedIds.includes(product.id));
+
+    if (targets.length === 0) return;
 
     setIsPending(true);
-    const res = await deleteProductAction({ productId: deleteTarget.id });
+    const results = await Promise.all(
+      targets.map((product) => deleteProductAction({ productId: product.id }))
+    );
     setIsPending(false);
 
-    if (res.success) {
-      toast.success(res.message);
-      router.refresh();
-      setDeleteTarget(null);
-    } else {
-      toast.error(res.message);
+    const failed = results.find((result) => !result.success);
+    if (failed) {
+      toast.error(failed.message);
+      return;
     }
+
+    toast.success(
+      targets.length === 1
+        ? results[0].message
+        : `${targets.length} products deleted successfully`
+    );
+    setSelectedIds([]);
+    setBulkDeleteOpen(false);
+    setDeleteTarget(null);
+    router.refresh();
   };
 
   const hasActiveFilters =
@@ -124,6 +162,7 @@ export default function ProductTable({
 
   return (
     <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+      <AdminTableRevealStyles />
       {/* Header */}
       <div className="p-6 border-b flex justify-between items-center">
         <div>
@@ -135,6 +174,22 @@ export default function ProductTable({
 
         {/* Filters */}
         <div className="flex gap-3 items-center">
+          {selectedIds.length > 0 && (
+            <>
+              <button
+                onClick={toggleSelectAllVisible}
+                className="px-4 py-4 rounded-lg text-sm border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
+              >
+                {allVisibleSelected ? "Clear Selection" : "Select All Visible"}
+              </button>
+              <button
+                onClick={() => setBulkDeleteOpen(true)}
+                className="px-4 py-4 rounded-lg text-sm border border-red-300 text-red-600 hover:bg-red-50 transition"
+              >
+                Delete Selected ({selectedIds.length})
+              </button>
+            </>
+          )}
           {/* Status */}
           <Select
             value={status}
@@ -207,6 +262,15 @@ export default function ProductTable({
         <table className="w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
+              <th className="px-6 py-4 text-center text-xs font-semibold uppercase">
+                <input
+                  type="checkbox"
+                  checked={allVisibleSelected}
+                  onChange={toggleSelectAllVisible}
+                  className="h-4 w-4"
+                  aria-label="Select all visible products"
+                />
+              </th>
               <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Product</th>
               <th className="px-6 py-4 text-center text-xs font-semibold uppercase">Brand</th>
               <th className="px-6 py-4 text-center text-xs font-semibold uppercase">Category</th>
@@ -221,8 +285,17 @@ export default function ProductTable({
           </thead>
 
           <tbody className="divide-y">
-            {products.map((product) => (
-              <tr key={product.id}>
+            {products.map((product, index) => (
+              <tr key={product.id} style={getAdminRowReveal(index)}>
+                <td className="px-6 py-4 text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(product.id)}
+                    onChange={() => toggleSelection(product.id)}
+                    className="h-4 w-4"
+                    aria-label={`Select ${product.name}`}
+                  />
+                </td>
                 <td className="px-6 py-4 flex gap-3">
                   <div className="relative w-14 h-14 border rounded">
                     <Image
@@ -384,37 +457,25 @@ export default function ProductTable({
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-2">Delete product?</h3>
-            <p className="text-sm text-gray-600 mb-6">
-              This will permanently delete <span className="font-medium">{deleteTarget.name}</span>.
-              This action cannot be undone.
-            </p>
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 rounded-lg border text-sm"
-                disabled={isPending}
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={confirmDelete}
-                disabled={isPending}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm flex items-center gap-2 disabled:opacity-60"
-              >
-                {isPending && <span className="w-4 h-4 animate-spin border-2 border-white border-t-transparent rounded-full"></span>}
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteTarget || bulkDeleteOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+            setBulkDeleteOpen(false);
+          }
+        }}
+        title={deleteTarget ? "Delete product?" : "Delete selected products?"}
+        description={
+          deleteTarget
+            ? `This will permanently delete ${deleteTarget.name}. This action cannot be undone.`
+            : `This will permanently delete ${selectedIds.length} selected products. This action cannot be undone.`
+        }
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        pending={isPending}
+        tone="danger"
+      />
 
     </div>
   );

@@ -48,8 +48,12 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
   /* -------------------- INIT CATEGORY FROM URL (NEW) -------------------- */
   useEffect(() => {
     const categoryFromUrl = searchParams.get("category");
+    const brandFromUrl = searchParams.get("brand");
     if (categoryFromUrl) {
       setSelectedCategorySlug(categoryFromUrl);
+    }
+    if (brandFromUrl) {
+      setSelectedBrand(brandFromUrl);
     }
   }, [searchParams]);
 
@@ -63,8 +67,14 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
       params.delete("category");
     }
 
+    if (selectedBrand) {
+      params.set("brand", selectedBrand);
+    } else {
+      params.delete("brand");
+    }
+
     router.replace(`/shop?${params.toString()}`, { scroll: false });
-  }, [selectedCategorySlug]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedCategorySlug, selectedBrand]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ----------------------------- FETCH STATIC BRANDS ------------------------ */
   useEffect(() => {

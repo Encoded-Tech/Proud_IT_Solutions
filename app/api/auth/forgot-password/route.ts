@@ -5,6 +5,7 @@ import User from "@/models/userModel";
 import { generateResetToken, hashToken } from "@/lib/helpers/genHashToken";
 import { sendEmail } from "@/lib/helpers/sendEmail";
 import { RESET_TOKEN_EXPIRES_MIN } from "@/config/env";
+import { applyRateLimit, buildRateLimitKey } from "@/lib/security/rate-limit";
 
 
 //total apis
@@ -16,6 +17,10 @@ export const POST = withDB(async (req: NextRequest, context?) => {
   
   const body = await req.json().catch(() => ({}));
   const email = (body.email || "").toString().trim().toLowerCase();
+  const ip =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
 
   if (!email) {
     return NextResponse.json({
@@ -25,14 +30,33 @@ export const POST = withDB(async (req: NextRequest, context?) => {
   }
 
   // Find user (don't reveal whether user exists in response)
-  const user = await User.findOne({ email });
-  if(!user) return NextResponse.json({ success: false, message: "No user found with that email" }, { status: 400 });
-
   // In every case, return same message so attackers can't enumerate emails
   const genericOk = NextResponse.json({
     success: true,
     message: "If an account with that email exists, you'll receive reset instructions."
   }, { status: 200 });
+
+  const rateLimit = applyRateLimit(
+    buildRateLimitKey(["auth-forgot-password", ip, email]),
+    { limit: 5, windowMs: 30 * 60 * 1000 }
+  );
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: `Too many reset requests. Try again in ${rateLimit.retryAfterSeconds} seconds.`,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+      }
+    );
+  }
+
+  const user = await User.findOne({ email });
 
   if (!user) return genericOk;
 

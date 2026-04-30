@@ -36,6 +36,15 @@ export interface IUserAddress {
 
 }
 
+export interface IUserNewsletterPreferences {
+  subscribed: boolean;
+  source: "register" | "account" | "footer" | "admin" | "import";
+  subscribedAt?: Date | null;
+  unsubscribedAt?: Date | null;
+  lastCampaignSentAt?: Date | null;
+  lastCampaignSubject?: string | null;
+}
+
 
 export interface ICartItem extends Document {
   _id: Types.ObjectId;
@@ -69,6 +78,7 @@ export interface IUser extends Document {
   resetPasswordToken?: string;
   resetPasswordExpiry?: Date;
   bio?: string;
+  newsletter: IUserNewsletterPreferences;
 
   // Security & Locking
   failedLoginAttempts: number;
@@ -171,6 +181,39 @@ const wishlistSchema = new Schema<IWishlistItem>(
   }
 )
 
+const newsletterSchema = new Schema<IUserNewsletterPreferences>(
+  {
+    subscribed: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    source: {
+      type: String,
+      enum: ["register", "account", "footer", "admin", "import"],
+      default: "register",
+    },
+    subscribedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    unsubscribedAt: {
+      type: Date,
+      default: null,
+    },
+    lastCampaignSentAt: {
+      type: Date,
+      default: null,
+    },
+    lastCampaignSubject: {
+      type: String,
+      default: null,
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
 
 const userSchema = new Schema<IUser>(
   {
@@ -205,6 +248,17 @@ const userSchema = new Schema<IUser>(
     bio: {
       type: String,
       default: null,
+    },
+    newsletter: {
+      type: newsletterSchema,
+      default: () => ({
+        subscribed: true,
+        source: "register",
+        subscribedAt: new Date(),
+        unsubscribedAt: null,
+        lastCampaignSentAt: null,
+        lastCampaignSubject: null,
+      }),
     },
 
     hashedPassword: {

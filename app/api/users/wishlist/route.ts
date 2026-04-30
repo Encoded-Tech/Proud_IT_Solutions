@@ -19,7 +19,7 @@ export const GET = withAuth(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   withDB(async (req: NextRequest, context?) => {
 
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
     const user = await User.findById(userId).populate(
       "wishlist.product",
       "name slug image price"
@@ -91,7 +91,7 @@ export const POST = withAuth(
         );
       }
     }
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
     // Add only if not already in wishlist
     const user = await User.findById(userId)
       .populate("wishlist.product", "name slug image price");
@@ -169,7 +169,7 @@ export const DELETE = withAuth(
         { status: 400 }
       );
     }     
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
     const user = await User.findById(userId);
 
     if (!user) {

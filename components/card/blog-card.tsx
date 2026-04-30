@@ -1,5 +1,5 @@
 
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import Link from "next/link";
 import React from "react";
 export interface blogType {

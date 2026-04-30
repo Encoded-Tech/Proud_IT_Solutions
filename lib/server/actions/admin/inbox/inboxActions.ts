@@ -78,6 +78,39 @@ export async function markContactAsRead(contactId: string) {
   }
 }
 
+export async function deleteContactsAction(contactIds: string[]) {
+  await connectDB();
+  await requireAdmin();
+
+  try {
+    const normalizedIds = Array.from(new Set(contactIds.filter(Boolean)));
+    if (normalizedIds.length === 0) {
+      return {
+        success: false,
+        message: "No contacts selected.",
+      };
+    }
+
+    const result = await Contact.deleteMany({ _id: { $in: normalizedIds } });
+    revalidatePath("/admin/inbox");
+
+    return {
+      success: true,
+      message:
+        result.deletedCount === 1
+          ? "Contact deleted successfully."
+          : `${result.deletedCount} contacts deleted successfully.`,
+      deletedIds: normalizedIds,
+    };
+  } catch (error) {
+    console.error("Error deleting contacts:", error);
+    return {
+      success: false,
+      message: "Failed to delete contacts",
+    };
+  }
+}
+
 /* ----------------------------- */
 /* Validation Schema             */
 /* ----------------------------- */

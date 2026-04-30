@@ -13,9 +13,18 @@
     image?: string;
     emailVerified?: boolean;
     bio?: string;
-     hasPassword: boolean;
-     address?: Partial<IUserAddressFrontend> | null;
-     
+    hasPassword: boolean;
+    newsletter?: IUserNewsletterFrontend;
+    address?: Partial<IUserAddressFrontend> | null;
+  }
+
+  export interface IUserNewsletterFrontend {
+    subscribed: boolean;
+    source: "register" | "account" | "footer" | "admin" | "import";
+    subscribedAt?: string | Date | null;
+    unsubscribedAt?: string | Date | null;
+    lastCampaignSentAt?: string | Date | null;
+    lastCampaignSubject?: string | null;
   }
 
   export interface IUserAddressFrontend {

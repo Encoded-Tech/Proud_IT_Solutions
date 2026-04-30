@@ -20,6 +20,10 @@ export const SERVER_URL =
       name: "About",
       href: "/about",
     },
+    {
+      name: "Promotions",
+      href: "/promotions",
+    },
    
     {
       name: "Contact",

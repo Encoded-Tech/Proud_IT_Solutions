@@ -12,7 +12,15 @@ export function serializeUser(user: IUser) {
     bio: user.bio ?? "",
     provider: user.provider ?? undefined,
     providerId: user.providerId ?? undefined,
-     hasPassword: Boolean(user.hashedPassword),
+    hasPassword: Boolean(user.hashedPassword),
+    newsletter: {
+      subscribed: user.newsletter?.subscribed ?? false,
+      source: user.newsletter?.source ?? "register",
+      subscribedAt: user.newsletter?.subscribedAt ?? null,
+      unsubscribedAt: user.newsletter?.unsubscribedAt ?? null,
+      lastCampaignSentAt: user.newsletter?.lastCampaignSentAt ?? null,
+      lastCampaignSubject: user.newsletter?.lastCampaignSubject ?? null,
+    },
     address: user.address
     
       ? {

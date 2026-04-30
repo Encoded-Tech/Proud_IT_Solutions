@@ -2,10 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { withDB } from "@/lib/HOF";
 import { withAuth } from "@/lib/HOF/withAuth";
 import { Product } from "@/models/productModel";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 interface DiscountBody {
   discountPercent: number;           // e.g., 20 for 20%
   isOfferedPriceActive?: boolean;    // optional, default true
+}
+
+function revalidateProductCaches(slug?: string) {
+  revalidatePath("/");
+  revalidatePath("/shop");
+  revalidatePath("/admin/product");
+  revalidateTag("products", "max");
+  revalidateTag("homepage", "max");
+  if (slug) {
+    revalidateTag(`product:${slug}`, "max");
+    revalidatePath(`/products/${slug}`);
+  }
 }
 
 // ✅ PUT: Apply discount to product
@@ -39,6 +52,7 @@ export const PUT = withAuth(
     product.discountPercent = discountPercent;
 
     await product.save();
+    revalidateProductCaches(product.slug);
 
     return NextResponse.json({
       success: true,
@@ -75,6 +89,7 @@ export const DELETE = withAuth(
     product.isOfferedPriceActive = false;
 
     await product.save();
+    revalidateProductCaches(product.slug);
 
     return NextResponse.json({
       success: true,

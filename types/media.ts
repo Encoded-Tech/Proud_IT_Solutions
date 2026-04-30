@@ -6,15 +6,24 @@ export type MediaType = "image" | "video";
 /**
  * Exact homepage placements
  */
+export const MEDIA_PLACEMENTS = [
+  "hero_first",
+  "hero_second",
+  "hero_third",
+  "hero_fourth",
+  "build-user-pc",
+  "best_seller_video_1",
+  "best_seller_video_2",
+  "hot_deals_video",
+  "home_top_banner",
+  "home_split_left",
+  "home_split_right",
+  "home_mid_banner",
+  "home_footer_banner",
+] as const;
+
 export type MediaPlacement =
-  | "hero_first"
-  | "hero_second"
-  | "hero_third"
-  | "hero_fourth"
-  | "build-user-pc"
-  | "best_seller_video_1"
-  | "best_seller_video_2"
-  | "hot_deals_video";
+  (typeof MEDIA_PLACEMENTS)[number];
 
 /**
  * Generic Media item returned from backend

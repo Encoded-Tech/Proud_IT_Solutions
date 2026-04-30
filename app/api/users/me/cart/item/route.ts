@@ -33,7 +33,7 @@ export const DELETE = withAuth(
       );
     }
 
-    const userId = getAuthUserId(req);
+    const userId = await getAuthUserId(req);
 
     const user = await userModel.findById(userId);
     if (!user) {

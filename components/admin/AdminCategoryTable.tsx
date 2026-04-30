@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import React, { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2, Search, Edit } from "lucide-react";
@@ -9,6 +9,8 @@ import toast from "react-hot-toast";
 import { CategoryType } from "@/types/product";
 import { deleteCategory, updateCategory } from "@/lib/server/actions/admin/category/categoryAction";
 import EditCategoryForm from "@/app/admin/category/add-category/edit-form";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
+import { AdminTableRevealStyles, getAdminRowReveal } from "@/components/admin/admin-table-reveal";
 
 export default function AdminCategoryTable({ categories }: { categories: CategoryType[] }) {
   const router = useRouter();
@@ -18,6 +20,8 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
   const [isPending, startTransition] = useTransition();
   const [editTarget, setEditTarget] = useState<CategoryType | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CategoryType | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const itemsPerPage = 6;
 
@@ -41,19 +45,49 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
   const totalPages = Math.ceil(sorted.length / itemsPerPage);
   const paginated = sorted.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
+  const allVisibleSelected =
+    paginated.length > 0 && paginated.every((item) => selectedIds.includes(item.id));
+
+  const toggleSelection = (categoryId: string) => {
+    setSelectedIds((current) =>
+      current.includes(categoryId)
+        ? current.filter((id) => id !== categoryId)
+        : [...current, categoryId]
+    );
+  };
+
+  const toggleSelectAllVisible = () => {
+    if (allVisibleSelected) {
+      setSelectedIds([]);
+      return;
+    }
+    setSelectedIds(paginated.map((item) => item.id));
+  };
+
   // 🗑 Delete
   const confirmDelete = () => {
-    if (!deleteTarget) return;
+    const targets = deleteTarget
+      ? [deleteTarget]
+      : paginated.filter((item) => selectedIds.includes(item.id));
+
+    if (targets.length === 0) return;
     
     startTransition(async () => {
-      const res = await deleteCategory(deleteTarget.id);
-      
-      if (!res.success) {
-        toast.error(res.message || "Failed to delete");
+      const results = await Promise.all(targets.map((item) => deleteCategory(item.id)));
+      const failed = results.find((result) => !result.success);
+
+      if (failed) {
+        toast.error(failed.message || "Failed to delete");
         return;
       }
       
-      toast.success(res.message || "Category deleted successfully");
+      toast.success(
+        targets.length === 1
+          ? results[0].message || "Category deleted successfully"
+          : `${targets.length} categories deleted successfully`
+      );
+      setSelectedIds([]);
+      setBulkDeleteOpen(false);
       setDeleteTarget(null);
       
       // Force a complete refresh
@@ -68,6 +102,7 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
 
   return (
     <>
+      <AdminTableRevealStyles />
       <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b flex flex-col sm:flex-row gap-4 justify-between">
@@ -77,14 +112,32 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
               Showing {paginated.length} of {sorted.length}
             </p>
           </div>
-          <div className="relative">
-            <input
-              placeholder="Search category by name..."
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1); }}
-              className="border px-12 py-4 rounded-lg text-lg w-80 focus:outline-none"
-            />
-            <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+          <div className="flex items-center gap-3">
+            {selectedIds.length > 0 && (
+              <>
+                <button
+                  onClick={toggleSelectAllVisible}
+                  className="px-4 py-4 rounded-lg text-sm border border-slate-300 text-slate-700 hover:bg-slate-50 transition"
+                >
+                  {allVisibleSelected ? "Clear Selection" : "Select All Visible"}
+                </button>
+                <button
+                  onClick={() => setBulkDeleteOpen(true)}
+                  className="px-4 py-4 rounded-lg text-sm border border-red-300 text-red-600 hover:bg-red-50 transition"
+                >
+                  Delete Selected ({selectedIds.length})
+                </button>
+              </>
+            )}
+            <div className="relative">
+              <input
+                placeholder="Search category by name..."
+                value={search}
+                onChange={e => { setSearch(e.target.value); setPage(1); }}
+                className="border px-12 py-4 rounded-lg text-lg w-80 focus:outline-none"
+              />
+              <Search className="h-5 w-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            </div>
           </div>
         </div>
 
@@ -93,6 +146,15 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
+                <th className="px-6 py-4 text-center text-xs font-semibold uppercase">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleSelectAllVisible}
+                    className="h-4 w-4"
+                    aria-label="Select all visible categories"
+                  />
+                </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Category</th>
                 <th className="px-6 py-4 text-center text-xs font-semibold uppercase">Image</th>
                 <th
@@ -108,11 +170,20 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
             <tbody className="divide-y">
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-12 text-center text-gray-500">No categories found</td>
+                  <td colSpan={5} className="py-12 text-center text-gray-500">No categories found</td>
                 </tr>
               ) : (
-                paginated.map(item => (
-                  <tr key={item.id} className="hover:bg-gray-50">
+                paginated.map((item, index) => (
+                  <tr key={item.id} className="hover:bg-gray-50" style={getAdminRowReveal(index)}>
+                    <td className="px-6 py-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(item.id)}
+                        onChange={() => toggleSelection(item.id)}
+                        className="h-4 w-4"
+                        aria-label={`Select ${item.categoryName}`}
+                      />
+                    </td>
                     {/* Name */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -195,24 +266,23 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
         </div>
       )}
 
-      {/* Delete Modal */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-2">Delete category?</h3>
-            <p className="text-sm text-gray-600 mb-6">
-              This will permanently delete <span className="font-medium">{deleteTarget.categoryName}</span>. This action cannot be undone.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 rounded-lg border text-sm" disabled={isPending}>Cancel</button>
-              <button onClick={confirmDelete} disabled={isPending} className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm flex items-center gap-2 disabled:opacity-60">
-                {isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteTarget || bulkDeleteOpen}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+          if (!open) setBulkDeleteOpen(false);
+        }}
+        title={deleteTarget ? "Delete category?" : "Delete selected categories?"}
+        description={
+          deleteTarget
+            ? `This will permanently delete ${deleteTarget.categoryName}. This action cannot be undone.`
+            : `This will permanently delete ${selectedIds.length} selected categories. This action cannot be undone.`
+        }
+        confirmLabel="Delete"
+        onConfirm={confirmDelete}
+        pending={isPending}
+        tone="danger"
+      />
     </>
   );
 }

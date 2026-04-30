@@ -1,9 +1,10 @@
-export const dynamic = "force-dynamic";
 import BuildRequestsClient from "@/components/client/BuildTable";
 import { fetchBuildRequests } from "@/lib/server/fetchers/fetchBuildRequest";
+import { connection } from "next/server";
 
 
 export default async function BuildRequestsPage() {
+  await connection();
   // Server-side fetch
   const { success, data } = await fetchBuildRequests();
 

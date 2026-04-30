@@ -1,17 +1,27 @@
 
-import { fetchProductBySlug } from "@/lib/server/fetchers/fetchProducts";
+import { fetchPublicProductBySlug } from "@/lib/server/fetchers/fetchPublicProducts";
 import ProductPageClient from "../products/productPageClient";
 import HomeProducts from "./ListHomeProducts";
 import { getReviewsAction } from "@/lib/server/fetchers/fetchReview";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth/authOptions";
 import { getProductVariants } from "@/lib/server/actions/admin/variants/variantsActions";
+import { productType } from "@/types/product";
+import { connection } from "next/server";
 
 
 export const revalidate = 60;
 
-export default async function ListSingleProduct({ slug }: { slug: string }) {
-  const res = await fetchProductBySlug(slug);
+export default async function ListSingleProduct({
+  slug,
+  initialProduct,
+}: {
+  slug: string;
+  initialProduct?: productType | null;
+}) {
+  const res = initialProduct
+    ? { success: true, data: initialProduct }
+    : await fetchPublicProductBySlug(slug);
 
 
   if (!res.success || !res.data) {
@@ -19,6 +29,8 @@ export default async function ListSingleProduct({ slug }: { slug: string }) {
   }
 
   const product = res.data || {};
+
+  await connection();
 
   const productId = product.id;
   const variantRes = await getProductVariants(productId);

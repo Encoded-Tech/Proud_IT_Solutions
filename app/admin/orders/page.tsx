@@ -1,6 +1,7 @@
 import { getAllOrdersAdmin } from "@/lib/server/actions/admin/order/orderActionsAdmin";
 import { OrderStatus, PaymentMethod, PaymentStatus } from "@/lib/server/fetchers/fetchOrders";
 import OrdersClient from "./orderClient";
+import { connection } from "next/server";
 
 
 
@@ -13,10 +14,8 @@ interface PageProps {
     search?: string;
   }>;
 }
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 export default async function OrdersPage({ searchParams }: PageProps) {
+  await connection();
   const params = await searchParams;
 
   const page = Number(params.page ?? 1);

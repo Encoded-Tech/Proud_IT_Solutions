@@ -7,10 +7,20 @@ import { Category, Product } from "@/models";
 import { ICategory } from "@/models/categoryModel";
 import { ApiResponse } from "@/types/api";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 //total apis
 //category-get-all api/category
 //category-create api/category
+
+function revalidateCategoryCaches() {
+  revalidatePath("/");
+  revalidatePath("/shop");
+  revalidatePath("/admin/category");
+  revalidateTag("categories", "max");
+  revalidateTag("products", "max");
+  revalidateTag("homepage", "max");
+}
 
 // category-get-all api/category
 export const GET = withDB(async () => {
@@ -91,6 +101,7 @@ export const POST = withAuth(
       imageUrl = await uploadToCloudinary(categoryImage);
     }
     const createCategory = await Category.create({ categoryName, categoryImage: imageUrl, parentId: normalizedParentId });
+    revalidateCategoryCaches();
     return NextResponse.json({
       success: true,
       message: "Category created successfully",

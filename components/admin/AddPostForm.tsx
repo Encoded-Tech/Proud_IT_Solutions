@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import Image from "next/image";
+import Image from "@/components/ui/optimized-image";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MediaPlacement, MediaType } from "@/types/media";
+import { MEDIA_PLACEMENTS, MediaPlacement, MediaType } from "@/types/media";
 import { addMedia, updateMedia } from "@/lib/server/actions/admin/media/mediaActions";
 import toast from "react-hot-toast";
 import { 
@@ -19,16 +19,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-const placements: MediaPlacement[] = [
-  "hero_first",
-  "hero_second",
-  "hero_third",
-  "hero_fourth",
-  "build-user-pc",
-  "best_seller_video_1",
-  "best_seller_video_2",
-  "hot_deals_video",
-];
+const placements: MediaPlacement[] = [...MEDIA_PLACEMENTS];
 
 const types: MediaType[] = ["image", "video"];
 
@@ -203,7 +194,10 @@ export default function MediaForm({ media, isModal = false, onCancel }: MediaFor
   };
 
   const formatPlacementLabel = (placement: string) => {
-    return placement.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+    return placement
+      .replace(/-/g, " ")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   const FormContent = (
@@ -233,7 +227,9 @@ export default function MediaForm({ media, isModal = false, onCancel }: MediaFor
                 )}
               </div>
               <p className="text-red-100 text-lg">
-                {media ? 'Update media placement and file' : 'Add images or videos to your website placements'}
+                {media
+                  ? "Update the placement or replace the file for a homepage ad slot"
+                  : "Add images or videos for hero banners, landing-page ads, and product-section media"}
               </p>
             </div>
             <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-32 -mt-32"></div>

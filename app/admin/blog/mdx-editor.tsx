@@ -12,8 +12,9 @@ import { Color } from "@tiptap/extension-color";
 import { TextStyle } from "@tiptap/extension-text-style";
 import Highlight from "@tiptap/extension-highlight";
 import { CharacterCount } from "@tiptap/extension-character-count";
+import ConfirmDialog from "@/components/ui/confirm-dialog";
 
-import {  useState } from "react";
+import { useState } from "react";
 import {
   Bold,
   Italic,
@@ -53,6 +54,7 @@ export function BlogRichTextEditor({
 }: Props) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   const colors = [
     "#000000", "#ef4444", "#f97316", "#eab308",
@@ -398,11 +400,7 @@ immediatelyRender: false,
 
           <button
             type="button"
-            onClick={() => {
-              if (confirm("Are you sure you want to clear all content?")) {
-                editor.chain().focus().clearContent().run();
-              }
-            }}
+            onClick={() => setConfirmClearOpen(true)}
             className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-all"
             title="Clear All"
           >
@@ -421,6 +419,18 @@ immediatelyRender: false,
         <span>{editor.storage.characterCount.characters() || 0} characters</span>
         <span>{editor.storage.characterCount.words() || 0} words</span>
       </div>
+      <ConfirmDialog
+        open={confirmClearOpen}
+        onOpenChange={setConfirmClearOpen}
+        title="Clear all editor content?"
+        description="This removes the current draft content from the editor and cannot be undone from this action."
+        confirmLabel="Clear Content"
+        tone="danger"
+        onConfirm={async () => {
+          editor.chain().focus().clearContent().run();
+          setConfirmClearOpen(false);
+        }}
+      />
     </div>
   );
 }

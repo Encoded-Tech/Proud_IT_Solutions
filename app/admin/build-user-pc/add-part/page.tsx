@@ -3,9 +3,10 @@ import PartForm from "../../../../components/admin/parts-option-form";
 
 import { ArrowLeft } from "lucide-react";
 import { PART_TYPES } from "@/constants/part";
+import { connection } from "next/server";
 
 export default async function AddPartPage() {
-  // Fetch part types on the server
+  await connection();
 
 
   return (

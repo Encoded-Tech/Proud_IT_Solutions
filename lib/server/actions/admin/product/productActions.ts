@@ -405,7 +405,7 @@ import { requireAdmin } from "@/lib/auth/requireSession";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { productType } from "@/types/product";
 import { mapProductToFrontend } from "@/lib/server/mappers/MapProductData";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 /* ------------------------ API RESPONSE TYPES ------------------------ */
 export interface ActionResult<T = undefined> {
@@ -413,6 +413,22 @@ export interface ActionResult<T = undefined> {
   message: string;
   data?: T;
   error?: string;
+}
+
+function revalidateProductCaches(slug?: string) {
+  revalidatePath("/");
+  revalidatePath("/shop");
+  revalidatePath("/admin/product");
+  revalidateTag("products", "max");
+  revalidateTag("homepage", "max");
+  if (slug) {
+    revalidateTag(`product:${slug}`, "max");
+    revalidatePath(`/products/${slug}`);
+  }
+}
+
+function normalizeAdminLabel(value: string) {
+  return value.trim().toUpperCase();
 }
 
 /* ------------------------ CREATE PRODUCT ------------------------ */
@@ -445,7 +461,7 @@ export async function createProductAction(formData: FormData): Promise<ActionRes
       : [];
 
     /* ------------------------- BRAND ------------------------- */
-    const brandName = formData.get("brandName")?.toString() || "";
+    const brandName = normalizeAdminLabel(formData.get("brandName")?.toString() || "");
 
     /* ------------------------- OFFERS ------------------------- */
  const discountRaw = formData.get("discountPercent");
@@ -490,7 +506,7 @@ if (discountPercent !== undefined) {
     }
   
 
-    const exists = await Product.findOne({ name });
+    const exists = await Product.findOne({ name, brandName });
     if (exists) return { success: false, message: `Product '${name}' already exists` };
 
     /* ------------------------- IMAGE UPLOAD ------------------------- */
@@ -524,9 +540,7 @@ if (discountPercent !== undefined) {
       isActive,
     });
 
-    revalidatePath("/");
-    revalidatePath("/shop");
-    revalidatePath("/admin/product");
+    revalidateProductCaches(product.slug);
 
     return { success: true, message: "Product created successfully", data: mapProductToFrontend(product) };
   } catch (err) {
@@ -577,7 +591,8 @@ export async function updateProductAction({ productId, formData }: UpdateProduct
       : undefined;
 
     /* ------------------------- BRAND ------------------------- */
-    const brandName = formData.get("brandName")?.toString();
+    const brandNameRaw = formData.get("brandName")?.toString();
+    const brandName = brandNameRaw ? normalizeAdminLabel(brandNameRaw) : undefined;
 
     /* ------------------------- OFFERS ------------------------- */
 const discountRaw = formData.get("discountPercent");
@@ -644,9 +659,7 @@ if (discountPercent === undefined) {
 
     await productToUpdate.save();
     
-    revalidatePath("/");
-    revalidatePath("/shop");
-    revalidatePath("/admin/product");
+    revalidateProductCaches(productToUpdate.slug);
 
     return { success: true, message: "Product updated successfully", data: mapProductToFrontend(productToUpdate) };
   } catch (err) {
@@ -683,9 +696,7 @@ export const deleteProductAction = async ({ productId }: DeleteProductInput): Pr
     // Delete product from DB
     await productToDelete.deleteOne();
     
-    revalidatePath("/");
-    revalidatePath("/shop");
-    revalidatePath("/admin/product");
+    revalidateProductCaches(productToDelete.slug);
 
     return { success: true, message: "Product deleted successfully" };
   } catch (err) {
