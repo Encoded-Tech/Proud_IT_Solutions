@@ -227,8 +227,7 @@
 import { connectDB } from "@/db";
 import { Product } from "@/models";
 import { IReview } from "@/models/productModel";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/authOptions";
+import { auth } from "@/auth";
 import mongoose from "mongoose";
 import { recalculateRating } from "@/lib/helpers/recalculateRating";
 import { ReviewType } from "@/types/product";
@@ -251,7 +250,7 @@ export async function createReviewAction(
   try {
     await connectDB();
 
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) return { success: false, message: "Unauthorized" };
 
 
@@ -315,7 +314,7 @@ export async function updateReviewAction(
   try {
     await connectDB();
 
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) return { success: false, message: "Unauthorized" };
     
 
@@ -369,7 +368,7 @@ export async function deleteReviewAction(
   try {
     await connectDB();
 
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) return { success: false, message: "Unauthorized" };
 
     const product = await Product.findOne({ slug });

@@ -28,7 +28,7 @@ export async function addWishlistAction({
     if (!productId && !variantId) {
       throw new Error("productId or variantId is required");
     }
-  let user = await requireUser();
+  const sessionUser = await requireUser();
 
     // Resolve product document
     let productDoc: InstanceType<typeof Product> | null;
@@ -54,7 +54,7 @@ export async function addWishlistAction({
     }
 
     // Fetch user with wishlist populated
-     user = await User.findById(user.id)
+     const user = await User.findById(sessionUser.id)
       .populate<{ wishlist: IWishlistItem[] }>({
         path: "wishlist.product",
         select: "name slug images price",
@@ -131,9 +131,9 @@ export async function removeWishlistAction({
       throw new Error("Invalid wishlist item ID");
     }
 
-    let user = await requireUser();
+    const sessionUser = await requireUser();
 
-    user = await User.findById(user.id)
+    const user = await User.findById(sessionUser.id)
       .populate({
         path: "wishlist.product",
         select: "name slug images price",

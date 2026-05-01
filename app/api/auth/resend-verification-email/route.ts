@@ -1,4 +1,4 @@
-import { FRONTEND_URL } from "@/config/env";
+import { buildAppUrl } from "@/config/env";
 import { generateResetToken, hashToken } from "@/lib/helpers/genHashToken";
 import { sendEmail } from "@/lib/helpers/sendEmail";
 import { withDB } from "@/lib/HOF";
@@ -65,7 +65,9 @@ export const POST = withDB(async (req, context?) => {
     await user.save();
 
     // 3️⃣ Create verification URL  
-    const verifyUrl = `${FRONTEND_URL}/verify-email/confirm?token=${rawVerifyToken}&email=${encodeURIComponent(email)}`;
+    const verifyUrl = buildAppUrl(
+        `/verify-email/confirm?token=${rawVerifyToken}&email=${encodeURIComponent(email)}`
+    );
 
     // 4️⃣ Build email HTML
     const html = `

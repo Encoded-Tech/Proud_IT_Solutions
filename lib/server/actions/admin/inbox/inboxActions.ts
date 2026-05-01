@@ -216,8 +216,21 @@ export async function replyToContactAction(formData: FormData) {
       to: contact.email,
       subject:
         validated.subject ||
-        `Re: ${contact.subject || "Your inquiry"}`,
+        `Re: ${contact.subject || "Your Proud Nepal enquiry"}`,
       html: emailHTML,
+      text: [
+        `Dear ${contact.name},`,
+        "",
+        "Thank you for contacting Proud IT Solutions. Here is our response:",
+        "",
+        validated.replyMessage,
+        "",
+        "Your original message:",
+        contact.description,
+        "",
+        "Best regards,",
+        "Proud IT Solutions Team",
+      ].join("\n"),
     });
 
     /* ----------------------------- */

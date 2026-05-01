@@ -1,10 +1,10 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/authOptions";
+import { auth } from "@/auth";
 import { connectDB } from "@/db";
 import UserModel from "@/models/userModel";
+import { resolveAuthUserId } from "@/lib/auth/resolveAuthUser";
 
 export async function updatePasswordAction({
   currentPassword,
@@ -16,12 +16,16 @@ export async function updatePasswordAction({
   try {
     await connectDB();
 
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return { success: false, message: "Unauthorized" };
     }
+    const userId = await resolveAuthUserId(session.user);
+    if (!userId) {
+      return { success: false, message: "Unauthorized" };
+    }
 
-    const user = await UserModel.findById(session.user.id).select(
+    const user = await UserModel.findById(userId).select(
       "+hashedPassword +provider +providerId"
     );
 

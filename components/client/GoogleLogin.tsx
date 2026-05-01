@@ -5,13 +5,14 @@ import { Icon } from "@iconify/react";
 import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { signIn, useSession } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch } from "@/redux/hooks";
 import { setUser, clearUser, markHydrated } from "@/redux/features/auth/userSlice";
 import { getCurrentUserAction } from "@/lib/server/fetchers/fetchUser";
 
 const GoogleSignIn = () => {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const { status } = useSession();
   const searchParams = useSearchParams();
@@ -70,6 +71,7 @@ const handleGoogleLogin = async () => {
   setIsLoading(true);
   try {
     await signIn("google", { callbackUrl: redirect });
+    router.refresh();
   } catch (error) {
     toast.error(error instanceof Error ? error.message : "Google login failed");
     setIsLoading(false);

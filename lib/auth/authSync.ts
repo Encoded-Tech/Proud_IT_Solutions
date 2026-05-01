@@ -17,8 +17,8 @@ export function useAuthSync() {
           name: session.user.name!,
           email: session.user.email!,
           role: session.user.role,
-          image: session.user.image,
-          hasPassword: Boolean(session.user.hashedPassword),
+          image: session.user.image ?? undefined,
+          hasPassword: Boolean(session.user.hasPassword),
           
           emailVerified: session.user.emailVerified,
         })

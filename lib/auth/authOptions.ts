@@ -1,9 +1,10 @@
-import { AuthOptions, User as NextAuthUser } from "next-auth";
+import type { NextAuthConfig, User as NextAuthUser } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import mongoose from "mongoose";
 
 
 import { connectDB } from "@/db";
@@ -41,10 +42,50 @@ function getDeviceFingerprint(userAgent: string) {
     .slice(0, 32);
 }
 
+async function findSessionUser(token: {
+  id?: unknown;
+  sub?: unknown;
+  email?: unknown;
+  providerId?: unknown;
+}) {
+  const tokenId = typeof token.id === "string" ? token.id : "";
+  const tokenSub = typeof token.sub === "string" ? token.sub : "";
+  const tokenEmail = typeof token.email === "string" ? token.email : "";
+  const tokenProviderId =
+    typeof token.providerId === "string" ? token.providerId : "";
+
+  if (mongoose.Types.ObjectId.isValid(tokenId)) {
+    return UserModel.findById(tokenId).select("+hashedPassword").lean<IUser>();
+  }
+
+  if (tokenProviderId) {
+    const user = await UserModel.findOne({ providerId: tokenProviderId })
+      .select("+hashedPassword")
+      .lean<IUser>();
+    if (user) return user;
+  }
+
+  if (tokenSub) {
+    const user = await UserModel.findOne({ providerId: tokenSub })
+      .select("+hashedPassword")
+      .lean<IUser>();
+    if (user) return user;
+  }
+
+  if (tokenEmail) {
+    return UserModel.findOne({ email: tokenEmail.toLowerCase() })
+      .select("+hashedPassword")
+      .lean<IUser>();
+  }
+
+  return null;
+}
+
 /* ---------------- authOptions ---------------- */
 
-export const authOptions: AuthOptions = {
+export const authOptions = {
   secret: NEXTAUTH_SECRET,
+  trustHost: true,
   session: { strategy: "jwt" },
 
   providers: [
@@ -113,29 +154,32 @@ export const authOptions: AuthOptions = {
       async authorize(credentials, req) {
         await connectDB();
 
-        if (!credentials?.email || !credentials?.password) {
+        const credentialEmail =
+          typeof credentials?.email === "string" ? credentials.email : "";
+        const credentialPassword =
+          typeof credentials?.password === "string" ? credentials.password : "";
+
+        if (!credentialEmail || !credentialPassword) {
           throw new Error("MISSING_CREDENTIALS");
         }
 
-        const email = credentials.email.toLowerCase();
-        const password = credentials.password;
-
-        const headers = req.headers as Record<string, string>;
+        const email = credentialEmail.toLowerCase();
+        const password = credentialPassword;
 
         const ip = normalizeIP(
-          headers["x-forwarded-for"] ||
-          headers["x-real-ip"] ||
+          req.headers.get("x-forwarded-for") ||
+          req.headers.get("x-real-ip") ||
           "unknown"
         );
 
-        const userAgent = headers["user-agent"] || "unknown";
+        const userAgent = req.headers.get("user-agent") || "unknown";
         const deviceFingerprint = getDeviceFingerprint(userAgent);
 
         const user = await UserModel.findOne({ email }).select(
           "+hashedPassword +failedLoginAttempts +lockUntil +hardLock +lockCount +lastLockTime"
         );
 
-        if (!user) throw new Error("INVALID_CREDENTIALS");
+        if (!user) return null;
         if (user.provider === "google") throw new Error("USE_GOOGLE_LOGIN");
         if (!user.emailVerified) throw new Error("EMAIL_NOT_VERIFIED");
         if (user.hardLock) throw new Error("ACCOUNT_HARD_LOCKED");
@@ -179,9 +223,7 @@ export const authOptions: AuthOptions = {
           }
 
           await user.save();
-          throw new Error(
-            `INVALID_PASSWORD:${MAX_ATTEMPTS - user.failedLoginAttempts}`
-          );
+          return null;
         }
 
         /* ---------- login history ---------- */
@@ -230,6 +272,8 @@ export const authOptions: AuthOptions = {
 
     async signIn({ user, account }) {
       if (account?.provider === "google") {
+        await connectDB();
+
         const existingCredUser = await UserModel.findOne({
           email: user.email,
           provider: "credentials",
@@ -245,11 +289,47 @@ export const authOptions: AuthOptions = {
       return true;
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
       if (user) {
-        token.id = user.id;
+        token.id = user.id || token.id;
         token.role = user.role ?? "user";
         token.emailVerified = !!user.emailVerified;
+        token.providerId ??= user.providerId;
+      }
+
+      if (account?.provider === "google") {
+        await connectDB();
+
+        const providerId =
+          account.providerAccountId ||
+          (typeof profile?.sub === "string" ? profile.sub : undefined);
+        const email =
+          typeof user?.email === "string"
+            ? user.email
+            : typeof token.email === "string"
+              ? token.email
+              : undefined;
+
+        const dbUser = providerId
+          ? await UserModel.findOne({ provider: "google", providerId })
+              .select("+hashedPassword")
+              .lean<IUser>()
+          : email
+            ? await UserModel.findOne({ email: email.toLowerCase() })
+                .select("+hashedPassword")
+                .lean<IUser>()
+            : null;
+
+        if (dbUser) {
+          token.id = dbUser._id.toString();
+          token.sub = dbUser._id.toString();
+          token.email = dbUser.email;
+          token.name = dbUser.name;
+          token.picture = dbUser.image ?? token.picture;
+          token.role = dbUser.role;
+          token.emailVerified = Boolean(dbUser.emailVerified);
+          token.providerId = dbUser.providerId ?? providerId;
+        }
       }
       // Safety fallback for malformed / legacy tokens
       token.role ??= "user";
@@ -259,26 +339,27 @@ export const authOptions: AuthOptions = {
     },
 
     async session({ session, token }) {
-      if (!token.id) return session;
-
       await connectDB();
 
-      const user = await UserModel.findById(token.id).lean<IUser>();
+      const user = await findSessionUser(token);
 
       if (!user) return session;
       session.user = {
         id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        image: user.image,
+        sub: token.sub,
+        name: user.name ?? undefined,
+        email: user.email ?? undefined,
+        phone: user.phone ?? undefined,
+        image: user.image ?? undefined,
+        hasPassword: Boolean(user.hashedPassword),
+        providerId: user.providerId ?? undefined,
         role: user.role,
         emailVerified: Boolean(user.emailVerified),
-      };
+      } as typeof session.user;
 
       return session;
     }
 
 
   },
-};
+} satisfies NextAuthConfig;

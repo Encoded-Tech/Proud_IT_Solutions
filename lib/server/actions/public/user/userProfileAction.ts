@@ -2,8 +2,7 @@
 
 import { connectDB } from "@/db";
 import UserModel from "@/models/userModel";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/authOptions";
+import { auth } from "@/auth";
 
 import { IUserAddress } from "@/models/userModel";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
@@ -22,7 +21,7 @@ export async function updateProfileAction(
   try {
     await connectDB();
 
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return { success: false, message: "Unauthorized" };
     }

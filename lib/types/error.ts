@@ -4,6 +4,6 @@ export interface MongoErrorType extends Error {
     keyValue?: Record<string, unknown>;
   }
   
-export interface NodemailerErrorType extends Error {
+export interface EmailErrorType extends Error {
     response?: string;
   }

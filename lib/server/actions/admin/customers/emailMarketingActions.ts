@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { Types } from "mongoose";
 import { connectDB } from "@/db";
-import { FRONTEND_URL } from "@/config/env";
+import { buildAppUrl } from "@/config/env";
 import { requireAdmin } from "@/lib/auth/requireSession";
 import { generateSlug } from "@/lib/helpers/slugify";
 import { buildMarketingEmailTemplate } from "@/lib/helpers/emailMarketing";
@@ -155,9 +155,7 @@ function normalizePath(path: string) {
 }
 
 function toAbsoluteUrl(path: string) {
-  const normalizedPath = normalizePath(path);
-  const baseUrl = (FRONTEND_URL || "").replace(/\/$/, "");
-  return baseUrl ? `${baseUrl}${normalizedPath}` : normalizedPath;
+  return buildAppUrl(normalizePath(path));
 }
 
 function getDefaultCtaLabel(targetType: CampaignTargetType) {

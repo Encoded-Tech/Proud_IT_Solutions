@@ -1,18 +1,18 @@
-import { APP_NAME, FRONTEND_URL } from "@/config/env";
+import { APP_NAME, APP_URL } from "@/config/env";
 
 function sanitizeUrl(value?: string) {
-  if (!value?.trim()) return FRONTEND_URL || "#";
+  if (!value?.trim()) return APP_URL || "#";
 
   try {
-    const candidate = new URL(value, FRONTEND_URL || "http://localhost");
+    const candidate = new URL(value, APP_URL);
     if (candidate.protocol === "http:" || candidate.protocol === "https:") {
       return candidate.toString();
     }
   } catch {
-    return FRONTEND_URL || "#";
+    return APP_URL || "#";
   }
 
-  return FRONTEND_URL || "#";
+  return APP_URL || "#";
 }
 
 function escapeHtml(value: string) {

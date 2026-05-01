@@ -3,8 +3,7 @@ import { fetchPublicProductBySlug } from "@/lib/server/fetchers/fetchPublicProdu
 import ProductPageClient from "../products/productPageClient";
 import HomeProducts from "./ListHomeProducts";
 import { getReviewsAction } from "@/lib/server/fetchers/fetchReview";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/authOptions";
+import { auth } from "@/auth";
 import { getProductVariants } from "@/lib/server/actions/admin/variants/variantsActions";
 import { productType } from "@/types/product";
 import { connection } from "next/server";
@@ -44,7 +43,7 @@ export default async function ListSingleProduct({
   const reviewData = await getReviewsAction(slug);
 
   // 🔥 get current logged-in user ID
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   const currentUserId = session?.user?.id;
 
   // pass currentUserId along with reviewData

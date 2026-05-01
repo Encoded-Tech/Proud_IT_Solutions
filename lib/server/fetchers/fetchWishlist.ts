@@ -4,8 +4,7 @@ import { connectDB } from "@/db";
 import User, { IWishlistItem } from "@/models/userModel";
 
 import { mapWishlistArray, WishlistItemDTO } from "../mappers/MapWishlist";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/authOptions";
+import { auth } from "@/auth";
 
 
 
@@ -20,7 +19,7 @@ export async function getWishlistAction(): Promise<GetWishlistActionResponse> {
   try {
     await connectDB();
 
-      const session = await getServerSession(authOptions);
+      const session = await auth();
     if (!session?.user?.email) return { wishlist: [] };
 
     const user = await User.findOne({ email: session.user.email })

@@ -62,10 +62,9 @@ export async function submitContactForm(
     await newContact.save();
 
     await sendEmail({
-      from: `"${safeName}" <${safeEmail}>`,
       to: SEND_TO,
       replyTo: safeEmail,
-      subject: `New Contact Form Submission from ${safeName}`,
+      subject: "New enquiry received from Proud Nepal website",
       html: `
         <h2>New Contact Form Submission</h2>
         <p><strong>Name:</strong> ${safeName}</p>
@@ -80,11 +79,24 @@ export async function submitContactForm(
         <hr />
         <p>Submission received on: ${new Date().toLocaleString()}</p>
       `,
+      text: [
+        "New enquiry received from Proud Nepal website",
+        `Name: ${safeName}`,
+        `Email: ${safeEmail}`,
+        `Phone: ${safePhone}`,
+        `Organization: ${safeOrganization || "N/A"}`,
+        `Preferred contact method: ${safePreferredContact}`,
+        "",
+        "Message:",
+        safeDescription,
+        "",
+        `Submission received on: ${new Date().toLocaleString()}`,
+      ].join("\n"),
     });
 
     await sendEmail({
       to: safeEmail,
-      subject: "We Received Your Message - Proud IT Solutions",
+      subject: "Your Proud Nepal enquiry has been received",
       html: `
         <h2>Hi ${safeName},</h2>
         <p>Thank you for reaching out to Proud IT Solutions. We have received your message and will respond as soon as possible.</p>
@@ -103,6 +115,24 @@ export async function submitContactForm(
         <p>We appreciate your interest and will get back to you shortly.</p>
         <p>Best regards,<br/>Proud IT Solutions Team</p>
       `,
+      text: [
+        `Hi ${safeName},`,
+        "",
+        "Thank you for reaching out to Proud IT Solutions. We have received your message and will respond as soon as possible.",
+        "",
+        "Your submitted details:",
+        `Name: ${safeName}`,
+        `Email: ${safeEmail}`,
+        `Phone: ${safePhone}`,
+        `Organization: ${safeOrganization || "N/A"}`,
+        `Preferred contact: ${safePreferredContact}`,
+        "",
+        "Your message:",
+        safeDescription,
+        "",
+        "Best regards,",
+        "Proud IT Solutions Team",
+      ].join("\n"),
     });
 
     return {

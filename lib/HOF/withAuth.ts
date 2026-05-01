@@ -57,11 +57,11 @@ export function withAuth(
     }
 
    (req as AuthenticatedRequest).auth = {
-  id: (token.id || token.providerId) as string, // fallback to providerId
+  id: (token.id || token.sub || token.providerId) as string,
   role: token.role as UserRole,
   emailVerified: token.emailVerified as boolean,
   email: token.email as string,
-  providerId: token.providerId as string | undefined,
+  providerId: (token.providerId || token.sub) as string | undefined,
 };
     
     if (context) {

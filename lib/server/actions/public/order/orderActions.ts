@@ -15,6 +15,7 @@ import {
   ORDER_EXPIRY_HOURS,
 } from "@/config/env";
 import { requireUser } from "@/lib/auth/requireSession";
+import { resolveAuthUserId } from "@/lib/auth/resolveAuthUser";
 import { BuildRequest } from "@/models/buildMyPcModel";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 
@@ -128,6 +129,10 @@ export async function createOrderAction(
   try {
     /* -------------------- AUTH -------------------- */
     const user = await requireUser();
+    const userId = await resolveAuthUserId(user);
+    if (!userId) {
+      return { success: false, message: "Unauthorized" };
+    }
 
     const {
       items,
@@ -197,7 +202,7 @@ export async function createOrderAction(
 
       buildRequest = await BuildRequest.findOne({
         _id: buildId,
-        user: user.id,
+        user: userId,
       });
 
       if (!buildRequest) {
@@ -227,7 +232,7 @@ export async function createOrderAction(
     /* -------------------- DUPLICATE ORDER CHECK -------------------- */
 
     const pendingOrders = await Order.find({
-      user: user.id,
+      user: userId,
       paymentStatus: "pending",
       orderStatus: { $ne: "cancelled" },
       expiresAt: { $gt: new Date() },
@@ -390,7 +395,7 @@ export async function createOrderAction(
     );
 
     const order = await Order.create({
-      user: user.id,
+      user: userId,
       orderItems,
       totalPrice,
       paymentMethod,
@@ -428,14 +433,14 @@ export async function createOrderAction(
 
     if (source === "cart") {
       await userModel.findByIdAndUpdate(
-        user.id,
+        userId,
         { $set: { cart: [] } }
       );
     }
 
     /* -------------------- EMAIL -------------------- */
     try {
-      const dbUser = await userModel.findById(user.id).select("email name");
+      const dbUser = await userModel.findById(userId).select("email name");
 
       if (!dbUser?.email) throw new Error("User email not found");
 
@@ -525,12 +530,16 @@ export async function updateOrderAction(
 
   try {
     const user = await requireUser();
+    const userId = await resolveAuthUserId(user);
+    if (!userId) {
+      return { success: false, message: "Unauthorized" };
+    }
 
     if (!Types.ObjectId.isValid(orderId)) {
       return { success: false, message: "Invalid order ID" };
     }
 
-    const order = await Order.findOne({ _id: orderId, user: user.id });
+    const order = await Order.findOne({ _id: orderId, user: userId });
 
     if (!order) {
       return { success: false, message: "Order not found" };
@@ -597,7 +606,7 @@ export async function updateOrderAction(
     await order.save();
 
     /* -------------------- EMAIL -------------------- */
-    const dbUser = await userModel.findById(user.id).select("email name");
+    const dbUser = await userModel.findById(userId).select("email name");
     if (dbUser?.email) {
       const isBuildOrder = !!order.buildRequest;
 
@@ -656,6 +665,10 @@ export async function deleteOrderAction(
   try {
     /* -------------------- AUTH -------------------- */
     const user = await requireUser();
+    const userId = await resolveAuthUserId(user);
+    if (!userId) {
+      return { success: false, message: "Unauthorized" };
+    }
 
     if (!Types.ObjectId.isValid(orderId)) {
       return { success: false, message: "Invalid order ID" };
@@ -664,7 +677,7 @@ export async function deleteOrderAction(
     /* -------------------- FIND ORDER -------------------- */
     const order = await Order.findOne({
       _id: orderId,
-      user: user.id,
+      user: userId,
     });
 
     if (!order) {
@@ -697,7 +710,7 @@ export async function deleteOrderAction(
     await Order.deleteOne({ _id: order._id });
 
     /* -------------------- EMAIL -------------------- */
-    const dbUser = await userModel.findById(user.id).select("email name");
+    const dbUser = await userModel.findById(userId).select("email name");
 
     if (dbUser?.email) {
       await sendEmail({
@@ -734,6 +747,10 @@ export async function cancelOrderAction(
   try {
     /* -------------------- AUTH -------------------- */
     const user = await requireUser();
+    const userId = await resolveAuthUserId(user);
+    if (!userId) {
+      return { success: false, message: "Unauthorized" };
+    }
 
     if (!Types.ObjectId.isValid(orderId)) {
       return { success: false, message: "Invalid order ID" };
@@ -742,7 +759,7 @@ export async function cancelOrderAction(
     /* -------------------- FIND ORDER -------------------- */
     const order = await Order.findOne({
       _id: orderId,
-      user: user.id,
+      user: userId,
     });
 
     if (!order) {
@@ -785,7 +802,7 @@ export async function cancelOrderAction(
 
     await order.save();
 
-    const dbUser = await userModel.findById(user.id).select("email name");
+    const dbUser = await userModel.findById(userId).select("email name");
 
     if (dbUser?.email) {
       await sendEmail({

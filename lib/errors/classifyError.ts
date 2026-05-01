@@ -2,7 +2,7 @@ import { AppError } from "../class";
 import { MongooseError } from "mongoose";
 import { handleMongoError, handleMongooseError, handleEmailError } from "../errors";
 import { ERROR_DICTIONARY } from "../constants";
-import { MongoErrorType, NodemailerErrorType } from "../types";
+import { EmailErrorType, MongoErrorType } from "../types";
 
 export function classifyError(error: unknown, resourceName?: string) {
   const safeError = error instanceof Error ? error : new Error(String(error));
@@ -31,7 +31,7 @@ export function classifyError(error: unknown, resourceName?: string) {
     errorCode = mongoHandled.code;
   }
 
-  const emailHandled = handleEmailError(safeError as NodemailerErrorType);
+  const emailHandled = handleEmailError(safeError as EmailErrorType);
   if (emailHandled) {
     statusCode = emailHandled.statusCode;
     friendlyMessage = emailHandled.message;

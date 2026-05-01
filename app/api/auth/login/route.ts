@@ -9,6 +9,7 @@ import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
 import { applyRateLimit, buildRateLimitKey } from "@/lib/security/rate-limit";
 import { SecurityLogData } from "@/types/api";
 import { HARDLOCK_THRESHOLD, HARDLOCK_WINDOW, MAX_ATTEMPTS, TEMP_LOCK_TIME } from "@/config/env";
+import { AUTH_SESSION_COOKIE_NAME } from "@/lib/auth/cookies";
 
 
 //total apis
@@ -242,12 +243,13 @@ export const POST = withDB(async (req: NextRequest, context?) => {
       emailVerified: !!user.emailVerified,
     },
     secret: process.env.NEXTAUTH_SECRET!,
+    salt: AUTH_SESSION_COOKIE_NAME,
     maxAge: 60 * 60 * 24 * 30, // 30 days
   });
 
   // Set the session cookie
   const cookieStore = await cookies();
-  cookieStore.set("next-auth.session-token", nextAuthToken, {
+  cookieStore.set(AUTH_SESSION_COOKIE_NAME, nextAuthToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

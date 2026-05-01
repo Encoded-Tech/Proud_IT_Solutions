@@ -13,9 +13,14 @@ import {
 import AdminSidebar from "@/components/layout/header/sidebar";
 import { Toaster } from "sonner";
 import { RootLayoutProps } from "@/types/layout";
+import { signOut } from "next-auth/react";
 
 export default function AdminLayout({ children }: RootLayoutProps) {
   const [collapsed, setCollapsed] = useState(false);
+
+  const handleLogout = () => {
+    signOut({ callbackUrl: "/login" });
+  };
 
   return (
     <div className="min-h-screen flex w-full overflow-x-hidden bg-gray-50 text-gray-800">
@@ -78,7 +83,10 @@ export default function AdminLayout({ children }: RootLayoutProps) {
 
             <DropdownMenuContent align="end">
              
-              <DropdownMenuItem className="text-red-600">
+              <DropdownMenuItem
+                className="text-red-600 cursor-pointer"
+                onClick={handleLogout}
+              >
                 Logout
               </DropdownMenuItem>
             </DropdownMenuContent>

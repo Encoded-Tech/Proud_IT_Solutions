@@ -100,7 +100,7 @@ const isAdmin = isLoggedIn && user?.role === "admin";
         )}
 
         {/* USER */}
-        {isLoggedIn && !isAdmin && (
+        {isLoggedIn && user && !isAdmin && (
           <>
           <div className="flex items-center gap-3 border-b pb-4">
     <Image

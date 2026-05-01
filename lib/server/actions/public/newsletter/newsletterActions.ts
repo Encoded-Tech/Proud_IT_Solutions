@@ -2,9 +2,8 @@
 
 import { cacheLife, cacheTag } from "next/cache";
 import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
+import { auth } from "@/auth";
 import { connectDB } from "@/db";
-import { authOptions } from "@/lib/auth/authOptions";
 import { verifyNewsletterUnsubscribeToken } from "@/lib/helpers/newsletterSecurity";
 import { sanitize } from "@/lib/helpers/performValidation";
 import { applyRateLimit, buildRateLimitKey } from "@/lib/security/rate-limit";
@@ -18,7 +17,7 @@ export async function subscribeToNewsletterAction(formData: FormData) {
   try {
     await connectDB();
 
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     const rawEmail =
       sanitize(formData.get("email")?.toString() || session?.user?.email || "")

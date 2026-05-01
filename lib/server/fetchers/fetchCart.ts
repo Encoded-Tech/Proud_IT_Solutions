@@ -6,8 +6,8 @@ import userModel from "@/models/userModel";
 
 import { CartItem } from "@/types/product";
 import { ICartItemPopulated, mapCartItemsArrayToDTO } from "../mappers/MapCart";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth/authOptions";
+import { auth } from "@/auth";
+import { resolveAuthUserId } from "@/lib/auth/resolveAuthUser";
 
 interface GetCartActionResponse {
   cart: CartItem[];
@@ -21,11 +21,13 @@ export async function getCartAction(): Promise<GetCartActionResponse> {
     await connectDB();
 
   
-        const session = await getServerSession(authOptions);
+        const session = await auth();
       if (!session?.user?.email) return { cart: [] };
+      const userId = await resolveAuthUserId(session.user);
+      if (!userId) return { cart: [] };
 
     const user = await userModel
-      .findById(session.user.id)
+      .findById(userId)
       .populate<{ cart: ICartItemPopulated[] }>({
         path: "cart.product",
         select: "name slug images price stock",

@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { FRONTEND_URL, JWT_SECRET } from "@/config/env";
+import { buildAppUrl, JWT_SECRET } from "@/config/env";
 
 function base64UrlEncode(value: string) {
   return Buffer.from(value).toString("base64url");
@@ -50,6 +50,5 @@ export function verifyNewsletterUnsubscribeToken(token: string) {
 
 export function buildNewsletterUnsubscribeUrl(email: string) {
   const token = createNewsletterUnsubscribeToken(email);
-  const baseUrl = FRONTEND_URL || "";
-  return `${baseUrl}/newsletter/unsubscribe?token=${encodeURIComponent(token)}`;
+  return buildAppUrl(`/newsletter/unsubscribe?token=${encodeURIComponent(token)}`);
 }

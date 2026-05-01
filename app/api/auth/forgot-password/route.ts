@@ -4,7 +4,7 @@ import { withDB } from "@/lib/HOF";
 import User from "@/models/userModel";
 import { generateResetToken, hashToken } from "@/lib/helpers/genHashToken";
 import { sendEmail } from "@/lib/helpers/sendEmail";
-import { RESET_TOKEN_EXPIRES_MIN } from "@/config/env";
+import { buildAppUrl, RESET_TOKEN_EXPIRES_MIN } from "@/config/env";
 import { applyRateLimit, buildRateLimitKey } from "@/lib/security/rate-limit";
 
 
@@ -71,8 +71,9 @@ export const POST = withDB(async (req: NextRequest, context?) => {
   await user.save();
 
   // Send email
-  const frontendUrl = process.env.FRONTEND_URL;
-  const resetUrl = `${frontendUrl}/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`;
+  const resetUrl = buildAppUrl(
+    `/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`
+  );
 
   const html = `
     <p>Hello ${user.name || ""},</p>

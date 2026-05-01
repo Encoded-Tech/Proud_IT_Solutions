@@ -1,13 +1,12 @@
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "./authOptions";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
 export async function requireSession(options?: {
   roles?: ("admin" | "user")[];
   emailVerified?: boolean;
 }) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session?.user?.id) {
   redirect("/login");

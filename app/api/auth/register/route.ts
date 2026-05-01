@@ -6,7 +6,7 @@ import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
 import { uploadToCloudinary } from "@/config/cloudinary";
 import { isStrongPassword } from "@/lib/helpers/isStrongPw";
 import { sendEmail } from "@/lib/helpers/sendEmail";
-import { FRONTEND_URL } from "@/config/env";
+import { buildAppUrl } from "@/config/env";
 import { generateResetToken, hashToken } from "@/lib/helpers/genHashToken";
 import { isMongoDuplicateError } from "@/lib/errors";
 import { applyRateLimit, buildRateLimitKey } from "@/lib/security/rate-limit";
@@ -148,9 +148,9 @@ try {
 }
 
 
-  const verifyUrl = `${FRONTEND_URL}/verify-email/confirm?token=${rawVerifyToken}&email=${encodeURIComponent(
+  const verifyUrl = buildAppUrl(`/verify-email/confirm?token=${rawVerifyToken}&email=${encodeURIComponent(
     email
-  )}`;
+  )}`);
 
   const html = `
             <p>Hello ${newUser.name},</p>

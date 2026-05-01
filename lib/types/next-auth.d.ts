@@ -1,23 +1,30 @@
 import "next-auth";
 import "next-auth/jwt";
+import type { DefaultSession } from "next-auth";
 
 // ------------------ NextAuth Session & User ------------------
 declare module "next-auth" {
   interface Session {
     backendJwt?: string;
-    user: {
+    user: Omit<NonNullable<DefaultSession["user"]>, "emailVerified"> & {
       id: string;
+      sub?: string;
       role: "user" | "admin";
       emailVerified: boolean;
-      providerId?: string; // <--- add this
-    } & DefaultSession["user"];
+      phone?: string;
+      hasPassword?: boolean;
+      providerId?: string;
+    };
   }
 
   interface User {
     id: string;
+    sub?: string;
     role: "user" | "admin";
     emailVerified: boolean;
-    providerId?: string; // <--- add this
+    phone?: string;
+    hasPassword?: boolean;
+    providerId?: string;
   }
 }
 
@@ -28,7 +35,7 @@ declare module "next-auth/jwt" {
     role?: "user" | "admin";
     emailVerified?: boolean;
     backendJwt?: string;
-    providerId?: string; // <--- add this
+    providerId?: string;
   }
 }
 
