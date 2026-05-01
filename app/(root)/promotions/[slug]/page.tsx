@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { buildMetadata } from "@/app/seo/utils/metadata";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import {
   fetchPromotionBySlug,
   fetchPublishedPromotions,
@@ -9,7 +9,13 @@ import type { Metadata } from "next";
 
 export async function generateStaticParams() {
   const response = await fetchPublishedPromotions();
-  return (response.data ?? []).map((promotion) => ({ slug: promotion.slug }));
+  const promotions = response.data ?? [];
+
+  if (promotions.length === 0) {
+    return [{ slug: "__placeholder__" }];
+  }
+
+  return promotions.map((promotion) => ({ slug: promotion.slug }));
 }
 
 export async function generateMetadata({
@@ -55,6 +61,11 @@ export default async function PromotionDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+
+  if (slug === "__placeholder__") {
+    notFound();
+  }
+
   const response = await fetchPromotionBySlug(slug);
 
   if (!response.success || !response.data) {

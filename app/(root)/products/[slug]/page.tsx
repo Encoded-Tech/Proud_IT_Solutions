@@ -7,11 +7,17 @@ import {
 } from "@/lib/server/fetchers/fetchPublicProducts";
 import { APP_NAME } from "@/config/env";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Script from "next/script";
 import { Suspense } from "react";
 
 export async function generateStaticParams() {
   const slugs = await fetchPublicProductSlugs();
+
+  if (slugs.length === 0) {
+    return [{ slug: "__placeholder__" }];
+  }
+
   return slugs.map((slug) => ({ slug }));
 }
 
@@ -64,6 +70,10 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+
+  if (slug === "__placeholder__") {
+    notFound();
+  }
 
   const res = await fetchPublicProductBySlug(slug);
   const product = res.data;

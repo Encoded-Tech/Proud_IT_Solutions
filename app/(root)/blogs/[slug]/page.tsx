@@ -14,6 +14,10 @@ type BlogPageProps = {
 };
 
 export async function generateStaticParams() {
+  if (mockblogs.length === 0) {
+    return [{ slug: "__placeholder__" }];
+  }
+
   return mockblogs.map((blog) => ({ slug: blog.slug }));
 }
 
@@ -39,6 +43,11 @@ export async function generateMetadata({ params }: BlogPageProps): Promise<Metad
 
 export default async function BlogDetailPage({ params }: BlogPageProps) {
   const { slug } = await params;
+
+  if (slug === "__placeholder__") {
+    notFound();
+  }
+
   const blogItem = mockblogs.find((blog) => blog.slug === slug);
 
   if (!blogItem) {
