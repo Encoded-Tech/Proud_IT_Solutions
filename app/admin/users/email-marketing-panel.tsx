@@ -72,7 +72,8 @@ export default function EmailMarketingPanel({
 }: EmailMarketingPanelProps) {
   const campaignsPerPage = 4;
   const [overview, setOverview] = useState(initialOverview);
-  const [isPending, startTransition] = useTransition();
+  const [isSending, startSendTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
   const [form, setForm] = useState({
     subject: "",
     previewText: "",
@@ -115,7 +116,7 @@ export default function EmailMarketingPanel({
 
   const submitCampaign = () => {
     setConfirmOpen(false);
-    startTransition(async () => {
+    startSendTransition(async () => {
       try {
         const formData = new FormData();
         formData.set("subject", form.subject.trim());
@@ -158,7 +159,7 @@ export default function EmailMarketingPanel({
     const campaignId = deleteTarget.id;
     setDeleteTarget(null);
 
-    startTransition(async () => {
+    startDeleteTransition(async () => {
       try {
         const response = await deleteEmailCampaignAction(campaignId);
 
@@ -238,7 +239,7 @@ export default function EmailMarketingPanel({
           form.publishToSite ? "It will also be published on the public promotions page." : "It will remain email-only."
         }${selectedTarget ? ` Linked destination: ${selectedTarget.label}.` : ""}`}
         confirmLabel="Send Campaign"
-        pending={isPending}
+        pending={isSending}
         onConfirm={submitCampaign}
       />
       <ConfirmDialog
@@ -251,7 +252,7 @@ export default function EmailMarketingPanel({
           deleteTarget?.publishedToSite ? " and remove it from the public promotions page." : "."
         }`}
         confirmLabel="Delete Promotion"
-        pending={isPending}
+        pending={isDeleting}
         tone="danger"
         onConfirm={deleteCampaign}
       />
@@ -419,10 +420,10 @@ export default function EmailMarketingPanel({
             </p>
             <Button
               onClick={handleSubmit}
-              disabled={isPending}
+              disabled={isSending}
               className="w-full rounded-xl bg-red-600 hover:bg-red-700 sm:w-auto"
             >
-              {isPending ? "Sending..." : "Send Campaign"}
+              {isSending ? "Sending..." : "Send Campaign"}
             </Button>
           </div>
         </div>
@@ -473,7 +474,7 @@ export default function EmailMarketingPanel({
                         type="button"
                         variant="outline"
                         size="sm"
-                        disabled={isPending}
+                        disabled={isDeleting}
                         onClick={() => setDeleteTarget(campaign)}
                         aria-label={`Delete ${campaign.subject}`}
                         title="Delete promotion"
