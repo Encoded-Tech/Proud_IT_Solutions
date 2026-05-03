@@ -9,6 +9,7 @@ import Link from "next/link";
 import { CategoryType, MediaType, productType, ProductVariantType, ReviewState, ReviewType } from "@/types/product";
 import ProductImages from "@/app/(root)/products/product-images";
 import AddToCartButton from "../client/AddToCartButton";
+import ProductShareButton from "@/components/product/ProductShareButton";
 import { addWishlistAction } from "@/lib/server/actions/public/wishlist/addToWishlist";
 import { setWishlist } from "@/redux/features/wishlist/wishListSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
@@ -441,7 +442,7 @@ export default function ProductPageClient({
                 </button>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <AddToCartButton
                   productId={product.id}
                   variantId={selectedVariant?.id ?? ""}
@@ -449,6 +450,7 @@ export default function ProductPageClient({
                   variant="page"
                   quantity={quantity}
                 />
+                <ProductShareButton productName={name} />
  <button
   onClick={handleAddToWishlist}
   disabled={loading}
