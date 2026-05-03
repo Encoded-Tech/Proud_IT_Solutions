@@ -18,7 +18,6 @@ const COLOR_SCAN_PROPERTIES = [
 ] as const;
 
 type QuotationAssetData = {
-  letterpadDataUrl: string;
   stampDataUrl: string;
   signatureDataUrl: string;
 };
@@ -62,18 +61,15 @@ async function imageToDataUrl(src: string): Promise<string> {
 }
 
 async function loadQuotationAssetData(draft: QuotationDraft): Promise<QuotationAssetData> {
-  const letterpadSrc = draft.assets.letterpad || "/assets/quotation/letterpad.png";
   const stampSrc = draft.assets.stamp || "";
   const signatureSrc = draft.assets.signature || "/assets/quotation/signature.png";
 
-  const [letterpadDataUrl, stampDataUrl, signatureDataUrl] = await Promise.all([
-    imageToDataUrl(letterpadSrc),
+  const [stampDataUrl, signatureDataUrl] = await Promise.all([
     stampSrc ? imageToDataUrl(stampSrc) : Promise.resolve(""),
     signatureSrc ? imageToDataUrl(signatureSrc) : Promise.resolve(""),
   ]);
 
   return {
-    letterpadDataUrl,
     stampDataUrl,
     signatureDataUrl,
   };
@@ -217,23 +213,20 @@ function findUnsupportedColors(root: HTMLElement) {
   return bad;
 }
 
-function waitForImages(container: ParentNode) {
-  const images = Array.from(container.querySelectorAll("img"));
+async function waitForImages(root: HTMLElement) {
+  const images = Array.from(root.querySelectorAll("img"));
 
-  return Promise.all(
-    images.map(
-      (img) =>
-        new Promise<void>((resolve) => {
-          if (img.complete) {
-            resolve();
-            return;
-          }
+  await Promise.all(
+    images.map((img) => {
+      if (img.complete && img.naturalWidth > 0) {
+        return Promise.resolve();
+      }
 
-          const done = () => resolve();
-          img.addEventListener("load", done, { once: true });
-          img.addEventListener("error", done, { once: true });
-        })
-    )
+      return new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+      });
+    })
   );
 }
 
@@ -272,10 +265,7 @@ export async function downloadQuotationPdf(
     );
   }
 
-  const { letterpadDataUrl, stampDataUrl, signatureDataUrl } = await loadQuotationAssetData(draft);
-  if (!letterpadDataUrl) {
-    throw new Error("Failed to load the quotation letterpad for PDF export.");
-  }
+  const { stampDataUrl, signatureDataUrl } = await loadQuotationAssetData(draft);
 
   if (draft.assets.stamp && !stampDataUrl) {
     throw new Error("Failed to load the quotation stamp for PDF export.");
@@ -286,12 +276,13 @@ export async function downloadQuotationPdf(
   }
 
   const canvas = await html2canvas(quotationPage, {
-    scale: 3,
+    scale: Math.max(4, window.devicePixelRatio || 1),
     useCORS: true,
     allowTaint: false,
     backgroundColor: "#ffffff",
-    logging: true,
+    logging: false,
     imageTimeout: 15000,
+    removeContainer: true,
     foreignObjectRendering: false,
     onclone: (clonedDocument) => {
       clonedDocument.documentElement.style.backgroundColor = "#ffffff";
@@ -303,20 +294,22 @@ export async function downloadQuotationPdf(
         return;
       }
 
+      clonedRoot.style.width = "210mm";
+      clonedRoot.style.height = "297mm";
+      clonedRoot.style.minHeight = "297mm";
+      clonedRoot.style.maxHeight = "297mm";
+      clonedRoot.style.overflow = "hidden";
       clonedRoot.style.backgroundColor = "#ffffff";
       clonedRoot.style.color = "#0f172a";
       clonedRoot.style.boxShadow = "none";
+      clonedRoot.style.setProperty("-webkit-print-color-adjust", "exact");
+      clonedRoot.style.printColorAdjust = "exact";
 
       const clonedImages = Array.from(clonedRoot.querySelectorAll("img"));
       for (const img of clonedImages) {
         img.removeAttribute("srcset");
         img.removeAttribute("sizes");
         img.crossOrigin = "anonymous";
-      }
-
-      const letterpadLayer = clonedRoot.querySelector<HTMLElement>("[data-letterpad-layer]");
-      if (letterpadLayer) {
-        letterpadLayer.style.backgroundImage = `url("${letterpadDataUrl}")`;
       }
 
       const stamp = clonedRoot.querySelector<HTMLImageElement>("[data-stamp-image]");
@@ -327,10 +320,32 @@ export async function downloadQuotationPdf(
       const signature = clonedRoot.querySelector<HTMLImageElement>("[data-signature-image]");
       if (signature && signatureDataUrl) {
         signature.src = signatureDataUrl;
+        if (!stampDataUrl) {
+          signature.style.display = "block";
+          signature.style.width = "25mm";
+          signature.style.height = "auto";
+          signature.style.maxWidth = "none";
+          signature.style.maxHeight = "none";
+          signature.style.objectFit = "contain";
+          signature.style.objectPosition = "center";
+          signature.style.margin = "0 auto 0.4mm";
+          signature.style.transform = "none";
+          signature.style.position = "static";
+        }
       }
 
       const all = [clonedRoot, ...Array.from(clonedRoot.querySelectorAll("*"))] as HTMLElement[];
       for (const el of all) {
+        if (el.closest("[data-letterhead-chrome]")) {
+          for (const prop of COLOR_SCAN_PROPERTIES) {
+            const inlineValue = el.style.getPropertyValue(prop);
+            if (inlineValue && UNSUPPORTED_COLOR_RE.test(inlineValue)) {
+              el.style.setProperty(prop, replaceUnsupportedColorFunctions(inlineValue));
+            }
+          }
+          continue;
+        }
+
         el.style.color = el.style.color || "#0f172a";
         el.style.borderColor = "#cbd5e1";
         el.style.outlineColor = "#cbd5e1";
@@ -390,15 +405,15 @@ export async function downloadQuotationPdf(
     },
   });
 
-  const imgData = canvas.toDataURL("image/png", 1.0);
+  const imageData = canvas.toDataURL("image/png");
 
   const pdf = new jsPDF({
     orientation: "portrait",
     unit: "mm",
     format: "a4",
-    compress: true,
+    compress: false,
   });
 
-  pdf.addImage(imgData, "PNG", 0, 0, 210, 297, undefined, "FAST");
+  pdf.addImage(imageData, "PNG", 0, 0, 210, 297, undefined, "NONE");
   pdf.save(filename.toLowerCase().endsWith(".pdf") ? filename : `${filename}.pdf`);
 }

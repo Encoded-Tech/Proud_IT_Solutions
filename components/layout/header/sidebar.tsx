@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Folder,
@@ -31,6 +32,7 @@ type MenuName =
   ;
 
 export default function AdminSidebar({ collapsed }: AdminProps) {
+  const pathname = usePathname();
   const [openMenus, setOpenMenus] = useState<Record<MenuName, boolean>>({
     categories: false,
     products: false,
@@ -40,9 +42,48 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
    
   });
 
+  useEffect(() => {
+    if (pathname.startsWith("/admin/category")) {
+      setOpenMenus((prev) => ({ ...prev, categories: true }));
+    }
+    if (pathname.startsWith("/admin/product")) {
+      setOpenMenus((prev) => ({ ...prev, products: true }));
+    }
+    if (pathname.startsWith("/admin/variants")) {
+      setOpenMenus((prev) => ({ ...prev, variants: true }));
+    }
+    if (pathname.startsWith("/admin/posts")) {
+      setOpenMenus((prev) => ({ ...prev, posts: true }));
+    }
+    if (pathname.startsWith("/admin/build-user-pc")) {
+      setOpenMenus((prev) => ({ ...prev, buildUserPC: true }));
+    }
+  }, [pathname]);
+
   const toggleMenu = (name: MenuName) => {
     setOpenMenus((prev) => ({ ...prev, [name]: !prev[name] }));
   };
+
+  const isActivePath = (href: string) =>
+    pathname === href || pathname.startsWith(`${href}/`);
+
+  const isDashboardActive = pathname === "/admin";
+
+  const isSectionActive = (hrefs: string[]) => hrefs.some((href) => isActivePath(href));
+
+  const navLinkClass = (active: boolean, compactCenter = false) =>
+    `flex items-center rounded-lg transition ${
+      compactCenter ? "justify-center" : "gap-3"
+    } ${
+      active
+        ? "bg-red-50 text-red-700 ring-1 ring-red-100"
+        : "hover:bg-gray-100 text-gray-900"
+    }`;
+
+  const navChildLinkClass = (active: boolean) =>
+    `block rounded-lg p-2 transition ${
+      active ? "bg-red-50 text-red-700 ring-1 ring-red-100" : "hover:bg-gray-50 text-gray-700"
+    }`;
 
   return (
     <div className="h-screen fixed flex flex-col overflow-hidden">
@@ -83,13 +124,13 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
           <li>
             <Link
               href="/admin"
-              className={`flex items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`p-2 ${navLinkClass(isDashboardActive, collapsed)}`}
             >
-              <LayoutDashboard className="w-5 h-5 text-gray-600" />
+              <LayoutDashboard className={`w-5 h-5 ${isDashboardActive ? "text-red-600" : "text-gray-600"}`} />
               {!collapsed && (
-                <span className="text-gray-900">Dashboard</span>
+                <span className={isDashboardActive ? "text-red-700 font-semibold" : "text-gray-900"}>
+                  Dashboard
+                </span>
               )}
             </Link>
           </li>
@@ -106,18 +147,18 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
           <li>
             <button
               onClick={() => toggleMenu("categories")}
-              className={`flex w-full items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`w-full p-2 ${navLinkClass(isSectionActive(["/admin/category"]), collapsed)}`}
             >
-              <Folder className="w-5 h-5 text-gray-600" />
+              <Folder className={`w-5 h-5 ${isSectionActive(["/admin/category"]) ? "text-red-600" : "text-gray-600"}`} />
               {!collapsed && (
                 <>
-                  <span className="text-gray-900">Categories</span>
+                  <span className={isSectionActive(["/admin/category"]) ? "text-red-700 font-semibold" : "text-gray-900"}>
+                    Categories
+                  </span>
                   {openMenus.categories ? (
-                    <ChevronDown className="ml-auto w-4 text-gray-400" />
+                    <ChevronDown className={`ml-auto w-4 ${isSectionActive(["/admin/category"]) ? "text-red-500" : "text-gray-400"}`} />
                   ) : (
-                    <ChevronRight className="ml-auto w-4 text-gray-400" />
+                    <ChevronRight className={`ml-auto w-4 ${isSectionActive(["/admin/category"]) ? "text-red-500" : "text-gray-400"}`} />
                   )}
                 </>
               )}
@@ -128,7 +169,7 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 <li>
                   <Link
                     href="/admin/category"
-                    className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                    className={navChildLinkClass(isActivePath("/admin/category"))}
                   >
                     All Categories
                   </Link>
@@ -136,7 +177,7 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 <li>
                   <Link
                     href="/admin/category/add-category"
-                    className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                    className={navChildLinkClass(isActivePath("/admin/category/add-category"))}
                   >
                     Add Category
                   </Link>
@@ -149,18 +190,18 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
           <li>
             <button
               onClick={() => toggleMenu("products")}
-              className={`flex w-full items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`w-full p-2 ${navLinkClass(isSectionActive(["/admin/product"]), collapsed)}`}
             >
-              <Package className="w-5 h-5 text-gray-600" />
+              <Package className={`w-5 h-5 ${isSectionActive(["/admin/product"]) ? "text-red-600" : "text-gray-600"}`} />
               {!collapsed && (
                 <>
-                  <span className="text-gray-900">Products</span>
+                  <span className={isSectionActive(["/admin/product"]) ? "text-red-700 font-semibold" : "text-gray-900"}>
+                    Products
+                  </span>
                   {openMenus.products ? (
-                    <ChevronDown className="ml-auto w-4 text-gray-400" />
+                    <ChevronDown className={`ml-auto w-4 ${isSectionActive(["/admin/product"]) ? "text-red-500" : "text-gray-400"}`} />
                   ) : (
-                    <ChevronRight className="ml-auto w-4 text-gray-400" />
+                    <ChevronRight className={`ml-auto w-4 ${isSectionActive(["/admin/product"]) ? "text-red-500" : "text-gray-400"}`} />
                   )}
                 </>
               )}
@@ -171,7 +212,7 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 <li>
                   <Link
                     href="/admin/product"
-                    className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                    className={navChildLinkClass(isActivePath("/admin/product"))}
                   >
                     All Products
                   </Link>
@@ -179,7 +220,7 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 <li>
                   <Link
                     href="/admin/product/add-product"
-                    className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                    className={navChildLinkClass(isActivePath("/admin/product/add-product"))}
                   >
                     Add Product
                   </Link>
@@ -192,18 +233,18 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
           <li>
             <button
               onClick={() => toggleMenu("variants")}
-              className={`flex w-full items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`w-full p-2 ${navLinkClass(isSectionActive(["/admin/variants"]), collapsed)}`}
             >
-              <Package className="w-5 h-5 text-gray-600" />
+              <Package className={`w-5 h-5 ${isSectionActive(["/admin/variants"]) ? "text-red-600" : "text-gray-600"}`} />
               {!collapsed && (
                 <>
-                  <span className="text-gray-900">Product Variants</span>
+                  <span className={isSectionActive(["/admin/variants"]) ? "text-red-700 font-semibold" : "text-gray-900"}>
+                    Product Variants
+                  </span>
                   {openMenus.variants ? (
-                    <ChevronDown className="ml-auto w-4 text-gray-400" />
+                    <ChevronDown className={`ml-auto w-4 ${isSectionActive(["/admin/variants"]) ? "text-red-500" : "text-gray-400"}`} />
                   ) : (
-                    <ChevronRight className="ml-auto w-4 text-gray-400" />
+                    <ChevronRight className={`ml-auto w-4 ${isSectionActive(["/admin/variants"]) ? "text-red-500" : "text-gray-400"}`} />
                   )}
                 </>
               )}
@@ -214,7 +255,7 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 <li>
                   <Link
                     href="/admin/variants"
-                    className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                    className={navChildLinkClass(isActivePath("/admin/variants"))}
                   >
                     All Variants
                   </Link>
@@ -222,7 +263,7 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 <li>
                   <Link
                     href="/admin/variants/add-variant"
-                    className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                    className={navChildLinkClass(isActivePath("/admin/variants/add-variant"))}
                   >
                     Add Variants
                   </Link>
@@ -235,18 +276,18 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
           <li>
             <button
               onClick={() => toggleMenu("buildUserPC")}
-              className={`flex w-full items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`w-full p-2 ${navLinkClass(isSectionActive(["/admin/build-user-pc"]), collapsed)}`}
             >
-              <ComputerIcon className="w-5 h-5 text-gray-600" />
+              <ComputerIcon className={`w-5 h-5 ${isSectionActive(["/admin/build-user-pc"]) ? "text-red-600" : "text-gray-600"}`} />
               {!collapsed && (
                 <>
-                  <span className="text-gray-900">Build My PC</span>
+                  <span className={isSectionActive(["/admin/build-user-pc"]) ? "text-red-700 font-semibold" : "text-gray-900"}>
+                    Build My PC
+                  </span>
                   {openMenus.buildUserPC ? (
-                    <ChevronDown className="ml-auto w-4 text-gray-400" />
+                    <ChevronDown className={`ml-auto w-4 ${isSectionActive(["/admin/build-user-pc"]) ? "text-red-500" : "text-gray-400"}`} />
                   ) : (
-                    <ChevronRight className="ml-auto w-4 text-gray-400" />
+                    <ChevronRight className={`ml-auto w-4 ${isSectionActive(["/admin/build-user-pc"]) ? "text-red-500" : "text-gray-400"}`} />
                   )}
                 </>
               )}
@@ -257,7 +298,7 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 <li>
                   <Link
                     href="/admin/build-user-pc/parts-table"
-                    className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                    className={navChildLinkClass(isActivePath("/admin/build-user-pc/parts-table"))}
                   >
                     All Build Parts
                   </Link>
@@ -265,7 +306,7 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 <li>
                   <Link
                     href="/admin/build-user-pc/add-part"
-                    className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                    className={navChildLinkClass(isActivePath("/admin/build-user-pc/add-part"))}
                   >
                     Add Build Parts
                   </Link>
@@ -285,18 +326,18 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
           <li>
             <button
               onClick={() => toggleMenu("posts")}
-              className={`flex w-full items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`w-full p-2 ${navLinkClass(isSectionActive(["/admin/posts"]), collapsed)}`}
             >
-              <FileText className="w-5 h-5 text-gray-600" />
+              <FileText className={`w-5 h-5 ${isSectionActive(["/admin/posts"]) ? "text-red-600" : "text-gray-600"}`} />
               {!collapsed && (
                 <>
-                  <span className="text-gray-900">Posts</span>
+                  <span className={isSectionActive(["/admin/posts"]) ? "text-red-700 font-semibold" : "text-gray-900"}>
+                    Posts
+                  </span>
                   {openMenus.posts ? (
-                    <ChevronDown className="ml-auto w-4 text-gray-400" />
+                    <ChevronDown className={`ml-auto w-4 ${isSectionActive(["/admin/posts"]) ? "text-red-500" : "text-gray-400"}`} />
                   ) : (
-                    <ChevronRight className="ml-auto w-4 text-gray-400" />
+                    <ChevronRight className={`ml-auto w-4 ${isSectionActive(["/admin/posts"]) ? "text-red-500" : "text-gray-400"}`} />
                   )}
                 </>
               )}
@@ -307,7 +348,7 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 <li>
                   <Link
                     href="/admin/posts"
-                    className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                    className={navChildLinkClass(isActivePath("/admin/posts"))}
                   >
                     All Posts
                   </Link>
@@ -315,7 +356,7 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 <li>
                   <Link
                     href="/admin/posts/add-posts"
-                    className="block p-2 rounded-lg hover:bg-gray-50 text-gray-700"
+                    className={navChildLinkClass(isActivePath("/admin/posts/add-posts"))}
                   >
                     Add Post
                   </Link>
@@ -329,12 +370,14 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 <li>
             <Link
               href="/admin/inbox"
-              className={`flex items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`p-2 ${navLinkClass(isActivePath("/admin/inbox"), collapsed)}`}
             >
-              <MessageSquare className="w-5 h-5 text-gray-600" />
-              {!collapsed && <span className="text-gray-900">Inbox</span>}
+              <MessageSquare className={`w-5 h-5 ${isActivePath("/admin/inbox") ? "text-red-600" : "text-gray-600"}`} />
+              {!collapsed && (
+                <span className={isActivePath("/admin/inbox") ? "text-red-700 font-semibold" : "text-gray-900"}>
+                  Inbox
+                </span>
+              )}
             </Link>
           </li>
         </ul>
@@ -349,60 +392,70 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
           <li>
             <Link
               href="/admin/users"
-              className={`flex items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`p-2 ${navLinkClass(isActivePath("/admin/users"), collapsed)}`}
             >
-              <Users className="w-5 h-5 text-gray-600" />
-              {!collapsed && <span className="text-gray-900">Users</span>}
+              <Users className={`w-5 h-5 ${isActivePath("/admin/users") ? "text-red-600" : "text-gray-600"}`} />
+              {!collapsed && (
+                <span className={isActivePath("/admin/users") ? "text-red-700 font-semibold" : "text-gray-900"}>
+                  Users
+                </span>
+              )}
             </Link>
           </li>
 
           <li>
             <Link
               href="/admin/newsletter"
-              className={`flex items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`p-2 ${navLinkClass(isActivePath("/admin/newsletter"), collapsed)}`}
             >
-              <MailPlus className="w-5 h-5 text-gray-600" />
-              {!collapsed && <span className="text-gray-900">Newsletter</span>}
+              <MailPlus className={`w-5 h-5 ${isActivePath("/admin/newsletter") ? "text-red-600" : "text-gray-600"}`} />
+              {!collapsed && (
+                <span className={isActivePath("/admin/newsletter") ? "text-red-700 font-semibold" : "text-gray-900"}>
+                  Newsletter
+                </span>
+              )}
             </Link>
           </li>
 
           <li>
             <Link
               href="/admin/orders"
-              className={`flex items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`p-2 ${navLinkClass(isActivePath("/admin/orders"), collapsed)}`}
             >
-              <ShoppingCart className="w-5 h-5 text-gray-600" />
-              {!collapsed && <span className="text-gray-900">Orders</span>}
+              <ShoppingCart className={`w-5 h-5 ${isActivePath("/admin/orders") ? "text-red-600" : "text-gray-600"}`} />
+              {!collapsed && (
+                <span className={isActivePath("/admin/orders") ? "text-red-700 font-semibold" : "text-gray-900"}>
+                  Orders
+                </span>
+              )}
             </Link>
           </li>
 
           <li>
             <Link
               href="/admin/quotations"
-              className={`flex items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`p-2 ${navLinkClass(isActivePath("/admin/quotations"), collapsed)}`}
             >
-              <FileText className="w-5 h-5 text-gray-600" />
-              {!collapsed && <span className="text-gray-900">Quotations</span>}
+              <FileText className={`w-5 h-5 ${isActivePath("/admin/quotations") ? "text-red-600" : "text-gray-600"}`} />
+              {!collapsed && (
+                <span className={isActivePath("/admin/quotations") ? "text-red-700 font-semibold" : "text-gray-900"}>
+                  Quotations
+                </span>
+              )}
             </Link>
           </li>
 
           <li>
             <Link
               href="/admin/build-requests"
-              className={`flex items-center p-2 rounded-lg hover:bg-gray-100 transition ${
-                collapsed ? "justify-center" : "gap-3"
-              }`}
+              className={`p-2 ${navLinkClass(isActivePath("/admin/build-requests"), collapsed)}`}
             >
-              <Wrench className="w-5 h-5 text-gray-600" />
-              {!collapsed && <span className="text-gray-900">Build Requests</span>}
+              <Wrench className={`w-5 h-5 ${isActivePath("/admin/build-requests") ? "text-red-600" : "text-gray-600"}`} />
+              {!collapsed && (
+                <span className={isActivePath("/admin/build-requests") ? "text-red-700 font-semibold" : "text-gray-900"}>
+                  Build Requests
+                </span>
+              )}
             </Link>
           </li>
         </ul>

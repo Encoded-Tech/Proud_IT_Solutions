@@ -7,6 +7,7 @@ import {
   computeQuotationTotals,
   DEFAULT_QUOTATION_ASSETS,
   DEFAULT_QUOTATION_TERMS,
+  STATIC_QUOTATION_PREPARED_BY,
 } from "@/lib/helpers/quotation";
 import { quotationSchema } from "@/lib/validations/quotation";
 import Quotation from "@/models/quotationModel";
@@ -49,9 +50,11 @@ function serializeQuotation(doc: any): QuotationRecord {
     grandTotal: doc.grandTotal,
     terms: doc.terms ?? "",
     preparedBy: {
-      name: doc.preparedBy?.name ?? "",
+      heading: doc.preparedBy?.heading ?? STATIC_QUOTATION_PREPARED_BY.heading,
+      name: doc.preparedBy?.name ?? STATIC_QUOTATION_PREPARED_BY.name,
       role: doc.preparedBy?.role ?? "",
-      contact: doc.preparedBy?.contact ?? "",
+      contact: doc.preparedBy?.contact ?? STATIC_QUOTATION_PREPARED_BY.contact,
+      email: doc.preparedBy?.email ?? STATIC_QUOTATION_PREPARED_BY.email,
     },
     assets: {
       letterpad: doc.assets.letterpad,
@@ -164,9 +167,11 @@ export async function saveQuotationAction(
       grandTotal: totals.grandTotal,
       terms: parsed.terms || null,
       preparedBy: {
+        heading: parsed.preparedBy.heading || STATIC_QUOTATION_PREPARED_BY.heading,
         name: parsed.preparedBy.name || null,
         role: parsed.preparedBy.role || null,
         contact: parsed.preparedBy.contact || null,
+        email: parsed.preparedBy.email || null,
       },
       assets: {
         letterpad: parsed.assets.letterpad,

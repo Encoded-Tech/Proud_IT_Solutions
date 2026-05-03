@@ -24,52 +24,119 @@ function SignatureBlock({
   stamp?: string;
   signature?: string;
 }) {
-  const hasSeparateStamp = Boolean(stamp);
+  const hasStamp = Boolean(stamp);
+  const hasSignature = Boolean(signature);
 
   return (
-    <div className="flex min-h-[42mm] flex-col items-end justify-end">
-      <div
-        className="signature-area relative h-[28mm] w-[42mm] text-center"
-        style={{
-          WebkitPrintColorAdjust: "exact",
-          printColorAdjust: "exact",
-        }}
-      >
-        {hasSeparateStamp ? (
-          <div className="relative mx-auto h-[32mm] w-[32mm]">
-            <img
-              src={stamp!}
-              alt="Company stamp"
-              data-stamp-image
-              crossOrigin="anonymous"
-              draggable={false}
-              className="stamp-image absolute inset-0 h-full w-full object-contain opacity-90"
-            />
-          </div>
-        ) : null}
+    <div className="signature-block">
+      {hasSignature && !hasStamp ? (
+        <img
+          src={signature}
+          alt="Authorized stamp and signature"
+          data-signature-image
+          draggable={false}
+          className="signature-combined-image"
+        />
+      ) : null}
 
-        {signature ? (
-          <div
-            className={`relative mx-auto ${hasSeparateStamp ? "mt-[-10mm] h-[14mm] w-[34mm]" : "h-[22mm] w-[42mm]"}`}
-          >
+      {hasStamp ? (
+        <div className="signature-layered">
+          <img
+            src={stamp!}
+            alt="Company stamp"
+            data-stamp-image
+            draggable={false}
+            className="stamp-image"
+          />
+
+          {hasSignature ? (
             <img
               src={signature}
               alt="Authorized signature"
               data-signature-image
-              crossOrigin="anonymous"
               draggable={false}
-              className="signature-image absolute inset-0 h-full w-full object-contain"
+              className="signature-image"
             />
-          </div>
-        ) : null}
+          ) : null}
+        </div>
+      ) : null}
 
-        <div className="authorized-text q-text-800 mt-[2mm] text-center text-[8px] font-bold uppercase tracking-[1px]">
-          Authorized Signatory
-        </div>
-        <div className="q-text-600 mt-[1.5mm] text-center text-[6.5px] font-medium tracking-[0.03em]">
-          {ELECTRONIC_SIGNATURE_NOTE}
-        </div>
-      </div>
+      <p className="authorized-text">AUTHORIZED SIGNATORY</p>
+      <p className="signature-note">{ELECTRONIC_SIGNATURE_NOTE}</p>
+
+      <style jsx>{`
+        .signature-block {
+          display: flex;
+          width: 56mm;
+          min-height: 36mm;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-end;
+          text-align: center;
+        }
+
+        .signature-combined-image {
+          display: block;
+          width: 25mm !important;
+          height: auto !important;
+          max-width: none !important;
+          max-height: none !important;
+          object-fit: contain;
+          object-position: center;
+          margin: 0 auto 0.1mm !important;
+          transform: none !important;
+          position: static !important;
+        }
+
+        .signature-layered {
+          position: relative;
+          width: 48mm;
+          height: 34mm;
+          margin: 0 auto 0.4mm;
+          overflow: visible;
+        }
+
+        .stamp-image {
+          position: absolute;
+          top: 0;
+          left: 50%;
+          width: 30mm;
+          height: 30mm;
+          object-fit: contain;
+          object-position: center;
+          transform: translateX(-50%);
+        }
+
+        .signature-image {
+          position: absolute;
+          bottom: 0;
+          left: 50%;
+          width: 42mm;
+          height: 16mm;
+          object-fit: contain;
+          object-position: center;
+          transform: translateX(-50%);
+        }
+
+        .authorized-text {
+          margin: 0 !important;
+          color: #020617 !important;
+          font-size: 2mm;
+          font-weight: 900;
+          line-height: 1.1;
+          letter-spacing: 0.3mm;
+          text-transform: uppercase;
+        }
+
+        .signature-note {
+          margin: 0.4mm 0 0 !important;
+          max-width: 52mm;
+          color: #334155 !important;
+          font-size: 1.55mm;
+          font-weight: 600;
+          line-height: 1.2;
+        }
+      `}</style>
     </div>
   );
 }
@@ -104,9 +171,19 @@ const QuotationPreview = forwardRef<HTMLElement, QuotationPreviewProps>(function
         }}
       >
         <style jsx>{`
+          .quotation-page {
+            width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
+            max-height: 297mm !important;
+            overflow: hidden !important;
+            position: relative;
+            background: #ffffff;
+          }
+
           .quotation-export-safe {
             width: 210mm;
-            height: 300mm;
+            height: 297mm;
             position: relative;
             background-color: #ffffff !important;
             color: #0f172a !important;
@@ -173,6 +250,88 @@ const QuotationPreview = forwardRef<HTMLElement, QuotationPreviewProps>(function
           .quotation-export-safe .signature-image {
             background-color: transparent !important;
           }
+
+          .letterpad-footer-mask {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 19mm;
+            background: #ffffff;
+            z-index: 1;
+          }
+
+          .custom-letterpad-footer {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 18.5mm;
+            z-index: 2;
+            overflow: hidden;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          .custom-footer-shape {
+            position: absolute;
+            inset: 0;
+            width: 210mm;
+            height: 18.5mm;
+          }
+
+          .footer-left {
+            position: absolute;
+            left: 10.5mm;
+            bottom: 3.4mm;
+            color: #ffffff !important;
+            font-size: 3mm;
+            font-weight: 900;
+            line-height: 1.18;
+            letter-spacing: 0;
+          }
+
+          .footer-right {
+            position: absolute;
+            right: 9.5mm;
+            bottom: 3.4mm;
+            color: #ffffff !important;
+            font-size: 2.9mm;
+            font-weight: 900;
+            line-height: 1.18;
+            text-align: right;
+            white-space: nowrap;
+          }
+
+          .footer-left p,
+          .footer-right p {
+            margin: 0;
+            color: #ffffff !important;
+          }
+
+          .quotation-content {
+            position: absolute;
+            z-index: 3;
+            top: 46mm;
+            left: 16mm;
+            right: 16mm;
+            bottom: 22mm;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+          }
+
+          .signature-area-bottom {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 6mm;
+            display: grid;
+            grid-template-columns: 1fr 64mm;
+            gap: 8mm;
+            align-items: end;
+          }
+
           @media print {
             .stamp-image,
             .signature-image {
@@ -191,7 +350,29 @@ const QuotationPreview = forwardRef<HTMLElement, QuotationPreviewProps>(function
             backgroundRepeat: "no-repeat",
           }}
         >
-          <div className="q-text-900 relative flex min-h-[297mm] flex-col px-[14mm] pb-[26mm] pt-[38mm]">
+          <div className="letterpad-footer-mask" />
+          <div className="custom-letterpad-footer" aria-hidden="true">
+            <svg
+              className="custom-footer-shape"
+              viewBox="0 0 210 18"
+              preserveAspectRatio="none"
+            >
+              <path d="M0 0 H150 L142 18 H0 Z" fill="#ef3b2d" />
+              <path d="M150 0 H210 V18 H142 Z" fill="#0b8f43" />
+              <path d="M142 0 H151 L143 18 H134 Z" fill="#ffffff" />
+            </svg>
+
+            <div className="footer-left">
+              <p>Contact</p>
+              <p>+977 9848938375, 9803463674</p>
+            </div>
+
+            <div className="footer-right">
+              <p>Website: proudnepal.com.np</p>
+              <p>Email: proudnepalits@gmail.com</p>
+            </div>
+          </div>
+          <div className="quotation-content q-text-900">
             <div>
               <div className="flex items-start justify-between gap-4">
                 <div className="client-details max-w-[115mm]">
@@ -362,42 +543,44 @@ const QuotationPreview = forwardRef<HTMLElement, QuotationPreviewProps>(function
               </div>
             </div>
 
-            <div className="mt-0.5">
-              <div className="grid gap-3 md:grid-cols-[1fr_74mm]">
-                <div className="space-y-3">
-                  <div className="notes space-y-1.5 px-1 py-1 pl-3">
-                    {STATIC_QUOTATION_HIGHLIGHTS.map((item) => (
-                      <div key={item} className="q-text-800 flex items-start gap-2 text-[9.5px] leading-4">
-                        <span className="q-text-700 pt-[1px] text-[10px] font-semibold">
-                          &#10003;
-                        </span>
-                        <span>{item}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="regards-block q-text-800 mt-40 px-1 py-1 text-[9.5px] leading-4">
-                    <p className="q-text-700 text-[10px] font-medium tracking-[0.02em]">
-                      {STATIC_QUOTATION_PREPARED_BY.heading}
-                    </p>
-                    <p className="q-text-900 mt-2 text-[10px] font-semibold">
-                      {STATIC_QUOTATION_PREPARED_BY.name}
-                    </p>
-                    <div className="q-text-700 mt-2 space-y-0.5 text-[9.5px]">
-                      <p className="q-text-700 font-medium">Call</p>
-                      <p className="q-text-900 font-medium tracking-[0.04em]">
-                        {STATIC_QUOTATION_PREPARED_BY.contact}
-                      </p>
+            <div className="signature-area-bottom">
+              <div className="space-y-3">
+                <div className="notes space-y-1.5 px-1 py-1 pl-3">
+                  {STATIC_QUOTATION_HIGHLIGHTS.map((item) => (
+                    <div key={item} className="q-text-800 flex items-start gap-2 text-[9.5px] leading-4">
+                      <span className="q-text-700 pt-[1px] text-[10px] font-semibold">
+                        &#10003;
+                      </span>
+                      <span>{item}</span>
                     </div>
-                  </div>
+                  ))}
                 </div>
 
-                <div className="mt-40 flex items-end justify-end">
-                  <SignatureBlock
-                    stamp={draft.assets.stamp}
-                    signature={draft.assets.signature}
-                  />
+                <div className="regards-block q-text-800 mt-40 px-1 py-1 text-[9.5px] leading-4">
+                  <p className="q-text-700 text-[10px] font-medium tracking-[0.02em]">
+                    {STATIC_QUOTATION_PREPARED_BY.heading}
+                  </p>
+                  <p className="q-text-900 mt-2 text-[10px] font-semibold">
+                    {STATIC_QUOTATION_PREPARED_BY.name}
+                  </p>
+                  <div className="q-text-700 mt-2 space-y-0.5 text-[9.5px]">
+                    <p className="q-text-700 font-medium">Call</p>
+                    <p className="q-text-900 font-medium tracking-[0.04em]">
+                      {STATIC_QUOTATION_PREPARED_BY.contact}
+                    </p>
+                    <p className="q-text-700 pt-1 font-medium">Email</p>
+                    <p className="q-text-900 font-medium tracking-[0.02em]">
+                      {STATIC_QUOTATION_PREPARED_BY.email}
+                    </p>
+                  </div>
                 </div>
+              </div>
+
+              <div className="flex items-end justify-end">
+                <SignatureBlock
+                  stamp={draft.assets.stamp}
+                  signature={draft.assets.signature}
+                />
               </div>
             </div>
           </div>

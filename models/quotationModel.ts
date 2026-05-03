@@ -31,9 +31,11 @@ export interface IQuotation extends Document {
   grandTotal: number;
   terms?: string | null;
   preparedBy: {
+    heading?: string | null;
     name?: string | null;
     role?: string | null;
     contact?: string | null;
+    email?: string | null;
   };
   assets: {
     letterpad: string;
@@ -127,9 +129,11 @@ const quotationSchema = new Schema<IQuotation>(
       maxlength: 3000,
     },
     preparedBy: {
+      heading: { type: String, default: null, trim: true, maxlength: 80 },
       name: { type: String, default: null, trim: true, maxlength: 120 },
       role: { type: String, default: null, trim: true, maxlength: 120 },
       contact: { type: String, default: null, trim: true, maxlength: 160 },
+      email: { type: String, default: null, trim: true, maxlength: 160 },
     },
     assets: {
       letterpad: { type: String, required: true, trim: true, maxlength: 500 },

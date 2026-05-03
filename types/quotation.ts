@@ -21,9 +21,11 @@ export interface QuotationAssetPaths {
 }
 
 export interface QuotationPreparedBy {
+  heading?: string;
   name?: string;
   role?: string;
   contact?: string;
+  email?: string;
 }
 
 export interface QuotationDraft {

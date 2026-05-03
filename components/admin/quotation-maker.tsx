@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Download, Eye, FilePlus2, Loader2, Printer, Save, Trash2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Eye,
+  FilePlus2,
+  Loader2,
+  Printer,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import QuotationItemRow from "@/components/admin/quotation-item-row";
 import QuotationPreview from "@/components/admin/quotation-preview";
@@ -22,6 +32,8 @@ import {
 } from "@/lib/server/actions/admin/quotation/quotationActions";
 import { quotationSchema } from "@/lib/validations/quotation";
 import { QuotationDraft, QuotationItemInput, QuotationRecord } from "@/types/quotation";
+
+const SAVED_QUOTATIONS_PER_PAGE = 4;
 
 interface QuotationMakerProps {
   initialQuotations: QuotationRecord[];
@@ -69,9 +81,11 @@ function createBlankDraft(
     taxValue: 0,
     terms: defaults.terms || DEFAULT_QUOTATION_TERMS,
     preparedBy: {
+      heading: STATIC_QUOTATION_PREPARED_BY.heading,
       name: STATIC_QUOTATION_PREPARED_BY.name,
       role: "",
       contact: STATIC_QUOTATION_PREPARED_BY.contact,
+      email: STATIC_QUOTATION_PREPARED_BY.email,
     },
     assets: {
       letterpad: defaults.assets.letterpad || DEFAULT_QUOTATION_ASSETS.letterpad,
@@ -104,8 +118,11 @@ export default function QuotationMaker({
   const [draft, setDraft] = useState<QuotationDraft>(() =>
     initialQuotations[0] ?? createBlankDraft(nextQuotationNumber, defaults)
   );
+  const [savedQuotationPage, setSavedQuotationPage] = useState(1);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [deleteTarget, setDeleteTarget] = useState<QuotationRecord | null>(null);
+  const [selectedSavedQuotationIds, setSelectedSavedQuotationIds] = useState<string[]>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const previewRef = useRef<HTMLElement | null>(null);
   const quotationPageRef = useRef<HTMLElement | null>(null);
@@ -120,12 +137,44 @@ export default function QuotationMaker({
   }, [quotations, selectedQuotationId]);
 
   const totals = useMemo(() => computeQuotationTotals(draft), [draft]);
+  const savedQuotationTotalPages = Math.max(
+    1,
+    Math.ceil(quotations.length / SAVED_QUOTATIONS_PER_PAGE)
+  );
+  const paginatedQuotations = useMemo(() => {
+    const start = (savedQuotationPage - 1) * SAVED_QUOTATIONS_PER_PAGE;
+    return quotations.slice(start, start + SAVED_QUOTATIONS_PER_PAGE);
+  }, [quotations, savedQuotationPage]);
+  const allVisibleSavedQuotationsSelected =
+    paginatedQuotations.length > 0 &&
+    paginatedQuotations.every((quotation) => selectedSavedQuotationIds.includes(quotation.id));
+
+  useEffect(() => {
+    setSavedQuotationPage((current) => Math.min(current, savedQuotationTotalPages));
+  }, [savedQuotationTotalPages]);
 
   const createNewDraft = () => {
     const generatedNumber = getNextQuotationNumberFromList(quotations);
     setSelectedQuotationId(null);
     setDraft(createBlankDraft(generatedNumber, defaults));
     setFormErrors({});
+  };
+
+  const toggleSavedQuotationSelection = (quotationId: string) => {
+    setSelectedSavedQuotationIds((current) =>
+      current.includes(quotationId)
+        ? current.filter((id) => id !== quotationId)
+        : [...current, quotationId]
+    );
+  };
+
+  const toggleAllVisibleSavedQuotations = () => {
+    if (allVisibleSavedQuotationsSelected) {
+      setSelectedSavedQuotationIds([]);
+      return;
+    }
+
+    setSelectedSavedQuotationIds(paginatedQuotations.map((quotation) => quotation.id));
   };
 
   const setField = <K extends keyof QuotationDraft>(key: K, value: QuotationDraft[K]) => {
@@ -147,6 +196,16 @@ export default function QuotationMaker({
       ...current,
       assets: {
         ...current.assets,
+        [field]: value,
+      },
+    }));
+  };
+
+  const setPreparedByField = (field: keyof QuotationDraft["preparedBy"], value: string) => {
+    setDraft((current) => ({
+      ...current,
+      preparedBy: {
+        ...current.preparedBy,
         [field]: value,
       },
     }));
@@ -240,6 +299,7 @@ export default function QuotationMaker({
           (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
       });
+      setSavedQuotationPage(1);
       setSelectedQuotationId(response.data.id);
       setDraft(response.data);
       toast.success(response.message);
@@ -247,20 +307,29 @@ export default function QuotationMaker({
   };
 
   const handleDelete = () => {
-    if (!deleteTarget) return;
+    const targets = deleteTarget
+      ? [deleteTarget]
+      : quotations.filter((quotation) => selectedSavedQuotationIds.includes(quotation.id));
+
+    if (targets.length === 0) return;
 
     startTransition(async () => {
-      const response = await deleteQuotationAction(deleteTarget.id);
-      if (!response.success) {
-        toast.error(response.message);
+      const results = await Promise.all(targets.map((quotation) => deleteQuotationAction(quotation.id)));
+      const failed = results.find((result) => !result.success);
+
+      if (failed) {
+        toast.error(failed.message);
         return;
       }
 
-      const remaining = quotations.filter((item) => item.id !== deleteTarget.id);
+      const deletedIds = new Set(targets.map((quotation) => quotation.id));
+      const remaining = quotations.filter((item) => !deletedIds.has(item.id));
       setQuotations(remaining);
       setDeleteTarget(null);
+      setBulkDeleteOpen(false);
+      setSelectedSavedQuotationIds((current) => current.filter((id) => !deletedIds.has(id)));
 
-      if (selectedQuotationId === deleteTarget.id) {
+      if (selectedQuotationId && deletedIds.has(selectedQuotationId)) {
         if (remaining[0]) {
           setSelectedQuotationId(remaining[0].id);
           setDraft(remaining[0]);
@@ -270,7 +339,11 @@ export default function QuotationMaker({
         }
       }
 
-      toast.success(response.message);
+      toast.success(
+        targets.length === 1
+          ? results[0].message
+          : `${targets.length} quotations deleted successfully.`
+      );
     });
   };
 
@@ -348,86 +421,34 @@ export default function QuotationMaker({
         }
       `}</style>
 
-      <div>
-        <div className="mb-2 flex items-center gap-2">
-          <span className="flex h-2 w-2 rounded-full bg-red-500" />
-          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500">
-            Quotation Admin
-          </span>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="mb-2 flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-red-500" />
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-red-500">
+              Quotation Admin
+            </span>
+          </div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">
+            Professional Quotation Maker
+          </h1>
+          <p className="mt-1 max-w-3xl text-sm text-slate-500">
+            Create multi-page A4 quotations using the exact Proud Nepal letterpad background,
+            then print or save the same preview as PDF.
+          </p>
         </div>
-        <h1 className="text-2xl font-black tracking-tight text-slate-900">
-          Professional Quotation Maker
-        </h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-500">
-          Create multi-page A4 quotations using the exact Proud Nepal letterpad background,
-          then print or save the same preview as PDF.
-        </p>
+        <Button
+          type="button"
+          onClick={createNewDraft}
+          className="rounded-xl bg-red-600 hover:bg-red-700 sm:mt-1"
+        >
+          <FilePlus2 className="h-4 w-4" />
+          New Quotation
+        </Button>
       </div>
 
       <div className="grid gap-6 2xl:grid-cols-[0.95fr_1.05fr]">
         <div className="admin-no-print space-y-6">
-          <section className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-lg font-black tracking-tight text-slate-900">
-                  Saved Quotations
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Load, update, or remove existing quotations from the admin system.
-                </p>
-              </div>
-              <Button
-                type="button"
-                onClick={createNewDraft}
-                className="rounded-xl bg-red-600 hover:bg-red-700"
-              >
-                <FilePlus2 className="h-4 w-4" />
-                New Quotation
-              </Button>
-            </div>
-
-            <div className="mt-4 max-h-[320px] space-y-3 overflow-y-auto pr-1">
-              {quotations.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-400">
-                  No quotations have been saved yet.
-                </div>
-              ) : (
-                quotations.map((quotation) => (
-                  <div
-                    key={quotation.id}
-                    className={`rounded-2xl border p-4 transition ${
-                      selectedQuotationId === quotation.id
-                        ? "border-red-200 bg-red-50/70"
-                        : "border-slate-200 bg-slate-50/60"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedQuotationId(quotation.id)}
-                        className="min-w-0 text-left"
-                      >
-                        <p className="font-semibold text-slate-900">{quotation.quotationNumber}</p>
-                        <p className="mt-1 text-sm text-slate-600">{quotation.subject}</p>
-                        <p className="mt-1 text-xs text-slate-400">
-                          {quotation.party.clientName} • {quotation.quotationDate}
-                        </p>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(quotation)}
-                        className="rounded-lg border border-slate-200 p-2 text-red-600 transition hover:bg-red-50"
-                        aria-label={`Delete ${quotation.quotationNumber}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-
           <section className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -650,21 +671,11 @@ export default function QuotationMaker({
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                   <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">
-                    Letter Pad Assets
+                    Letterhead & Signature
                   </h3>
                   <div className="mt-4 grid items-start gap-4">
                     <div className="rounded-[24px] border border-slate-200 bg-white/80 p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
                       <div className="space-y-4">
-                        <div className="space-y-1.5">
-                          <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
-                            Letter Pad Image Path
-                          </label>
-                          <Input
-                            value={draft.assets.letterpad}
-                            onChange={(event) => setAssetField("letterpad", event.target.value)}
-                            className="h-11 w-full rounded-xl border-slate-200 bg-white px-3 text-sm leading-5 text-slate-700 focus-visible:border-red-300 focus-visible:ring-red-200"
-                          />
-                        </div>
                         <div className="space-y-1.5">
                           <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
                             Signature Image Path
@@ -681,29 +692,54 @@ export default function QuotationMaker({
                     <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[linear-gradient(160deg,#ffffff,#f8fafc)] shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
                       <div className="border-b border-slate-200 bg-white/70 px-5 py-3">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-red-600">
-                          Fixed Regards Block
+                          Regards Block
                         </p>
                       </div>
                       <div className="space-y-3 p-4">
-                        <div className="rounded-2xl bg-white/90 px-4 py-3.5 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
-                          <div className="flex flex-col gap-1.5">
-                            <p className="text-[11px] font-medium tracking-[0.01em] text-slate-700">
-                              {STATIC_QUOTATION_PREPARED_BY.heading}
-                            </p>
-                            <p className="text-sm font-semibold leading-5 text-slate-900">
-                              {STATIC_QUOTATION_PREPARED_BY.name}
-                            </p>
-                            <div className="space-y-0.5 text-sm text-slate-700">
-                              <p className="font-medium">Call</p>
-                              <p className="break-all font-medium text-slate-900">
-                                {STATIC_QUOTATION_PREPARED_BY.contact}
-                              </p>
-                            </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1.5">
+                            <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                              Regards Status
+                            </label>
+                            <Input
+                              value={draft.preparedBy.heading || ""}
+                              onChange={(event) => setPreparedByField("heading", event.target.value)}
+                              className="h-11 rounded-xl border-slate-200 bg-white"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                              Team / Name
+                            </label>
+                            <Input
+                              value={draft.preparedBy.name || ""}
+                              onChange={(event) => setPreparedByField("name", event.target.value)}
+                              className="h-11 rounded-xl border-slate-200 bg-white"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                              Number
+                            </label>
+                            <Input
+                              value={draft.preparedBy.contact || ""}
+                              onChange={(event) => setPreparedByField("contact", event.target.value)}
+                              className="h-11 rounded-xl border-slate-200 bg-white"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                              Email
+                            </label>
+                            <Input
+                              value={draft.preparedBy.email || ""}
+                              onChange={(event) => setPreparedByField("email", event.target.value)}
+                              className="h-11 rounded-xl border-slate-200 bg-white"
+                            />
                           </div>
                         </div>
                         <p className="text-xs leading-5 text-slate-500">
-                          This regards block is fixed for all quotations and appears in the same
-                          styled format on the live preview and exported PDF.
+                          Website stays fixed as {STATIC_QUOTATION_PREPARED_BY.website}.
                         </p>
                       </div>
                     </div>
@@ -763,30 +799,31 @@ export default function QuotationMaker({
           }}
           className="quotation-print-stage space-y-4"
         >
-          <div className="admin-no-print rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="admin-no-print rounded-[24px] border border-slate-200 bg-white/95 px-4 py-3 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
-                <div className="mt-0.5 rounded-full bg-red-50 p-2 text-red-500">
+                <div className="mt-0.5 rounded-full bg-red-50 p-1.5 text-red-500">
                   <Eye className="h-4 w-4" />
                 </div>
-                <div>
-                  <h2 className="text-lg font-black tracking-tight text-slate-900">
+                <div className="max-w-3xl">
+                  <h2 className="text-base font-black tracking-tight text-slate-900">
                     Quotation Preview
                   </h2>
-                  <p className="mt-1 text-sm text-slate-600">
+                  <p className="mt-0.5 text-xs leading-5 text-slate-500">
                     This live preview shows exactly how the quotation will look when you print it
-                    or download it as PDF. The letter pad, signature, and fixed regards block
+                    or download it as PDF. The letterhead, signature, and regards block
                     update this layout directly.
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2 sm:justify-end">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handlePrint}
-                  className="rounded-xl border-slate-200"
+                  size="sm"
+                  className="rounded-lg border-slate-200 bg-white"
                 >
                   <Printer className="h-4 w-4" />
                   Print Quotation
@@ -795,7 +832,8 @@ export default function QuotationMaker({
                   type="button"
                   variant="outline"
                   onClick={handleDownloadPdf}
-                  className="rounded-xl border-slate-200"
+                  size="sm"
+                  className="rounded-lg border-slate-200 bg-white"
                 >
                   <Download className="h-4 w-4" />
                   Download PDF
@@ -812,16 +850,205 @@ export default function QuotationMaker({
         </section>
       </div>
 
+      <section className="admin-no-print overflow-hidden rounded-[30px] border border-slate-200 bg-white shadow-sm">
+            <div className="flex flex-col gap-3 border-b border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-black tracking-tight text-slate-900">
+                  Saved Quotations
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Showing {paginatedQuotations.length} of {quotations.length} quotations.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                {selectedSavedQuotationIds.length > 0 ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={toggleAllVisibleSavedQuotations}
+                      className="rounded-xl border-slate-200"
+                    >
+                      {allVisibleSavedQuotationsSelected ? "Clear Selection" : "Select All Visible"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setBulkDeleteOpen(true)}
+                      className="rounded-xl border-red-200 text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete Selected ({selectedSavedQuotationIds.length})
+                    </Button>
+                  </>
+                ) : null}
+                <Button
+                  onClick={createNewDraft}
+                  className="rounded-xl bg-red-600 hover:bg-red-700"
+                >
+                  <FilePlus2 className="h-4 w-4" />
+                  New Quotation
+                </Button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b border-slate-200 bg-slate-50">
+                  <tr>
+                    <th className="px-5 py-4 text-center text-xs font-semibold uppercase tracking-widest text-slate-500">
+                      <input
+                        type="checkbox"
+                        checked={allVisibleSavedQuotationsSelected}
+                        onChange={toggleAllVisibleSavedQuotations}
+                        className="h-4 w-4 rounded border-slate-300"
+                        aria-label="Select all visible saved quotations"
+                      />
+                    </th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-widest text-slate-500">
+                      Quotation
+                    </th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-widest text-slate-500">
+                      Client
+                    </th>
+                    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-widest text-slate-500">
+                      Date
+                    </th>
+                    <th className="px-5 py-4 text-right text-xs font-semibold uppercase tracking-widest text-slate-500">
+                      Total
+                    </th>
+                    <th className="px-5 py-4 text-center text-xs font-semibold uppercase tracking-widest text-slate-500">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paginatedQuotations.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-5 py-10 text-center text-sm text-slate-400">
+                        No quotations have been saved yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedQuotations.map((quotation) => (
+                      <tr
+                        key={quotation.id}
+                        className={`transition hover:bg-slate-50 ${
+                          selectedQuotationId === quotation.id ? "bg-red-50/70" : "bg-white"
+                        }`}
+                      >
+                        <td className="px-5 py-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedSavedQuotationIds.includes(quotation.id)}
+                            onChange={() => toggleSavedQuotationSelection(quotation.id)}
+                            className="h-4 w-4 rounded border-slate-300"
+                            aria-label={`Select ${quotation.quotationNumber}`}
+                          />
+                        </td>
+                        <td className="px-5 py-4">
+                          <p className="font-semibold text-slate-900">
+                            {quotation.quotationNumber}
+                          </p>
+                          <p className="mt-1 max-w-[260px] truncate text-sm text-slate-500">
+                            {quotation.subject}
+                          </p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <p className="font-medium text-slate-800">
+                            {quotation.party.clientName || "Not provided"}
+                          </p>
+                          {quotation.party.clientCompanyName ? (
+                            <p className="mt-1 max-w-[220px] truncate text-xs text-slate-400">
+                              {quotation.party.clientCompanyName}
+                            </p>
+                          ) : null}
+                        </td>
+                        <td className="px-5 py-4 text-sm text-slate-600">
+                          {quotation.quotationDate}
+                        </td>
+                        <td className="px-5 py-4 text-right text-sm font-semibold text-slate-900">
+                          {formatCurrency(quotation.grandTotal, quotation.currency)}
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedQuotationId(quotation.id)}
+                              className="rounded-lg bg-slate-50 p-2 text-slate-700 transition hover:bg-slate-100"
+                              aria-label={`Load ${quotation.quotationNumber}`}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget(quotation)}
+                              className="rounded-lg bg-red-50 p-2 text-red-700 transition hover:bg-red-100"
+                              aria-label={`Delete ${quotation.quotationNumber}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {quotations.length > SAVED_QUOTATIONS_PER_PAGE ? (
+              <div className="flex flex-col gap-3 border-t border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-500">
+                  Page <span className="font-semibold text-slate-700">{savedQuotationPage}</span>{" "}
+                  of{" "}
+                  <span className="font-semibold text-slate-700">{savedQuotationTotalPages}</span>
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSavedQuotationPage((page) => Math.max(1, page - 1))}
+                    disabled={savedQuotationPage === 1}
+                    className="rounded-xl border-slate-200"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Prev
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setSavedQuotationPage((page) =>
+                        Math.min(savedQuotationTotalPages, page + 1)
+                      )
+                    }
+                    disabled={savedQuotationPage === savedQuotationTotalPages}
+                    className="rounded-xl border-slate-200"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+      </section>
+
       <ConfirmDialog
-        open={!!deleteTarget}
+        open={!!deleteTarget || bulkDeleteOpen}
         onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
+          if (!open) {
+            setDeleteTarget(null);
+            setBulkDeleteOpen(false);
+          }
         }}
-        title="Delete quotation?"
+        title={deleteTarget ? "Delete quotation?" : "Delete selected quotations?"}
         description={
           deleteTarget
             ? `This will permanently delete ${deleteTarget.quotationNumber}. This action cannot be undone.`
-            : ""
+            : `This will permanently delete ${selectedSavedQuotationIds.length} selected quotations. This action cannot be undone.`
         }
         confirmLabel="Delete"
         onConfirm={handleDelete}

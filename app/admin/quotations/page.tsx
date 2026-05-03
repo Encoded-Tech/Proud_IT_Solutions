@@ -26,7 +26,7 @@ export default async function AdminQuotationsPage() {
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
           {response.message}
         </div>
-      ) : null}
+      ) : null} 
       <QuotationMaker
         initialQuotations={data.quotations}
         nextQuotationNumber={data.nextQuotationNumber}

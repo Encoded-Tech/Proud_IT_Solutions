@@ -30,9 +30,11 @@ export const quotationSchema = z.object({
   taxValue: z.number().min(0).max(100000000).default(0),
   terms: z.string().trim().max(3000).optional().or(z.literal("")),
   preparedBy: z.object({
+    heading: z.string().trim().max(80).optional().or(z.literal("")),
     name: z.string().trim().max(120).optional().or(z.literal("")),
     role: z.string().trim().max(120).optional().or(z.literal("")),
     contact: z.string().trim().max(160).optional().or(z.literal("")),
+    email: z.string().trim().email("Enter a valid email.").max(160).optional().or(z.literal("")),
   }),
   assets: z.object({
     letterpad: z.string().trim().min(1, "Letter pad path is required.").max(500),

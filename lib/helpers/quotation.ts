@@ -24,6 +24,8 @@ export const STATIC_QUOTATION_PREPARED_BY = {
   heading: "Regards",
   name: "ProudNepal Service & Warranty Team",
   contact: "9867174242",
+  email: "proudnepalits@gmail.com",
+  website: "proudnepal.com.np",
 } as const;
 
 export const ELECTRONIC_SIGNATURE_NOTE =
