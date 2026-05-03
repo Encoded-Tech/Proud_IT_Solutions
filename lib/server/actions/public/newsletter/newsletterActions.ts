@@ -241,6 +241,7 @@ export async function getPublishedPromotionsAction() {
         subject: campaign.subject,
         previewText: campaign.previewText ?? "",
         body: campaign.body,
+        imageUrl: (campaign as { imageUrl?: string | null }).imageUrl ?? "",
         ctaLabel: campaign.ctaLabel ?? "",
         ctaUrl: campaign.ctaUrl ?? "",
         targetPath: (campaign as { targetPath?: string | null }).targetPath ?? "",
@@ -284,6 +285,7 @@ export async function getPromotionBySlugAction(slug: string) {
       body: string;
       ctaLabel?: string | null;
       ctaUrl?: string | null;
+      imageUrl?: string | null;
       publishedAt?: Date | null;
       createdAt: Date;
       audience: string;
@@ -305,6 +307,7 @@ export async function getPromotionBySlugAction(slug: string) {
         subject: campaign.subject,
         previewText: campaign.previewText ?? "",
         body: campaign.body,
+        imageUrl: campaign.imageUrl ?? "",
         ctaLabel: campaign.ctaLabel ?? "",
         ctaUrl: campaign.ctaUrl ?? "",
         targetPath: (campaign as { targetPath?: string | null }).targetPath ?? "",

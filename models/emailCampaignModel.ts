@@ -5,6 +5,7 @@ export interface IEmailCampaign extends Document {
   subject: string;
   previewText?: string | null;
   body: string;
+  imageUrl?: string | null;
   targetType?: "none" | "page" | "category" | "brand" | "product";
   targetValue?: string | null;
   targetLabel?: string | null;
@@ -68,6 +69,12 @@ const emailCampaignSchema = new Schema<IEmailCampaign>(
       required: true,
       trim: true,
       maxlength: 20000,
+    },
+    imageUrl: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 1000,
     },
     targetType: {
       type: String,

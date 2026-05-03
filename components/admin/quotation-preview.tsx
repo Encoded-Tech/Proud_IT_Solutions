@@ -364,7 +364,7 @@ const QuotationPreview = forwardRef<HTMLElement, QuotationPreviewProps>(function
 
             <div className="footer-left">
               <p>Contact</p>
-              <p>+977 9848938375, 9803463674</p>
+              <p>9867174242</p>
             </div>
 
             <div className="footer-right">

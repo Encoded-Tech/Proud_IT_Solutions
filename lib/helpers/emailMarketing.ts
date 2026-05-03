@@ -15,6 +15,21 @@ function sanitizeUrl(value?: string) {
   return APP_URL || "#";
 }
 
+function sanitizeOptionalUrl(value?: string) {
+  if (!value?.trim()) return "";
+
+  try {
+    const candidate = new URL(value, APP_URL);
+    if (candidate.protocol === "http:" || candidate.protocol === "https:") {
+      return candidate.toString();
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, "&amp;")
@@ -37,6 +52,8 @@ export function buildMarketingEmailTemplate(input: {
   body: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  imageUrl?: string;
+  imageAlt?: string;
   footerNote?: string;
   footerHtml?: string;
 }) {
@@ -48,6 +65,8 @@ export function buildMarketingEmailTemplate(input: {
   const safeHeading = escapeHtml(input.heading);
   const safeCtaLabel = input.ctaLabel ? escapeHtml(input.ctaLabel) : "";
   const safeCtaUrl = sanitizeUrl(input.ctaUrl);
+  const safeImageUrl = sanitizeOptionalUrl(input.imageUrl);
+  const safeImageAlt = escapeHtml(input.imageAlt || input.heading);
   const bodyHtml = textToHtmlParagraphs(input.body);
 
   return `
@@ -68,6 +87,17 @@ export function buildMarketingEmailTemplate(input: {
           }
         </div>
         <div style="padding:32px;">
+          ${
+            safeImageUrl
+              ? `<div style="margin:0 0 24px;">
+                  <img
+                    src="${safeImageUrl}"
+                    alt="${safeImageAlt}"
+                    style="display:block;width:100%;max-width:100%;height:auto;border:0;border-radius:16px;object-fit:cover;"
+                  />
+                </div>`
+              : ""
+          }
           <div style="font-size:15px;line-height:1.75;color:#3f3f46;">
             ${bodyHtml}
           </div>

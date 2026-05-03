@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,7 @@ interface MarketingOverview {
     failureCount: number;
     skippedCount?: number;
     publishedToSite: boolean;
+    imageUrl?: string | null;
     targetType?: "none" | "page" | "category" | "brand" | "product";
     targetLabel?: string | null;
     targetPath?: string | null;
@@ -85,14 +86,8 @@ function getClientErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong. Please try again.";
 }
 
-export default function EmailMarketingPanel({
-  initialOverview,
-}: EmailMarketingPanelProps) {
-  const campaignsPerPage = 4;
-  const [overview, setOverview] = useState(initialOverview);
-  const [isSending, startSendTransition] = useTransition();
-  const [isDeleting, startDeleteTransition] = useTransition();
-  const [form, setForm] = useState({
+function createEmptyCampaignForm() {
+  return {
     subject: "",
     previewText: "",
     audience: "newsletter-users-and-guests",
@@ -101,22 +96,47 @@ export default function EmailMarketingPanel({
     targetType: "none",
     targetValue: "",
     publishToSite: true,
-  });
+    imageFile: null as File | null,
+    imagePreview: "",
+  };
+}
+
+const RECENT_CAMPAIGNS_PER_PAGE = 2;
+
+export default function EmailMarketingPanel({
+  initialOverview,
+}: EmailMarketingPanelProps) {
+  const [overview, setOverview] = useState(initialOverview);
+  const [isSending, startSendTransition] = useTransition();
+  const [isDeleting, startDeleteTransition] = useTransition();
+  const [form, setForm] = useState(createEmptyCampaignForm);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MarketingOverview["campaigns"][number] | null>(
     null
   );
-  const [campaignPage, setCampaignPage] = useState(1);
+  const [recentCampaignPage, setRecentCampaignPage] = useState(1);
   const [campaignProgress, setCampaignProgress] = useState<CampaignProgress | null>(null);
+  const [imageInputKey, setImageInputKey] = useState(0);
+  const totalRecentCampaignPages = Math.max(
+    1,
+    Math.ceil(overview.campaigns.length / RECENT_CAMPAIGNS_PER_PAGE)
+  );
 
   useEffect(() => {
     setOverview(initialOverview);
   }, [initialOverview]);
 
   useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(overview.campaigns.length / campaignsPerPage));
-    setCampaignPage((current) => Math.min(current, totalPages));
-  }, [overview.campaigns.length]);
+    setRecentCampaignPage((page) => Math.min(page, totalRecentCampaignPages));
+  }, [totalRecentCampaignPages]);
+
+  useEffect(() => {
+    return () => {
+      if (form.imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(form.imagePreview);
+      }
+    };
+  }, [form.imagePreview]);
 
   const refreshOverview = async () => {
     try {
@@ -133,6 +153,43 @@ export default function EmailMarketingPanel({
     }
   };
 
+  const updateCampaignImage = (file: File | null) => {
+    setForm((current) => {
+      if (current.imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(current.imagePreview);
+      }
+
+      if (!file) {
+        return {
+          ...current,
+          imageFile: null,
+          imagePreview: "",
+        };
+      }
+
+      return {
+        ...current,
+        imageFile: file,
+        imagePreview: URL.createObjectURL(file),
+      };
+    });
+  };
+
+  const clearCampaignImage = () => {
+    updateCampaignImage(null);
+  };
+
+  const resetCampaignForm = () => {
+    setForm((current) => {
+      if (current.imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(current.imagePreview);
+      }
+
+      return createEmptyCampaignForm();
+    });
+    setImageInputKey((current) => current + 1);
+  };
+
   const submitCampaign = () => {
     setConfirmOpen(false);
     startSendTransition(async () => {
@@ -146,6 +203,9 @@ export default function EmailMarketingPanel({
         formData.set("targetType", form.targetType);
         formData.set("targetValue", form.targetValue);
         formData.set("publishToSite", form.publishToSite ? "true" : "false");
+        if (form.imageFile) {
+          formData.set("image", form.imageFile);
+        }
 
         const queued = await createBulkEmailCampaignJobAction(formData);
 
@@ -197,16 +257,7 @@ export default function EmailMarketingPanel({
         }
 
         if ((response.data?.sentCount ?? 0) > 0) {
-          setForm((current) => ({
-            ...current,
-            subject: "",
-            previewText: "",
-            body: "",
-            ctaLabel: "",
-            targetType: "none",
-            targetValue: "",
-            publishToSite: true,
-          }));
+          resetCampaignForm();
         }
         await refreshOverview();
       } catch (error) {
@@ -256,6 +307,11 @@ export default function EmailMarketingPanel({
       toast.error("Select the campaign destination before sending.");
       return;
     }
+
+    if (form.imageFile && form.imageFile.size > 5 * 1024 * 1024) {
+      toast.error("Campaign image must be 5MB or smaller.");
+      return;
+    }
     setConfirmOpen(true);
   };
 
@@ -271,11 +327,10 @@ export default function EmailMarketingPanel({
             : [];
 
   const selectedTarget = targetOptions.find((option) => option.value === form.targetValue);
-  const totalCampaignPages = Math.max(1, Math.ceil(overview.campaigns.length / campaignsPerPage));
-  const visibleCampaigns = useMemo(() => {
-    const start = (campaignPage - 1) * campaignsPerPage;
-    return overview.campaigns.slice(start, start + campaignsPerPage);
-  }, [campaignPage, overview.campaigns]);
+  const paginatedCampaigns = overview.campaigns.slice(
+    (recentCampaignPage - 1) * RECENT_CAMPAIGNS_PER_PAGE,
+    recentCampaignPage * RECENT_CAMPAIGNS_PER_PAGE
+  );
   const completedProgressCount = campaignProgress
     ? campaignProgress.sentCount + campaignProgress.failedCount + campaignProgress.skippedCount
     : 0;
@@ -367,6 +422,55 @@ export default function EmailMarketingPanel({
                 placeholder="Short snippet shown in email inbox previews"
                 className="border-slate-200 bg-white"
               />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                Campaign Image
+              </label>
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">
+                      Add a banner or product image to this campaign
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      PNG, JPG, or WebP up to 5MB. The image will appear in the email and public
+                      promotion page.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      key={imageInputKey}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => updateCampaignImage(e.target.files?.[0] ?? null)}
+                      className="max-w-[240px] border-slate-200 bg-white text-sm file:mr-3 file:rounded-md file:border-0 file:bg-red-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-red-700 hover:file:bg-red-100"
+                    />
+                    {form.imagePreview && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={clearCampaignImage}
+                        className="h-10 rounded-lg border-slate-200 px-3"
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {form.imagePreview && (
+                  <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    <img
+                      src={form.imagePreview}
+                      alt="Campaign preview"
+                      className="h-48 w-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
@@ -574,8 +678,17 @@ export default function EmailMarketingPanel({
                 No campaigns sent yet.
               </div>
             ) : (
-              visibleCampaigns.map((campaign) => (
+              paginatedCampaigns.map((campaign) => (
                 <div key={campaign.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                  {campaign.imageUrl && (
+                    <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                      <img
+                        src={campaign.imageUrl}
+                        alt={campaign.subject}
+                        className="h-32 w-full object-cover"
+                      />
+                    </div>
+                  )}
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-slate-800">{campaign.subject}</p>
@@ -622,19 +735,19 @@ export default function EmailMarketingPanel({
             )}
           </div>
 
-          {overview.campaigns.length > campaignsPerPage && (
+          {overview.campaigns.length > RECENT_CAMPAIGNS_PER_PAGE && (
             <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-200 pt-4">
               <p className="text-xs text-slate-500">
-                Page <span className="font-semibold text-slate-700">{campaignPage}</span> of{" "}
-                <span className="font-semibold text-slate-700">{totalCampaignPages}</span>
+                Page <span className="font-semibold text-slate-700">{recentCampaignPage}</span> of{" "}
+                <span className="font-semibold text-slate-700">{totalRecentCampaignPages}</span>
               </p>
               <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setCampaignPage((page) => Math.max(1, page - 1))}
-                  disabled={campaignPage === 1}
+                  onClick={() => setRecentCampaignPage((page) => Math.max(1, page - 1))}
+                  disabled={recentCampaignPage === 1}
                   className="rounded-lg border-slate-200"
                 >
                   Previous
@@ -644,9 +757,9 @@ export default function EmailMarketingPanel({
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setCampaignPage((page) => Math.min(totalCampaignPages, page + 1))
+                    setRecentCampaignPage((page) => Math.min(totalRecentCampaignPages, page + 1))
                   }
-                  disabled={campaignPage === totalCampaignPages}
+                  disabled={recentCampaignPage === totalRecentCampaignPages}
                   className="rounded-lg border-slate-200"
                 >
                   Next

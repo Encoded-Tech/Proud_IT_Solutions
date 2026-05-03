@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Types } from "mongoose";
 import { connectDB } from "@/db";
 import { buildAppUrl } from "@/config/env";
+import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { requireAdmin } from "@/lib/auth/requireSession";
 import { generateSlug } from "@/lib/helpers/slugify";
 import { buildMarketingEmailTemplate } from "@/lib/helpers/emailMarketing";
@@ -101,6 +102,7 @@ type CampaignJobDocument = {
   status: string;
   currentRecipient?: string | null;
   publishedToSite: boolean;
+  imageUrl?: string | null;
   ctaLabel?: string | null;
   ctaUrl?: string | null;
   failures?: CampaignFailure[];
@@ -456,6 +458,7 @@ async function sendCampaignToRecipients(input: {
   subject: string;
   previewText?: string;
   body: string;
+  imageUrl?: string;
   ctaLabel?: string;
   ctaUrl?: string;
 }): Promise<CampaignSendSummary> {
@@ -525,6 +528,8 @@ async function sendCampaignToRecipients(input: {
           heading,
           previewText: input.previewText,
           body: input.body,
+          imageUrl: input.imageUrl,
+          imageAlt: input.subject,
           ctaLabel: input.ctaLabel,
           ctaUrl: input.ctaUrl,
           footerHtml: buildCampaignFooterHtml(recipient.email),
@@ -629,6 +634,7 @@ export async function getEmailMarketingOverview(): Promise<
       failureCount: number;
       skippedCount: number;
       publishedToSite: boolean;
+      imageUrl?: string | null;
       targetType?: CampaignTargetType;
       targetLabel?: string | null;
       targetPath?: string | null;
@@ -682,6 +688,7 @@ export async function getEmailMarketingOverview(): Promise<
           failureCount: campaign.failureCount,
           skippedCount: campaign.skippedCount ?? 0,
           publishedToSite: campaign.publishedToSite,
+          imageUrl: (campaign as { imageUrl?: string | null }).imageUrl ?? null,
           targetType: campaign.targetType ?? "none",
           targetLabel: campaign.targetLabel ?? null,
           targetPath: campaign.targetPath ?? null,
@@ -1028,14 +1035,22 @@ export async function deleteEmailCampaignAction(campaignId: string): Promise<Act
     }
 
     const deletedCampaign = await EmailCampaign.findByIdAndDelete(campaignId)
-      .select("slug publishedToSite")
-      .lean<{ slug?: string | null; publishedToSite?: boolean } | null>();
+      .select("slug publishedToSite imageUrl")
+      .lean<{ slug?: string | null; publishedToSite?: boolean; imageUrl?: string | null } | null>();
 
     if (!deletedCampaign) {
       return {
         success: false,
         message: "Promotion not found or already deleted.",
       };
+    }
+
+    if (deletedCampaign.imageUrl) {
+      try {
+        await deleteFromCloudinary(deletedCampaign.imageUrl);
+      } catch (error) {
+        console.warn("deleteEmailCampaignAction image cleanup failed:", error);
+      }
     }
 
     revalidatePath("/admin/newsletter");
@@ -1218,6 +1233,8 @@ export async function sendBulkEmailCampaignAction(
 export async function createBulkEmailCampaignJobAction(
   formData: FormData
 ): Promise<ActionResult<{ campaignId: string; totalRecipients: number }>> {
+  let uploadedImageUrl: string | null = null;
+
   try {
     await connectDB();
     const admin = await requireAdmin();
@@ -1233,6 +1250,25 @@ export async function createBulkEmailCampaignJobAction(
       ctaUrl: formData.get("ctaUrl") || "",
       publishToSite: formData.get("publishToSite") !== "false",
     });
+
+    const rawImage = formData.get("image");
+    if (rawImage instanceof File && rawImage.size > 0) {
+      if (!rawImage.type.startsWith("image/")) {
+        return {
+          success: false,
+          message: "Campaign image must be an image file.",
+        };
+      }
+
+      if (rawImage.size > 5 * 1024 * 1024) {
+        return {
+          success: false,
+          message: "Campaign image must be 5MB or smaller.",
+        };
+      }
+
+      uploadedImageUrl = await uploadToCloudinary(rawImage, "newsletter/campaigns");
+    }
 
     const targetOptions = await getCampaignTargetOptions();
     const target = resolveCampaignTarget({
@@ -1281,6 +1317,7 @@ export async function createBulkEmailCampaignJobAction(
       failures: [],
       startedAt: null,
       completedAt: null,
+      imageUrl: uploadedImageUrl,
     });
 
     revalidatePath("/admin/newsletter");
@@ -1294,6 +1331,14 @@ export async function createBulkEmailCampaignJobAction(
       },
     };
   } catch (error) {
+    if (uploadedImageUrl) {
+      try {
+        await deleteFromCloudinary(uploadedImageUrl);
+      } catch (cleanupError) {
+        console.warn("createBulkEmailCampaignJobAction image cleanup failed:", cleanupError);
+      }
+    }
+
     console.error("createBulkEmailCampaignJobAction failed:", error);
     return {
       success: false,
@@ -1368,6 +1413,7 @@ export async function sendEmailCampaignJobAction(
       subject: campaign.subject,
       previewText: normalizeOptional(campaign.previewText ?? undefined),
       body: campaign.body,
+      imageUrl: (campaign as { imageUrl?: string | null }).imageUrl ?? undefined,
       ctaLabel: normalizeOptional(campaign.ctaLabel ?? undefined),
       ctaUrl: normalizeOptional(campaign.ctaUrl ?? undefined),
     });
