@@ -1,11 +1,16 @@
 import { Schema, Document, model, models, Types, deleteModel } from "mongoose";
 import type { ProductHighlight } from "@/types/product";
 
-const PRODUCT_SLUG_WORD_LIMIT = 3;
-const PRODUCT_SLUG_BASE_LIMIT = 48;
+const PRODUCT_SLUG_BASE_LIMIT = 70;
 
 function buildShortProductSlug(name: string, id: Types.ObjectId) {
-  const base = name
+  const slugName =
+    name
+      .split("|")
+      .map((part) => part.trim())
+      .find(Boolean) || name.trim();
+
+  const base = slugName
     .toLowerCase()
     .trim()
     .replace(/%/g, "percent")
@@ -16,15 +21,10 @@ function buildShortProductSlug(name: string, id: Types.ObjectId) {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .split("-")
-    .filter(Boolean)
-    .slice(0, PRODUCT_SLUG_WORD_LIMIT)
-    .join("-")
     .slice(0, PRODUCT_SLUG_BASE_LIMIT)
     .replace(/-+$/g, "");
 
-  const suffix = id.toString().slice(-6);
-  return base ? `${base}-${suffix}` : `product-${suffix}`;
+  return base || `product-${id.toString().slice(-6)}`;
 }
 
 export interface IProduct extends Document {
@@ -119,7 +119,7 @@ discountPercent: { type: Number, default: 0 },
   //     this.slug = this.name.toLowerCase().replace(/\s+/g, "-");
   //   }
 
-  productSchema.pre("save", function (next) {
+  productSchema.pre("save", async function (next) {
   if (this.isModified("name")) {
     // Generate URL-safe slug from name
     this.slug = this.name
@@ -154,7 +154,13 @@ discountPercent: { type: Number, default: 0 },
       this.slug = this.slug.substring(0, 100).replace(/-+$/, '');
     }
 
-    this.slug = buildShortProductSlug(this.name, this._id);
+    const slug = buildShortProductSlug(this.name, this._id);
+    const existingProduct = await (this.constructor as typeof Product).exists({
+      _id: { $ne: this._id },
+      slug,
+    });
+
+    this.slug = existingProduct ? `${slug}-${this._id.toString().slice(-6)}` : slug;
   }
     next();
   });
