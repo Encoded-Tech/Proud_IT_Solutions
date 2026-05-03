@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  deleteEmailCampaignAction,
   getEmailMarketingOverview,
   sendBulkEmailCampaignAction,
 } from "@/lib/server/actions/admin/customers/emailMarketingActions";
@@ -82,6 +84,9 @@ export default function EmailMarketingPanel({
     publishToSite: true,
   });
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<MarketingOverview["campaigns"][number] | null>(
+    null
+  );
   const [campaignPage, setCampaignPage] = useState(1);
 
   useEffect(() => {
@@ -140,6 +145,29 @@ export default function EmailMarketingPanel({
           targetValue: "",
           publishToSite: true,
         }));
+        await refreshOverview();
+      } catch (error) {
+        toast.error(getClientErrorMessage(error));
+      }
+    });
+  };
+
+  const deleteCampaign = () => {
+    if (!deleteTarget) return;
+
+    const campaignId = deleteTarget.id;
+    setDeleteTarget(null);
+
+    startTransition(async () => {
+      try {
+        const response = await deleteEmailCampaignAction(campaignId);
+
+        if (!response.success) {
+          toast.error(response.message || "Promotion could not be deleted.");
+          return;
+        }
+
+        toast.success(response.message || "Promotion deleted.");
         await refreshOverview();
       } catch (error) {
         toast.error(getClientErrorMessage(error));
@@ -212,6 +240,20 @@ export default function EmailMarketingPanel({
         confirmLabel="Send Campaign"
         pending={isPending}
         onConfirm={submitCampaign}
+      />
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title="Delete this promotion?"
+        description={`This will permanently delete "${deleteTarget?.subject ?? "this promotion"}"${
+          deleteTarget?.publishedToSite ? " and remove it from the public promotions page." : "."
+        }`}
+        confirmLabel="Delete Promotion"
+        pending={isPending}
+        tone="danger"
+        onConfirm={deleteCampaign}
       />
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -415,17 +457,31 @@ export default function EmailMarketingPanel({
                         {audienceLabels[campaign.audience] || campaign.audience}
                       </p>
                     </div>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                        campaign.status === "completed"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : campaign.status === "partial"
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-red-50 text-red-700"
-                      }`}
-                    >
-                      {campaign.status}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                          campaign.status === "completed"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : campaign.status === "partial"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-red-50 text-red-700"
+                        }`}
+                      >
+                        {campaign.status}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => setDeleteTarget(campaign)}
+                        aria-label={`Delete ${campaign.subject}`}
+                        title="Delete promotion"
+                        className="h-8 w-8 rounded-lg border-red-100 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
                     <span>{campaign.recipientCount} recipients</span>

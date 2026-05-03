@@ -844,6 +844,56 @@ export async function deleteNewsletterSubscribersAction(input: {
   }
 }
 
+export async function deleteEmailCampaignAction(campaignId: string): Promise<ActionResult> {
+  try {
+    await connectDB();
+    await requireAdmin();
+
+    if (!Types.ObjectId.isValid(campaignId)) {
+      return {
+        success: false,
+        message: "Promotion identifier is invalid.",
+      };
+    }
+
+    const deletedCampaign = await EmailCampaign.findByIdAndDelete(campaignId)
+      .select("slug publishedToSite")
+      .lean<{ slug?: string | null; publishedToSite?: boolean } | null>();
+
+    if (!deletedCampaign) {
+      return {
+        success: false,
+        message: "Promotion not found or already deleted.",
+      };
+    }
+
+    revalidatePath("/admin/newsletter");
+    revalidatePath("/admin/users");
+    revalidatePath("/promotions");
+
+    if (deletedCampaign.slug) {
+      revalidatePath(`/promotions/${deletedCampaign.slug}`);
+      revalidateTag(`promotion:${deletedCampaign.slug}`, "max");
+    }
+
+    revalidateTag("promotions", "max");
+    revalidateTag("homepage", "max");
+
+    return {
+      success: true,
+      message: deletedCampaign.publishedToSite
+        ? "Promotion deleted from the website."
+        : "Campaign deleted.",
+    };
+  } catch (error) {
+    console.error("deleteEmailCampaignAction failed:", error);
+    return {
+      success: false,
+      message: getSafeErrorMessage(error, "Unable to delete promotion."),
+    };
+  }
+}
+
 export async function sendCustomEmailToUserAction(
   formData: FormData
 ): Promise<ActionResult> {
