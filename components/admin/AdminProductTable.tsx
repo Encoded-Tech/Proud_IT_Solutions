@@ -489,6 +489,7 @@ export function mapProductTypeToFormProduct(p: productType): Product {
     price: p.price,
     stock: p.stock,
     description: p.description,
+    highlights: p.highlights ?? [],
     category: {
       id: p.category?.id || "",
       categoryName: p.category.categoryName,

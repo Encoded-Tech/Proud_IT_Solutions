@@ -1,7 +1,7 @@
 "use client";
 
 import { Icon } from "@iconify/react";
-import { Minus, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowDown, ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
 
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -71,6 +71,9 @@ export default function ProductPageClient({
   const activeIsOfferActive = selectedVariant?.isOfferActive ?? isOfferedPriceActive;
   const activeStock = selectedVariant?.stock ?? stock;
   const activeImages = selectedVariant?.images?.length ? selectedVariant.images : product.images;
+  const highlights = Array.isArray(product.highlights)
+    ? product.highlights.filter((item) => item?.label && item?.specs).slice(0, 6)
+    : [];
 
 
 
@@ -137,6 +140,12 @@ export default function ProductPageClient({
   const increaseQuantity = () => {
     if (quantity >= availableStock) return toast.error(`Only ${availableStock} items in stock`);
     setQuantity((prev) => prev + 1);
+  };
+
+  const scrollToDescription = () => {
+    document
+      .getElementById("product-description")
+      ?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -510,20 +519,72 @@ export default function ProductPageClient({
           )}
           {availableStock < 1 && <p className="text-red-500 font-semibold my-8">Out of Stock!</p>}
           {!isActive && <p className="text-red-500 font-semibold my-8">This product is not available!</p>}
+
+          {highlights.length > 0 && (
+            <section className="pt-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Highlights
+                  </h3>
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                <div className="grid grid-cols-1 lg:grid-cols-2">
+                {[0, 1].map((column) => {
+                  const columnItems = highlights.slice(column * 3, column * 3 + 3);
+
+                  if (columnItems.length === 0) return null;
+
+                  return (
+                    <div
+                      key={column}
+                      className={`p-4 sm:p-5 ${column === 0 ? "border-b border-slate-200 lg:border-b-0 lg:border-r" : ""} border-slate-200`}
+                    >
+                      {columnItems.map((highlight, index) => (
+                        <div
+                          key={`${highlight.label}-${column}-${index}`}
+                          className={`relative pl-4 ${index < columnItems.length - 1 ? "mb-4 pb-4 border-b border-slate-100" : ""}`}
+                        >
+                          <span className="absolute left-0 top-1 h-[calc(100%-0.15rem)] w-0.5 rounded-full bg-primarymain/80" />
+                          <p className="break-words text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                            {highlight.label}
+                          </p>
+                          <p className="mt-2 break-words text-[15px] font-semibold leading-relaxed text-slate-900">
+                            {highlight.specs}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={scrollToDescription}
+                className="group mt-7 inline-flex items-center gap-2 text-sm font-semibold text-primarymain transition hover:text-red-700"
+              >
+                See full description
+                <ArrowDown className="h-4 w-4 transition-transform group-hover:translate-y-1" />
+              </button>
+            </section>
+          )}
         </div>
       </section>
-
-     {/* Description */}
-{/* Description */}
-<div className="space-y-4">
-  <h2 className="text-2xl font-medium">Description</h2>
-  <div className="h-max text-sm md:p-4 p-2 bg-zinc-100 rounded-md">
-    <div
-      className="prose max-w-none"
-      dangerouslySetInnerHTML={{ __html: description ?? "" }}
-    />
-  </div>
-</div>
+      {/* Description */}
+      <section id="product-description" className="space-y-4 scroll-mt-24">
+        <h2 className="text-2xl font-medium">Description</h2>
+        <div className="h-max text-sm md:p-4 p-2 bg-zinc-100 rounded-md">
+          <div
+            className="prose max-w-none"
+            dangerouslySetInnerHTML={{ __html: description ?? "" }}
+          />
+        </div>
+      </section>
 
 
       {/* Reviews */}

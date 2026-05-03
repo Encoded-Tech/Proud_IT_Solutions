@@ -6,6 +6,7 @@ import { IProduct, Product } from "@/models/productModel";
 import { ApiResponse } from "@/types/api";
 import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { sanitizeProductHighlights } from "@/lib/helpers/productHighlights";
 
 //total apis
 //product-get-by-slug api/product/[slug]
@@ -21,6 +22,16 @@ function revalidateProductCaches(slug?: string) {
     if (slug) {
         revalidateTag(`product:${slug}`, "max");
         revalidatePath(`/products/${slug}`);
+    }
+}
+
+function parseHighlights(value: FormDataEntryValue | null) {
+    if (!value) return [];
+
+    try {
+        return sanitizeProductHighlights(JSON.parse(value.toString()));
+    } catch {
+        return [];
     }
 }
 
@@ -75,6 +86,7 @@ export const PUT = withAuth(
         const name = formData.get("name") as string;
         const price = formData.get("price") as string;
         const description = formData.get("description") as string;
+        const highlights = parseHighlights(formData.get("highlights"));
         const category = formData.get("category") as string;
        const rawStock = formData.get("stock") as string;
 const stock = rawStock ? parseInt(rawStock, 10) : undefined;
@@ -92,6 +104,7 @@ const stock = rawStock ? parseInt(rawStock, 10) : undefined;
         if (description) {
             productToUpdate.description = description;
         }
+        productToUpdate.highlights = highlights;
         if (category) {
             productToUpdate.category = category;
         }

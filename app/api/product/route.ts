@@ -8,6 +8,7 @@ import { ApiResponse } from "@/types/api";
 import { Types } from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { sanitizeProductHighlights } from "@/lib/helpers/productHighlights";
 
 //total apis
 //product-get-all api/product 
@@ -22,6 +23,16 @@ function revalidateProductCaches(slug?: string) {
   if (slug) {
     revalidateTag(`product:${slug}`, "max");
     revalidatePath(`/products/${slug}`);
+  }
+}
+
+function parseHighlights(value: FormDataEntryValue | null) {
+  if (!value) return [];
+
+  try {
+    return sanitizeProductHighlights(JSON.parse(value.toString()));
+  } catch {
+    return [];
   }
 }
 
@@ -64,6 +75,7 @@ export const POST = withAuth(
 
       const stock = parseInt(formData.get("stock") as string, 10) || 0;
       const description = formData.get("description") as string;
+      const highlights = parseHighlights(formData.get("highlights"));
       const category = formData.get("category") as string;
 
       const images = formData.getAll("images") as File[];
@@ -204,6 +216,7 @@ export const POST = withAuth(
       const product = await Product.create({
         name,
         description,
+        highlights,
         price: priceNumber,
         stock,
         reservedStock: 0,

@@ -1,6 +1,7 @@
 
 import { IProduct } from "@/models/productModel";
 import { productType, VariantType } from "@/types/product";
+import { sanitizeProductHighlights } from "@/lib/helpers/productHighlights";
 
 // types/server/product-populated.ts
 import { Types } from "mongoose";
@@ -51,6 +52,7 @@ export function mapProductToFrontend(
     name: product.name,
     slug: product.slug,
     description: product.description || "",
+    highlights: sanitizeProductHighlights(product.highlights),
     images: product.images || [],
     price: product.price,
     stock: product.stock,

@@ -256,6 +256,7 @@ const ProductImages = ({
               sizes="(min-width: 1024px) 70vw, 100vw"
               quality={100}
               priority
+              loading="eager"
               unoptimized
               placeholder="empty"
               className={cn(

@@ -1,4 +1,5 @@
-import { Schema, Document, model, models, Types } from "mongoose";
+import { Schema, Document, model, models, Types, deleteModel } from "mongoose";
+import type { ProductHighlight } from "@/types/product";
 
 const PRODUCT_SLUG_WORD_LIMIT = 3;
 const PRODUCT_SLUG_BASE_LIMIT = 48;
@@ -31,6 +32,7 @@ export interface IProduct extends Document {
     name: string;
     slug: string;
     description?: string;
+    highlights?: ProductHighlight[] | null;
     price: number;
     stock: number;
     reservedStock:  number;
@@ -76,6 +78,15 @@ export interface IProduct extends Document {
       name: { type: String, required: true, trim: true, unique: true  },
       slug: { type: String, lowercase: true, trim: true, unique: true },
       description: { type: String },
+      highlights: {
+        type: [
+          {
+            label: { type: String, trim: true },
+            specs: { type: String, trim: true },
+          },
+        ],
+        default: [],
+      },
       price: { type: Number, required: true },
       stock: { type: Number, required: true, default: 0 },
       reservedStock: { type: Number, default: 0 },
@@ -154,6 +165,10 @@ discountPercent: { type: Number, default: 0 },
   productSchema.index({ totalSales: -1, isActive: 1 });
   productSchema.index({ discountPercent: -1, isActive: 1 });
   
+  if (models.Product && !models.Product.schema.path("highlights")) {
+    deleteModel("Product");
+  }
+
   export const Product =
     models.Product || model<IProduct>("Product", productSchema);
   

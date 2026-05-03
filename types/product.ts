@@ -1,8 +1,14 @@
+export type ProductHighlight = {
+  label: string;
+  specs: string;
+};
+
 export interface productType {
   id: string;
   name: string;
   slug: string;
   description: string;
+  highlights?: ProductHighlight[] | null;
   images?: string[] | null;
   price: number;
   stock: number;

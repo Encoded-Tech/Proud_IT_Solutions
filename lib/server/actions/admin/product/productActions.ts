@@ -405,7 +405,8 @@ import { requireAdmin } from "@/lib/auth/requireSession";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { productType } from "@/types/product";
 import { mapProductToFrontend } from "@/lib/server/mappers/MapProductData";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag, updateTag } from "next/cache";
+import { sanitizeProductHighlights } from "@/lib/helpers/productHighlights";
 
 /* ------------------------ API RESPONSE TYPES ------------------------ */
 export interface ActionResult<T = undefined> {
@@ -421,14 +422,27 @@ function revalidateProductCaches(slug?: string) {
   revalidatePath("/admin/product");
   revalidateTag("products", "max");
   revalidateTag("homepage", "max");
+  updateTag("products");
+  updateTag("homepage");
   if (slug) {
     revalidateTag(`product:${slug}`, "max");
+    updateTag(`product:${slug}`);
     revalidatePath(`/products/${slug}`);
   }
 }
 
 function normalizeAdminLabel(value: string) {
   return value.trim().toUpperCase();
+}
+
+function parseHighlights(value: FormDataEntryValue | null) {
+  if (!value) return [];
+
+  try {
+    return sanitizeProductHighlights(JSON.parse(value.toString()));
+  } catch {
+    return [];
+  }
 }
 
 /* ------------------------ CREATE PRODUCT ------------------------ */
@@ -446,6 +460,7 @@ export async function createProductAction(formData: FormData): Promise<ActionRes
     const price = Number(priceRaw);
     const stock = Number(formData.get("stock")) || 0;
     const description = formData.get("description")?.toString() || "";
+    const highlights = parseHighlights(formData.get("highlights"));
     const category = formData.get("category")?.toString() || "";
     const images = formData.getAll("images") as File[];
 
@@ -521,6 +536,7 @@ if (discountPercent !== undefined) {
     const product = await Product.create({
       name,
       description,
+      highlights,
       price,
       stock,
       reservedStock: 0,
@@ -577,6 +593,7 @@ export async function updateProductAction({ productId, formData }: UpdateProduct
     const price = formData.get("price") ? Number(formData.get("price")!.toString()) : undefined;
     const stock = formData.get("stock") ? parseInt(formData.get("stock")!.toString(), 10) : undefined;
     const description = formData.get("description")?.toString();
+    const highlights = parseHighlights(formData.get("highlights"));
     const category = formData.get("category")?.toString();
     const isActiveRaw = formData.get("isActive")?.toString();
     const isActive = isActiveRaw !== undefined ? isActiveRaw === "true" : undefined;
@@ -647,6 +664,7 @@ if (discountPercent === undefined) {
     if (price !== undefined) productToUpdate.price = price;
     if (stock !== undefined) productToUpdate.stock = stock;
     if (description) productToUpdate.description = description;
+    productToUpdate.highlights = highlights;
     if (category) productToUpdate.category = category;
     if (isActive !== undefined) productToUpdate.isActive = isActive;
     if (tags) productToUpdate.tags = tags;

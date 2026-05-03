@@ -111,7 +111,7 @@ export default function RichTextEditor({ value = "", onChange }: Props) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ codeBlock: false }),
+      StarterKit.configure({ codeBlock: false, link: false, underline: false }),
       Underline,
       Highlight.configure({ multicolor: true }),
       TextStyle,

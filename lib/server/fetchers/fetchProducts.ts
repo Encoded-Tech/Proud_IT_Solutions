@@ -50,7 +50,7 @@ interface FilteredParams {
 }
 
 const PRODUCT_SELECT =
-  "name slug description price stock reservedStock category images variants reviews avgRating totalReviews totalSales offeredPrice tags brandName isOfferedPriceActive discountPercent offerStartDate offerEndDate isActive createdAt updatedAt";
+  "name slug description highlights price stock reservedStock category images variants reviews avgRating totalReviews totalSales offeredPrice tags brandName isOfferedPriceActive discountPercent offerStartDate offerEndDate isActive createdAt updatedAt";
 
 async function queryProducts(
   page: number,

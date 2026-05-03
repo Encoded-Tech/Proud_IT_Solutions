@@ -15,6 +15,7 @@ import {
   Tag,
   Image as ImageIcon,
   Sparkles,
+  ListChecks,
 } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
@@ -34,8 +35,9 @@ import {
 } from "@/lib/server/actions/admin/product/productActions";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
-import { VariantType } from "@/types/product";
+import { ProductHighlight, VariantType } from "@/types/product";
 import RichTextEditor from "@/components/admin/RichTextEditor";
+import { MAX_PRODUCT_HIGHLIGHTS, sanitizeProductHighlights } from "@/lib/helpers/productHighlights";
 
 // ─── Shared utility ───────────────────────────────────────────────────────────
 // Use this wherever you render product.description on the frontend too
@@ -69,6 +71,7 @@ export interface Product {
   price: number;
   stock: number;
   description: string;
+  highlights?: ProductHighlight[] | null;
   category: {
     id: string;
     categoryName: string;
@@ -117,6 +120,9 @@ export function AddProductForm({
   const [buttonState, setButtonState] = useState<"idle" | "loading" | "success">("idle");
   const [tagsList, setTagsList] = useState<string[]>(
     editProduct?.tags?.map(t => t.name) || []
+  );
+  const [highlights, setHighlights] = useState<ProductHighlight[]>(
+    sanitizeProductHighlights(editProduct?.highlights)
   );
   const [tagInput, setTagInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
@@ -204,6 +210,30 @@ export function AddProductForm({
     setTagInput("");
   };
 
+  const updateHighlight = (
+    index: number,
+    field: keyof ProductHighlight,
+    value: string
+  ) => {
+    setHighlights((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item
+      )
+    );
+  };
+
+  const addHighlight = () => {
+    setHighlights((current) =>
+      current.length >= MAX_PRODUCT_HIGHLIGHTS
+        ? current
+        : [...current, { label: "", specs: "" }]
+    );
+  };
+
+  const removeHighlight = (index: number) => {
+    setHighlights((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  };
+
   const onSubmit = async (data: ProductFormData) => {
     try {
       setButtonState("loading");
@@ -214,6 +244,7 @@ export function AddProductForm({
       formData.append("stock", String(data.stock));
       // Sanitize description before saving — removes unsupported LAB/oklch colors
       formData.append("description", sanitizeDescription(data.description || ""));
+      formData.append("highlights", JSON.stringify(sanitizeProductHighlights(highlights)));
       formData.append("category", data.category);
       formData.append("tags", JSON.stringify(tagsList.map(t => ({ name: t }))));
       formData.append("brandName", normalizeAdminLabel(data.brandName || ""));
@@ -248,6 +279,7 @@ export function AddProductForm({
           setImages([]);
           setImagePreview([]);
           setTagsList([]);
+          setHighlights([]);
         }
         setButtonState("idle");
       }, 1200);
@@ -341,7 +373,70 @@ export function AddProductForm({
           </div>
         </div>
 
-        {/* ── Pricing & Inventory ── */}
+        {/* Product Highlights */}
+        <div className="space-y-6 bg-gradient-to-br from-rose-50 via-white to-slate-50 p-8 rounded-2xl border border-rose-200">
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b-2 border-rose-200">
+            <div className="flex items-center gap-3">
+              <ListChecks className="w-6 h-6 text-red-600" />
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800">Product Highlights</h3>
+                <p className="text-sm text-gray-500">Add up to 6 quick specifications for the product page.</p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={addHighlight}
+              disabled={highlights.length >= MAX_PRODUCT_HIGHLIGHTS}
+              className="h-11 bg-red-600 hover:bg-red-700 text-white rounded-xl disabled:opacity-50"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Highlight
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+            {highlights.length === 0 && (
+              <div className="rounded-xl border-2 border-dashed border-rose-200 bg-white p-5 text-sm text-gray-500">
+                No highlights added yet.
+              </div>
+            )}
+
+            {highlights.map((highlight, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-1 md:grid-cols-[1fr_1.4fr_auto] gap-3 rounded-xl border border-rose-100 bg-white p-4 shadow-sm"
+              >
+                <Input
+                  value={highlight.label}
+                  onChange={(event) => updateHighlight(index, "label", event.target.value)}
+                  placeholder="Label e.g. Memory"
+                  className="h-12 border-2 border-rose-100 focus:border-red-500 focus:ring-4 focus:ring-red-100 rounded-xl"
+                />
+                <Input
+                  value={highlight.specs}
+                  onChange={(event) => updateHighlight(index, "specs", event.target.value)}
+                  placeholder="Specs e.g. 16GB DDR4 RAM"
+                  className="h-12 border-2 border-rose-100 focus:border-red-500 focus:ring-4 focus:ring-red-100 rounded-xl"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => removeHighlight(index)}
+                  className="h-12 rounded-xl border-red-200 text-red-600 hover:bg-red-50"
+                  aria-label={`Remove highlight ${index + 1}`}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+
+            <p className="text-xs text-gray-500">
+              Empty rows and incomplete rows are removed automatically before saving.
+            </p>
+          </div>
+        </div>
+
+        {/* Pricing & Inventory */}
         <div className="space-y-6 bg-gradient-to-br from-emerald-50 to-teal-50 p-8 rounded-2xl border border-emerald-200">
           <div className="flex items-center gap-3 pb-4 border-b-2 border-emerald-300">
             <DollarSign className="w-6 h-6 text-emerald-600" />

@@ -43,7 +43,7 @@ export default function Image({
     <NextImage
       alt={alt}
       priority={priority}
-      loading={priority ? undefined : loading ?? "lazy"}
+      loading={loading ?? (priority ? undefined : "lazy")}
       quality={quality ?? 85}
       placeholder={placeholder ?? (canUseBlur ? "blur" : "empty")}
       blurDataURL={blurDataURL ?? (canUseBlur ? defaultBlurDataURL : undefined)}
