@@ -137,6 +137,8 @@ export default function QuotationMaker({
   }, [quotations, selectedQuotationId]);
 
   const totals = useMemo(() => computeQuotationTotals(draft), [draft]);
+  const previewClientLabel =
+    draft.party.clientCompanyName || draft.party.clientName || "Client not selected";
   const savedQuotationTotalPages = Math.max(
     1,
     Math.ceil(quotations.length / SAVED_QUOTATIONS_PER_PAGE)
@@ -777,7 +779,7 @@ export default function QuotationMaker({
                   className="rounded-xl border-slate-200"
                 >
                   <Printer className="h-4 w-4" />
-                  Print Quotation
+                  Print PDF
                 </Button>
                 <Button
                   type="button"
@@ -797,56 +799,95 @@ export default function QuotationMaker({
           ref={(node) => {
             previewRef.current = node;
           }}
-          className="quotation-print-stage space-y-4"
+          className="quotation-print-stage space-y-5 2xl:pt-1"
         >
-          <div className="admin-no-print rounded-[24px] border border-slate-200 bg-white/95 px-4 py-3 shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 rounded-full bg-red-50 p-1.5 text-red-500">
-                  <Eye className="h-4 w-4" />
+          <div className="admin-no-print overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
+            <div className="grid gap-5 p-5 lg:grid-cols-[1fr_auto] lg:p-6">
+              <div className="min-w-0">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 rounded-2xl bg-red-50 p-2.5 text-red-600">
+                    <Eye className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-xl font-black tracking-tight text-slate-950">
+                      Quotation Preview
+                    </h2>
+                  </div>
                 </div>
-                <div className="max-w-3xl">
-                  <h2 className="text-base font-black tracking-tight text-slate-900">
-                    Quotation Preview
-                  </h2>
-                  <p className="mt-0.5 text-xs leading-5 text-slate-500">
-                    This live preview shows exactly how the quotation will look when you print it
-                    or download it as PDF. The letterhead, signature, and regards block
-                    update this layout directly.
-                  </p>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Quotation No.
+                    </p>
+                    <p className="mt-1.5 break-words text-base font-black text-slate-900">
+                      {draft.quotationNumber || "Not set"}
+                    </p>
+                  </div>
+                  <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Client
+                    </p>
+                    <p className="mt-1.5 break-words text-base font-black text-slate-900">
+                      {previewClientLabel}
+                    </p>
+                  </div>
+                  <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Line Items
+                    </p>
+                    <p className="mt-1.5 break-words text-base font-black text-slate-900">
+                      {draft.items.length} item{draft.items.length === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <div className="min-w-0 rounded-2xl border border-red-100 bg-red-50 px-5 py-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-red-600">
+                      Payable Total
+                    </p>
+                    <p className="mt-1.5 break-words text-base font-black text-slate-950">
+                      {formatCurrency(totals.grandTotal, draft.currency)}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2 sm:justify-end">
+              <div className="flex flex-col justify-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 lg:min-w-[220px]">
+                <p className="text-xs font-medium leading-5 text-slate-500">
+                  Print or download the quotation PDF and use it as needed.
+                </p>
+                <div className="flex flex-wrap gap-2 lg:flex-col">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handlePrint}
                   size="sm"
-                  className="rounded-lg border-slate-200 bg-white"
+                  className="rounded-xl border-slate-200 bg-white lg:w-full lg:justify-start"
                 >
                   <Printer className="h-4 w-4" />
-                  Print Quotation
+                  Print PDF
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleDownloadPdf}
                   size="sm"
-                  className="rounded-lg border-slate-200 bg-white"
+                  className="rounded-xl border-slate-200 bg-white lg:w-full lg:justify-start"
                 >
                   <Download className="h-4 w-4" />
                   Download PDF
                 </Button>
+                </div>
               </div>
             </div>
           </div>
-          <QuotationPreview
-            ref={(node) => {
-              quotationPageRef.current = node;
-            }}
-            draft={draft}
-          />
+          <div className="overflow-x-auto px-2 pb-2 sm:px-4 2xl:px-6">
+            <QuotationPreview
+              ref={(node) => {
+                quotationPageRef.current = node;
+              }}
+              draft={draft}
+            />
+          </div>
         </section>
       </div>
 

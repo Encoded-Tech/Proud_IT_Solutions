@@ -33,18 +33,23 @@ export const ELECTRONIC_SIGNATURE_NOTE =
 
 export function formatCurrency(value: number, currency = "NPR") {
   const normalizedCurrency = currency.trim().toUpperCase();
+  const safeValue = Number.isFinite(value) ? value : 0;
+  const hasDecimals = Math.abs(safeValue % 1) > 0;
+  const fractionDigits = hasDecimals ? 2 : 0;
+
   if (normalizedCurrency === "RS" || normalizedCurrency === "NRS") {
     return `Rs. ${new Intl.NumberFormat("en-NP", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Number.isFinite(value) ? value : 0)}`;
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(safeValue)}`;
   }
 
   return new Intl.NumberFormat("en-NP", {
     style: "currency",
     currency: normalizedCurrency || "NPR",
-    maximumFractionDigits: 2,
-  }).format(Number.isFinite(value) ? value : 0);
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(safeValue);
 }
 
 export function computeQuotationTotals(draft: QuotationDraft): QuotationTotals {

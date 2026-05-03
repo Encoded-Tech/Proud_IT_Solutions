@@ -102,6 +102,22 @@ function createEmptyCampaignForm() {
 }
 
 const RECENT_CAMPAIGNS_PER_PAGE = 2;
+const CAMPAIGN_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const CAMPAIGN_IMAGE_ALLOWED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const CAMPAIGN_IMAGE_UPLOAD_ERROR =
+  "Campaign image upload failed. Please use PNG, JPG, or WebP under 5MB.";
+
+function validateCampaignImage(file: File) {
+  if (!CAMPAIGN_IMAGE_ALLOWED_TYPES.has(file.type)) {
+    return "Campaign image must be PNG, JPG, or WebP.";
+  }
+
+  if (file.size > CAMPAIGN_IMAGE_MAX_SIZE) {
+    return "Campaign image must be 5MB or smaller.";
+  }
+
+  return null;
+}
 
 export default function EmailMarketingPanel({
   initialOverview,
@@ -154,6 +170,15 @@ export default function EmailMarketingPanel({
   };
 
   const updateCampaignImage = (file: File | null) => {
+    if (file) {
+      const validationError = validateCampaignImage(file);
+      if (validationError) {
+        toast.error(validationError);
+        setImageInputKey((key) => key + 1);
+        file = null;
+      }
+    }
+
     setForm((current) => {
       if (current.imagePreview.startsWith("blob:")) {
         URL.revokeObjectURL(current.imagePreview);
@@ -261,7 +286,7 @@ export default function EmailMarketingPanel({
         }
         await refreshOverview();
       } catch (error) {
-        toast.error(getClientErrorMessage(error));
+        toast.error(form.imageFile ? CAMPAIGN_IMAGE_UPLOAD_ERROR : getClientErrorMessage(error));
       }
     });
   };
@@ -308,10 +333,14 @@ export default function EmailMarketingPanel({
       return;
     }
 
-    if (form.imageFile && form.imageFile.size > 5 * 1024 * 1024) {
-      toast.error("Campaign image must be 5MB or smaller.");
-      return;
+    if (form.imageFile) {
+      const validationError = validateCampaignImage(form.imageFile);
+      if (validationError) {
+        toast.error(validationError);
+        return;
+      }
     }
+
     setConfirmOpen(true);
   };
 
@@ -443,7 +472,7 @@ export default function EmailMarketingPanel({
                     <Input
                       key={imageInputKey}
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/webp"
                       onChange={(e) => updateCampaignImage(e.target.files?.[0] ?? null)}
                       className="max-w-[240px] border-slate-200 bg-white text-sm file:mr-3 file:rounded-md file:border-0 file:bg-red-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-red-700 hover:file:bg-red-100"
                     />

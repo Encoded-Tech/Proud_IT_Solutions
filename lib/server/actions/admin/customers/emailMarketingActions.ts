@@ -4,7 +4,12 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { Types } from "mongoose";
 import { connectDB } from "@/db";
-import { buildAppUrl } from "@/config/env";
+import {
+  buildAppUrl,
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET,
+  CLOUDINARY_CLOUD_NAME,
+} from "@/config/env";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { requireAdmin } from "@/lib/auth/requireSession";
 import { generateSlug } from "@/lib/helpers/slugify";
@@ -160,6 +165,39 @@ function getSafeErrorMessage(error: unknown, fallback: string) {
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const CAMPAIGN_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const CAMPAIGN_IMAGE_ALLOWED_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const CAMPAIGN_IMAGE_UPLOAD_ERROR =
+  "Campaign image upload failed. Please use PNG, JPG, or WebP under 5MB.";
+
+function validateCampaignImage<T = undefined>(file: File): ActionResult<T> | null {
+  if (!CAMPAIGN_IMAGE_ALLOWED_TYPES.has(file.type)) {
+    return {
+      success: false,
+      message: "Campaign image must be PNG, JPG, or WebP.",
+    };
+  }
+
+  if (file.size > CAMPAIGN_IMAGE_MAX_SIZE) {
+    return {
+      success: false,
+      message: "Campaign image must be 5MB or smaller.",
+    };
+  }
+
+  return null;
+}
+
+function getMissingCloudinaryEnv() {
+  return [
+    ["CLOUDINARY_CLOUD_NAME", CLOUDINARY_CLOUD_NAME],
+    ["CLOUDINARY_API_KEY", CLOUDINARY_API_KEY],
+    ["CLOUDINARY_API_SECRET", CLOUDINARY_API_SECRET],
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+}
 
 function isRateLimitError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
@@ -1253,21 +1291,54 @@ export async function createBulkEmailCampaignJobAction(
 
     const rawImage = formData.get("image");
     if (rawImage instanceof File && rawImage.size > 0) {
-      if (!rawImage.type.startsWith("image/")) {
+      const imageValidationError =
+        validateCampaignImage<{ campaignId: string; totalRecipients: number }>(rawImage);
+      if (imageValidationError) {
+        return imageValidationError;
+      }
+
+      const missingCloudinaryEnv = getMissingCloudinaryEnv();
+      if (missingCloudinaryEnv.length > 0) {
+        console.error("email.campaign.image_upload_missing_env", {
+          missingEnv: missingCloudinaryEnv,
+          destination: "cloudinary:newsletter/campaigns",
+          name: rawImage.name,
+          size: rawImage.size,
+          type: rawImage.type,
+        });
         return {
           success: false,
-          message: "Campaign image must be an image file.",
+          message: CAMPAIGN_IMAGE_UPLOAD_ERROR,
         };
       }
 
-      if (rawImage.size > 5 * 1024 * 1024) {
+      try {
+        console.info("email.campaign.image_upload_start", {
+          destination: "cloudinary:newsletter/campaigns",
+          name: rawImage.name,
+          size: rawImage.size,
+          type: rawImage.type,
+        });
+        uploadedImageUrl = await uploadToCloudinary(rawImage, "newsletter/campaigns");
+        console.info("email.campaign.image_upload_complete", {
+          destination: "cloudinary:newsletter/campaigns",
+          name: rawImage.name,
+          size: rawImage.size,
+          type: rawImage.type,
+        });
+      } catch (uploadError) {
+        console.error("email.campaign.image_upload_failed", {
+          destination: "cloudinary:newsletter/campaigns",
+          name: rawImage.name,
+          size: rawImage.size,
+          type: rawImage.type,
+          reason: truncateLogReason(getSafeErrorMessage(uploadError, "Cloudinary upload failed.")),
+        });
         return {
           success: false,
-          message: "Campaign image must be 5MB or smaller.",
+          message: CAMPAIGN_IMAGE_UPLOAD_ERROR,
         };
       }
-
-      uploadedImageUrl = await uploadToCloudinary(rawImage, "newsletter/campaigns");
     }
 
     const targetOptions = await getCampaignTargetOptions();

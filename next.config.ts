@@ -68,14 +68,26 @@ const securityHeaders = [
   },
 ];
 
+const existingExperimental = {
+  serverActions: {
+    bodySizeLimit: "10mb",
+  },
+  optimizeCss: false,
+};
+
+const existingServerActions = existingExperimental.serverActions;
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
   experimental: {
+    ...existingExperimental,
     serverActions: {
-      bodySizeLimit: '10mb',
+      ...existingServerActions,
+      bodySizeLimit: "6mb",
     },
     // 👇 Add these experimental options for better caching control
     optimizeCss: false, // Can sometimes cause issues with dynamic content
+    proxyClientMaxBodySize: "6mb",
   },
   
   // 👇 Add headers configuration for cache control
