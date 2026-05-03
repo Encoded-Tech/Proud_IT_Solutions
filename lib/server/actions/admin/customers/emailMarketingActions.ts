@@ -53,6 +53,8 @@ const manualSubscriberSchema = z.object({
   name: z.string().trim().max(80).optional().or(z.literal("")),
 });
 
+const emailAddressPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 type Audience = z.infer<typeof emailCampaignSchema>["audience"];
 type SubscriberEntityType = "user" | "guest";
 type CampaignTargetType = z.infer<typeof emailCampaignSchema>["targetType"];
@@ -69,6 +71,42 @@ interface ActionResult<T = undefined> {
   message: string;
   data?: T;
 }
+
+interface CampaignFailure {
+  email: string;
+  reason: string;
+}
+
+interface CampaignSendSummary {
+  totalRecipients: number;
+  sentCount: number;
+  failedCount: number;
+  skippedCount: number;
+  currentRecipient: string | null;
+  failures: CampaignFailure[];
+}
+
+type SendEmailPayload = Parameters<typeof sendEmail>[0];
+
+type CampaignJobDocument = {
+  _id: Types.ObjectId;
+  subject: string;
+  previewText?: string | null;
+  body: string;
+  audience: Audience;
+  recipientCount: number;
+  successCount: number;
+  failureCount: number;
+  skippedCount?: number;
+  status: string;
+  currentRecipient?: string | null;
+  publishedToSite: boolean;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
+  failures?: CampaignFailure[];
+  startedAt?: Date | null;
+  completedAt?: Date | null;
+};
 
 export interface NewsletterSubscriberAdminItem {
   id: string;
@@ -119,6 +157,48 @@ function getSafeErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function isRateLimitError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("429") ||
+    message.includes("rate_limit_exceeded") ||
+    message.includes("Too many requests")
+  );
+}
+
+function truncateLogReason(reason: string) {
+  return reason.length > 500 ? `${reason.slice(0, 500)}...` : reason;
+}
+
+async function sendEmailWithRetry(payload: SendEmailPayload, maxRetries = 3) {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+    try {
+      return await sendEmail(payload);
+    } catch (error) {
+      lastError = error;
+
+      if (!isRateLimitError(error) || attempt === maxRetries) {
+        throw error;
+      }
+
+      const waitMs = [1500, 3000, 5000][attempt] ?? 5000;
+      console.warn("email.campaign.rate_limit_retry", {
+        to: payload.to,
+        attempt: attempt + 1,
+        waitMs,
+        reason: truncateLogReason(getSafeErrorMessage(error, "Rate limited by email provider.")),
+      });
+      await sleep(waitMs);
+    }
+  }
+
+  throw lastError;
+}
+
 function createCampaignSlug(subject: string) {
   const baseSlug = generateSlug(subject) || "newsletter-campaign";
   return `${baseSlug}-${Date.now().toString(36)}`;
@@ -148,6 +228,10 @@ function buildListUnsubscribeHeaders(email: string) {
 
 function toEmailKey(email: string | null | undefined) {
   return email?.trim().toLowerCase() || "";
+}
+
+function isValidCampaignRecipientEmail(email: string) {
+  return emailAddressPattern.test(email.trim());
 }
 
 function normalizePath(path: string) {
@@ -285,6 +369,7 @@ async function createEmailCampaignRecord(
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const slug = attempt === 0 ? baseSlug : `${baseSlug}-${attempt + 1}`;
     const documentToInsert = {
+      _id: new Types.ObjectId(),
       ...payload,
       slug,
       createdAt: now,
@@ -366,67 +451,142 @@ async function resolveRecipients(audience: Audience): Promise<Recipient[]> {
 }
 
 async function sendCampaignToRecipients(input: {
+  campaignId?: string;
   recipients: Recipient[];
   subject: string;
   previewText?: string;
   body: string;
   ctaLabel?: string;
   ctaUrl?: string;
-}) {
-  const failures: { email: string; reason: string }[] = [];
-  let successCount = 0;
+}): Promise<CampaignSendSummary> {
+  const failures: CampaignFailure[] = [];
+  let sentCount = 0;
+  let skippedCount = 0;
   const userIdsToUpdate: string[] = [];
-  const batchSize = 20;
+  let currentRecipient: string | null = null;
 
-  for (let index = 0; index < input.recipients.length; index += batchSize) {
-    const batch = input.recipients.slice(index, index + batchSize);
+  for (const recipient of input.recipients) {
+    currentRecipient = recipient.email;
 
-    const batchResults = await Promise.all(
-      batch.map(async (recipient) => {
-        const heading = recipient.name
-          ? `${recipient.name}, here is an update from Proud IT Solutions`
-          : "Latest update from Proud IT Solutions";
-
-        try {
-          await sendEmail({
-            to: recipient.email,
-            subject: input.subject,
-            html: buildMarketingEmailTemplate({
-              heading,
-              previewText: input.previewText,
-              body: input.body,
-              ctaLabel: input.ctaLabel,
-              ctaUrl: input.ctaUrl,
-              footerHtml: buildCampaignFooterHtml(recipient.email),
-            }),
-            text: `${buildTextVersion(input.body, input.ctaLabel, input.ctaUrl)}\n\nUnsubscribe: ${buildNewsletterUnsubscribeUrl(recipient.email)}`,
-            headers: buildListUnsubscribeHeaders(recipient.email),
-          });
-
-          return { recipient, success: true as const };
-        } catch (error) {
-          return {
-            recipient,
-            success: false as const,
-            reason: getSafeErrorMessage(error, "Email delivery failed."),
-          };
+    if (input.campaignId) {
+      await EmailCampaign.updateOne(
+        { _id: input.campaignId },
+        {
+          $set: {
+            currentRecipient,
+            successCount: sentCount,
+            failureCount: failures.length,
+            skippedCount,
+            updatedAt: new Date(),
+          },
         }
-      })
-    );
-
-    for (const result of batchResults) {
-      if (result.success) {
-        successCount += 1;
-        if (result.recipient.userId) {
-          userIdsToUpdate.push(result.recipient.userId);
-        }
-      } else {
-        failures.push({
-          email: result.recipient.email,
-          reason: result.reason,
-        });
-      }
+      );
     }
+
+    if (!isValidCampaignRecipientEmail(recipient.email)) {
+      skippedCount += 1;
+      console.warn("email.campaign.recipient_skipped", {
+        to: recipient.email,
+        reason: "Invalid email address.",
+        sentCount,
+        failedCount: failures.length,
+        skippedCount,
+        totalRecipients: input.recipients.length,
+      });
+
+      if (input.campaignId) {
+        await EmailCampaign.updateOne(
+          { _id: input.campaignId },
+          {
+            $set: {
+              currentRecipient,
+              successCount: sentCount,
+              failureCount: failures.length,
+              skippedCount,
+              updatedAt: new Date(),
+            },
+          }
+        );
+      }
+
+      await sleep(300);
+      continue;
+    }
+
+    const heading = recipient.name
+      ? `${recipient.name}, here is an update from Proud IT Solutions`
+      : "Latest update from Proud IT Solutions";
+
+    try {
+      await sendEmailWithRetry({
+        to: recipient.email,
+        subject: input.subject,
+        html: buildMarketingEmailTemplate({
+          heading,
+          previewText: input.previewText,
+          body: input.body,
+          ctaLabel: input.ctaLabel,
+          ctaUrl: input.ctaUrl,
+          footerHtml: buildCampaignFooterHtml(recipient.email),
+        }),
+        text: `${buildTextVersion(input.body, input.ctaLabel, input.ctaUrl)}\n\nUnsubscribe: ${buildNewsletterUnsubscribeUrl(recipient.email)}`,
+        headers: buildListUnsubscribeHeaders(recipient.email),
+      });
+
+      sentCount += 1;
+      if (recipient.userId) {
+        userIdsToUpdate.push(recipient.userId);
+      }
+
+      console.log("email.campaign.recipient_sent", {
+        to: recipient.email,
+        sentCount,
+        failedCount: failures.length,
+        skippedCount,
+        totalRecipients: input.recipients.length,
+      });
+    } catch (error) {
+      const reason = truncateLogReason(getSafeErrorMessage(error, "Email delivery failed."));
+      failures.push({
+        email: recipient.email,
+        reason,
+      });
+
+      console.warn("email.campaign.recipient_failed", {
+        to: recipient.email,
+        reason,
+        sentCount,
+        failedCount: failures.length,
+        skippedCount,
+        totalRecipients: input.recipients.length,
+      });
+    }
+
+    if (input.campaignId) {
+      const latestFailure = failures[failures.length - 1];
+      const progressUpdate: Record<string, unknown> = {
+        $set: {
+          currentRecipient,
+          successCount: sentCount,
+          failureCount: failures.length,
+          skippedCount,
+          updatedAt: new Date(),
+        },
+      };
+
+      if (latestFailure?.email === recipient.email) {
+        progressUpdate.$push = {
+          failures: { $each: [latestFailure], $slice: -100 },
+        };
+      }
+
+      await EmailCampaign.updateOne(
+        { _id: input.campaignId },
+        progressUpdate
+      );
+    }
+
+    await sleep(300);
   }
 
   if (userIdsToUpdate.length > 0) {
@@ -442,8 +602,11 @@ async function sendCampaignToRecipients(input: {
   }
 
   return {
-    successCount,
-    failureCount: failures.length,
+    totalRecipients: input.recipients.length,
+    sentCount,
+    failedCount: failures.length,
+    skippedCount,
+    currentRecipient,
     failures,
   };
 }
@@ -464,10 +627,14 @@ export async function getEmailMarketingOverview(): Promise<
       recipientCount: number;
       successCount: number;
       failureCount: number;
+      skippedCount: number;
       publishedToSite: boolean;
       targetType?: CampaignTargetType;
       targetLabel?: string | null;
       targetPath?: string | null;
+      currentRecipient?: string | null;
+      failures?: CampaignFailure[];
+      completedAt?: Date | null;
       createdAt: Date;
     }[];
   }>
@@ -513,10 +680,14 @@ export async function getEmailMarketingOverview(): Promise<
           recipientCount: campaign.recipientCount,
           successCount: campaign.successCount,
           failureCount: campaign.failureCount,
+          skippedCount: campaign.skippedCount ?? 0,
           publishedToSite: campaign.publishedToSite,
           targetType: campaign.targetType ?? "none",
           targetLabel: campaign.targetLabel ?? null,
           targetPath: campaign.targetPath ?? null,
+          currentRecipient: campaign.currentRecipient ?? null,
+          failures: (campaign.failures ?? []).slice(-25),
+          completedAt: campaign.completedAt ?? null,
           createdAt: campaign.createdAt,
         })),
       },
@@ -1014,7 +1185,39 @@ export async function sendCustomEmailToUserAction(
 
 export async function sendBulkEmailCampaignAction(
   formData: FormData
-): Promise<ActionResult<{ successCount: number; failureCount: number }>> {
+): Promise<ActionResult<{ successCount: number; failureCount: number; skippedCount: number }>> {
+  const created = await createBulkEmailCampaignJobAction(formData);
+
+  if (!created.success || !created.data?.campaignId) {
+    return {
+      success: false,
+      message: created.message,
+    };
+  }
+
+  const sent = await sendEmailCampaignJobAction(created.data.campaignId);
+
+  if (!sent.success || !sent.data) {
+    return {
+      success: false,
+      message: sent.message,
+    };
+  }
+
+  return {
+    success: sent.data.sentCount > 0,
+    message: sent.message,
+    data: {
+      successCount: sent.data.sentCount,
+      failureCount: sent.data.failedCount,
+      skippedCount: sent.data.skippedCount,
+    },
+  };
+}
+
+export async function createBulkEmailCampaignJobAction(
+  formData: FormData
+): Promise<ActionResult<{ campaignId: string; totalRecipients: number }>> {
   try {
     await connectDB();
     const admin = await requireAdmin();
@@ -1050,23 +1253,7 @@ export async function sendBulkEmailCampaignAction(
       };
     }
 
-    const result = await sendCampaignToRecipients({
-      recipients,
-      subject: validated.subject,
-      previewText: normalizeOptional(validated.previewText),
-      body: validated.body,
-      ctaLabel,
-      ctaUrl: target.ctaUrl ?? undefined,
-    });
-
-    const status =
-      result.successCount === 0
-        ? "failed"
-        : result.failureCount === 0
-          ? "completed"
-          : "partial";
-
-    await createEmailCampaignRecord({
+    const campaign = await createEmailCampaignRecord({
       subject: validated.subject,
       slug: createCampaignSlug(validated.subject),
       previewText: normalizeOptional(validated.previewText) ?? null,
@@ -1077,11 +1264,13 @@ export async function sendBulkEmailCampaignAction(
       targetPath: target.targetPath,
       audience: validated.audience,
       recipientCount: recipients.length,
-      successCount: result.successCount,
-      failureCount: result.failureCount,
-      status,
+      successCount: 0,
+      failureCount: 0,
+      skippedCount: 0,
+      status: "pending",
+      currentRecipient: null,
       publishedToSite: validated.publishToSite,
-      publishedAt: validated.publishToSite ? new Date() : null,
+      publishedAt: null,
       ctaLabel: ctaLabel ?? null,
       ctaUrl: target.ctaUrl ?? null,
       sentBy: {
@@ -1089,8 +1278,124 @@ export async function sendBulkEmailCampaignAction(
         name: admin.name,
         email: admin.email,
       },
-      failures: result.failures.slice(0, 25),
+      failures: [],
+      startedAt: null,
+      completedAt: null,
     });
+
+    revalidatePath("/admin/newsletter");
+
+    return {
+      success: true,
+      message: `Campaign queued for ${recipients.length} recipients.`,
+      data: {
+        campaignId: String((campaign as { _id: Types.ObjectId })._id),
+        totalRecipients: recipients.length,
+      },
+    };
+  } catch (error) {
+    console.error("createBulkEmailCampaignJobAction failed:", error);
+    return {
+      success: false,
+      message: getSafeErrorMessage(error, "Failed to queue email campaign."),
+    };
+  }
+}
+
+export async function sendEmailCampaignJobAction(
+  campaignId: string
+): Promise<ActionResult<CampaignSendSummary & { status: string }>> {
+  try {
+    await connectDB();
+    await requireAdmin();
+
+    if (!Types.ObjectId.isValid(campaignId)) {
+      return {
+        success: false,
+        message: "Campaign identifier is invalid.",
+      };
+    }
+
+    const startedAt = new Date();
+    const campaign = await EmailCampaign.findOneAndUpdate(
+      { _id: campaignId, status: "pending" },
+      {
+        $set: {
+          status: "sending",
+          startedAt,
+          currentRecipient: null,
+          updatedAt: startedAt,
+        },
+      },
+      { new: true }
+    ).lean<CampaignJobDocument | null>();
+
+    if (!campaign) {
+      const existing = await getEmailCampaignJobStatusAction(campaignId);
+      return {
+        success: Boolean(existing.success && existing.data),
+        message: existing.data
+          ? `Campaign is already ${existing.data.status}.`
+          : existing.message,
+        data: existing.data
+          ? {
+              totalRecipients: existing.data.totalRecipients,
+              sentCount: existing.data.sentCount,
+              failedCount: existing.data.failedCount,
+              skippedCount: existing.data.skippedCount,
+              currentRecipient: existing.data.currentRecipient,
+              failures: existing.data.failures,
+              status: existing.data.status,
+            }
+          : undefined,
+      };
+    }
+
+    const recipients = await resolveRecipients(campaign.audience);
+    await EmailCampaign.updateOne(
+      { _id: campaignId },
+      {
+        $set: {
+          recipientCount: recipients.length,
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    const result = await sendCampaignToRecipients({
+      campaignId,
+      recipients,
+      subject: campaign.subject,
+      previewText: normalizeOptional(campaign.previewText ?? undefined),
+      body: campaign.body,
+      ctaLabel: normalizeOptional(campaign.ctaLabel ?? undefined),
+      ctaUrl: normalizeOptional(campaign.ctaUrl ?? undefined),
+    });
+
+    const status =
+      result.sentCount === 0
+        ? "failed"
+        : result.failedCount === 0
+          ? "completed"
+          : "partial";
+    const completedAt = new Date();
+
+    await EmailCampaign.updateOne(
+      { _id: campaignId },
+      {
+        $set: {
+          status,
+          recipientCount: result.totalRecipients,
+          successCount: result.sentCount,
+          failureCount: result.failedCount,
+          skippedCount: result.skippedCount,
+          currentRecipient: result.currentRecipient,
+          completedAt,
+          publishedAt: campaign.publishedToSite ? completedAt : null,
+          updatedAt: completedAt,
+        },
+      }
+    );
 
     revalidatePath("/admin/newsletter");
     revalidatePath("/admin/users");
@@ -1099,21 +1404,102 @@ export async function sendBulkEmailCampaignAction(
     revalidateTag("homepage", "max");
 
     return {
-      success: result.successCount > 0,
+      success: result.sentCount > 0,
       message:
-        result.failureCount === 0
-          ? `Campaign sent to ${result.successCount} recipients.`
-          : `Campaign finished with ${result.successCount} successful deliveries and ${result.failureCount} failures.`,
+        result.failedCount > 0
+          ? `Campaign partially completed. Sent ${result.sentCount}, failed ${result.failedCount}, skipped ${result.skippedCount}.`
+          : `Campaign completed. Sent ${result.sentCount} emails, skipped ${result.skippedCount}.`,
       data: {
-        successCount: result.successCount,
-        failureCount: result.failureCount,
+        ...result,
+        status,
       },
     };
   } catch (error) {
-    console.error("sendBulkEmailCampaignAction failed:", error);
+    console.error("sendEmailCampaignJobAction failed:", error);
+
+    if (Types.ObjectId.isValid(campaignId)) {
+      await EmailCampaign.updateOne(
+        { _id: campaignId },
+        {
+          $set: {
+            status: "failed",
+            completedAt: new Date(),
+            updatedAt: new Date(),
+          },
+        }
+      );
+    }
+
     return {
       success: false,
       message: getSafeErrorMessage(error, "Failed to send email campaign."),
+    };
+  }
+}
+
+export async function getEmailCampaignJobStatusAction(
+  campaignId: string
+): Promise<
+  ActionResult<{
+    campaignId: string;
+    subject: string;
+    totalRecipients: number;
+    sentCount: number;
+    failedCount: number;
+    skippedCount: number;
+    status: string;
+    currentRecipient: string | null;
+    failures: CampaignFailure[];
+    startedAt: Date | null;
+    completedAt: Date | null;
+  }>
+> {
+  try {
+    await connectDB();
+    await requireAdmin();
+
+    if (!Types.ObjectId.isValid(campaignId)) {
+      return {
+        success: false,
+        message: "Campaign identifier is invalid.",
+      };
+    }
+
+    const campaign = await EmailCampaign.findById(campaignId)
+      .select(
+        "subject recipientCount successCount failureCount skippedCount status currentRecipient failures startedAt completedAt"
+      )
+      .lean<CampaignJobDocument | null>();
+
+    if (!campaign) {
+      return {
+        success: false,
+        message: "Campaign job was not found.",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Campaign status loaded.",
+      data: {
+        campaignId,
+        subject: campaign.subject,
+        totalRecipients: campaign.recipientCount,
+        sentCount: campaign.successCount,
+        failedCount: campaign.failureCount,
+        skippedCount: campaign.skippedCount ?? 0,
+        status: campaign.status,
+        currentRecipient: campaign.currentRecipient ?? null,
+        failures: (campaign.failures ?? []).slice(-100),
+        startedAt: campaign.startedAt ?? null,
+        completedAt: campaign.completedAt ?? null,
+      },
+    };
+  } catch (error) {
+    console.error("getEmailCampaignJobStatusAction failed:", error);
+    return {
+      success: false,
+      message: getSafeErrorMessage(error, "Unable to load campaign status."),
     };
   }
 }

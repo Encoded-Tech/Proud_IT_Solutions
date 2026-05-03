@@ -18,7 +18,9 @@ export interface IEmailCampaign extends Document {
   recipientCount: number;
   successCount: number;
   failureCount: number;
-  status: "completed" | "partial" | "failed";
+  skippedCount: number;
+  status: "pending" | "sending" | "completed" | "partial" | "failed";
+  currentRecipient?: string | null;
   publishedToSite: boolean;
   publishedAt?: Date | null;
   ctaLabel?: string | null;
@@ -32,6 +34,8 @@ export interface IEmailCampaign extends Document {
     email: string;
     reason: string;
   }[];
+  startedAt?: Date | null;
+  completedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -116,11 +120,23 @@ const emailCampaignSchema = new Schema<IEmailCampaign>(
       required: true,
       min: 0,
     },
+    skippedCount: {
+      type: Number,
+      required: true,
+      min: 0,
+      default: 0,
+    },
     status: {
       type: String,
-      enum: ["completed", "partial", "failed"],
+      enum: ["pending", "sending", "completed", "partial", "failed"],
       required: true,
       index: true,
+    },
+    currentRecipient: {
+      type: String,
+      default: null,
+      trim: true,
+      lowercase: true,
     },
     publishedToSite: {
       type: Boolean,
@@ -170,6 +186,14 @@ const emailCampaignSchema = new Schema<IEmailCampaign>(
         },
       ],
       default: [],
+    },
+    startedAt: {
+      type: Date,
+      default: null,
+    },
+    completedAt: {
+      type: Date,
+      default: null,
     },
   },
   { timestamps: true }

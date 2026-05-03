@@ -8,9 +8,11 @@ import ConfirmDialog from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  createBulkEmailCampaignJobAction,
   deleteEmailCampaignAction,
+  getEmailCampaignJobStatusAction,
   getEmailMarketingOverview,
-  sendBulkEmailCampaignAction,
+  sendEmailCampaignJobAction,
 } from "@/lib/server/actions/admin/customers/emailMarketingActions";
 
 interface MarketingOverview {
@@ -33,12 +35,28 @@ interface MarketingOverview {
     recipientCount: number;
     successCount: number;
     failureCount: number;
+    skippedCount?: number;
     publishedToSite: boolean;
     targetType?: "none" | "page" | "category" | "brand" | "product";
     targetLabel?: string | null;
     targetPath?: string | null;
+    currentRecipient?: string | null;
+    failures?: { email: string; reason: string }[];
+    completedAt?: string | Date | null;
     createdAt: string | Date;
   }[];
+}
+
+interface CampaignProgress {
+  campaignId: string;
+  subject: string;
+  totalRecipients: number;
+  sentCount: number;
+  failedCount: number;
+  skippedCount: number;
+  status: string;
+  currentRecipient: string | null;
+  failures: { email: string; reason: string }[];
 }
 
 interface EmailMarketingPanelProps {
@@ -89,6 +107,7 @@ export default function EmailMarketingPanel({
     null
   );
   const [campaignPage, setCampaignPage] = useState(1);
+  const [campaignProgress, setCampaignProgress] = useState<CampaignProgress | null>(null);
 
   useEffect(() => {
     setOverview(initialOverview);
@@ -128,24 +147,67 @@ export default function EmailMarketingPanel({
         formData.set("targetValue", form.targetValue);
         formData.set("publishToSite", form.publishToSite ? "true" : "false");
 
-        const response = await sendBulkEmailCampaignAction(formData);
+        const queued = await createBulkEmailCampaignJobAction(formData);
 
-        if (!response.success) {
+        if (!queued.success || !queued.data) {
+          toast.error(queued.message || "Campaign could not be queued.");
+          return;
+        }
+
+        const queuedData = queued.data;
+        setCampaignProgress({
+          campaignId: queuedData.campaignId,
+          subject: form.subject.trim(),
+          totalRecipients: queuedData.totalRecipients,
+          sentCount: 0,
+          failedCount: 0,
+          skippedCount: 0,
+          status: "pending",
+          currentRecipient: null,
+          failures: [],
+        });
+
+        const syncProgress = async () => {
+          const statusResponse = await getEmailCampaignJobStatusAction(queuedData.campaignId);
+          if (statusResponse.success && statusResponse.data) {
+            setCampaignProgress(statusResponse.data);
+          }
+        };
+
+        await syncProgress();
+        const progressTimer = window.setInterval(() => {
+          void syncProgress();
+        }, 1000);
+
+        const response = await sendEmailCampaignJobAction(queuedData.campaignId);
+        window.clearInterval(progressTimer);
+        await syncProgress();
+
+        if (!response.success && !response.data) {
           toast.error(response.message || "Campaign could not be sent.");
           return;
         }
 
-        toast.success(response.message || "Campaign sent successfully.");
-        setForm((current) => ({
-          ...current,
-          subject: "",
-          previewText: "",
-          body: "",
-          ctaLabel: "",
-          targetType: "none",
-          targetValue: "",
-          publishToSite: true,
-        }));
+        const finalStatus = response.data?.status;
+        if (finalStatus === "partial" || (response.data?.failedCount ?? 0) > 0) {
+          toast.error(response.message || "Campaign partially completed.");
+        } else {
+          toast.success(response.message || "Campaign completed successfully.");
+          setCampaignProgress(null);
+        }
+
+        if ((response.data?.sentCount ?? 0) > 0) {
+          setForm((current) => ({
+            ...current,
+            subject: "",
+            previewText: "",
+            body: "",
+            ctaLabel: "",
+            targetType: "none",
+            targetValue: "",
+            publishToSite: true,
+          }));
+        }
         await refreshOverview();
       } catch (error) {
         toast.error(getClientErrorMessage(error));
@@ -214,6 +276,13 @@ export default function EmailMarketingPanel({
     const start = (campaignPage - 1) * campaignsPerPage;
     return overview.campaigns.slice(start, start + campaignsPerPage);
   }, [campaignPage, overview.campaigns]);
+  const completedProgressCount = campaignProgress
+    ? campaignProgress.sentCount + campaignProgress.failedCount + campaignProgress.skippedCount
+    : 0;
+  const progressPercent =
+    campaignProgress && campaignProgress.totalRecipients > 0
+      ? Math.min(100, Math.round((completedProgressCount / campaignProgress.totalRecipients) * 100))
+      : 0;
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -426,6 +495,62 @@ export default function EmailMarketingPanel({
               {isSending ? "Sending..." : "Send Campaign"}
             </Button>
           </div>
+
+          {campaignProgress && (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold text-slate-800">
+                    {["pending", "sending"].includes(campaignProgress.status)
+                      ? "Sending campaign..."
+                      : campaignProgress.status === "partial"
+                        ? "Partially completed"
+                        : campaignProgress.status === "failed"
+                          ? "Campaign failed"
+                          : "Campaign completed successfully."}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Sent {campaignProgress.sentCount} of {campaignProgress.totalRecipients}
+                    {campaignProgress.currentRecipient
+                      ? ` · Current: ${campaignProgress.currentRecipient}`
+                      : ""}
+                  </p>
+                </div>
+                <div className="text-left sm:text-right">
+                  <p className="text-lg font-black text-slate-900">{progressPercent}%</p>
+                  <p className="text-xs text-slate-500">
+                    {completedProgressCount} / {campaignProgress.totalRecipients} processed
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-red-600 transition-all duration-300"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-600">
+                <span>{campaignProgress.sentCount} sent</span>
+                <span>{campaignProgress.failedCount} failed</span>
+                <span>{campaignProgress.skippedCount} skipped</span>
+              </div>
+              {campaignProgress.failures.length > 0 && (
+                <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-amber-700">
+                    Failed emails
+                  </p>
+                  <div className="mt-2 max-h-36 space-y-2 overflow-auto pr-1">
+                    {campaignProgress.failures.map((failure) => (
+                      <div key={`${failure.email}-${failure.reason}`} className="text-xs">
+                        <p className="font-semibold text-amber-900">{failure.email}</p>
+                        <p className="break-words text-amber-700">{failure.reason}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-slate-50/40 p-4">

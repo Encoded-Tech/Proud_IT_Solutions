@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,8 @@ export default function SubscriberTable({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [, setConfirmTarget] = useState<NewsletterSubscriberAdminItem | null>(null);
   const [confirmConfig, setConfirmConfig] = useState<{
     mode: "toggle" | "delete-single" | "delete-selected";
@@ -71,7 +73,13 @@ export default function SubscriberTable({
 
   useEffect(() => {
     setSelectedKeys([]);
+    setCurrentPage(1);
   }, [search, status, entityType]);
+
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(subscribers.length / pageSize));
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [pageSize, subscribers.length]);
 
   const loadSubscribers = useCallback(async (overrides?: {
     search?: string;
@@ -107,10 +115,21 @@ export default function SubscriberTable({
   const keyForSubscriber = (subscriber: NewsletterSubscriberAdminItem) =>
     `${subscriber.entityType}-${subscriber.id}`;
 
+  const totalPages = Math.max(1, Math.ceil(subscribers.length / pageSize));
+  const pageStart = (currentPage - 1) * pageSize;
+  const visibleSubscribers = useMemo(
+    () => subscribers.slice(pageStart, pageStart + pageSize),
+    [pageSize, pageStart, subscribers]
+  );
+  const currentPageGuestSubscribers = visibleSubscribers.filter(
+    (subscriber) => subscriber.entityType === "guest"
+  );
+  const visibleStart = subscribers.length === 0 ? 0 : pageStart + 1;
+  const visibleEnd = Math.min(pageStart + pageSize, subscribers.length);
+
   const allVisibleSelected =
-    subscribers.filter((subscriber) => subscriber.entityType === "guest").length > 0 &&
-    subscribers
-      .filter((subscriber) => subscriber.entityType === "guest")
+    currentPageGuestSubscribers.length > 0 &&
+    currentPageGuestSubscribers
       .every((subscriber) => selectedKeys.includes(keyForSubscriber(subscriber)));
 
   const toggleSelection = (subscriber: NewsletterSubscriberAdminItem) => {
@@ -122,15 +141,17 @@ export default function SubscriberTable({
 
   const toggleSelectAllVisible = () => {
     if (allVisibleSelected) {
-      setSelectedKeys([]);
+      const currentPageKeys = new Set(
+        currentPageGuestSubscribers.map((subscriber) => keyForSubscriber(subscriber))
+      );
+      setSelectedKeys((current) => current.filter((key) => !currentPageKeys.has(key)));
       return;
     }
 
-    setSelectedKeys(
-      subscribers
-        .filter((subscriber) => subscriber.entityType === "guest")
-        .map((subscriber) => keyForSubscriber(subscriber))
+    const currentPageKeys = currentPageGuestSubscribers.map((subscriber) =>
+      keyForSubscriber(subscriber)
     );
+    setSelectedKeys((current) => [...new Set([...current, ...currentPageKeys])]);
   };
 
   useEffect(() => {
@@ -278,10 +299,10 @@ export default function SubscriberTable({
               type="button"
               variant="outline"
               onClick={toggleSelectAllVisible}
-              disabled={loading || subscribers.length === 0}
+              disabled={loading || currentPageGuestSubscribers.length === 0}
               className="w-full rounded-lg border-slate-200 sm:w-auto"
             >
-              {allVisibleSelected ? "Clear Selection" : "Select All"}
+              {allVisibleSelected ? "Clear Page" : "Select Page"}
             </Button>
             <Button
               type="button"
@@ -343,11 +364,11 @@ export default function SubscriberTable({
                     </td>
                   </tr>
                 ) : (
-                  subscribers.map((subscriber, index) => (
+                  visibleSubscribers.map((subscriber, index) => (
                     <tr
                       key={`${subscriber.entityType}-${subscriber.id}`}
                       className="border-t border-slate-100"
-                      style={getAdminRowReveal(index)}
+                      style={getAdminRowReveal(pageStart + index)}
                     >
                       <td className="px-4 py-3">
                         {subscriber.entityType === "guest" ? (
@@ -431,6 +452,57 @@ export default function SubscriberTable({
             </table>
           </div>
         </div>
+
+        {subscribers.length > 0 && (
+          <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-500">
+              Showing <span className="font-semibold text-slate-700">{visibleStart}</span> to{" "}
+              <span className="font-semibold text-slate-700">{visibleEnd}</span> of{" "}
+              <span className="font-semibold text-slate-700">{subscribers.length}</span>
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="h-9 rounded-md border border-slate-200 bg-slate-50 px-3 text-xs text-slate-600"
+              >
+                <option value={10}>10 per page</option>
+                <option value={25}>25 per page</option>
+                <option value={50}>50 per page</option>
+                <option value={100}>100 per page</option>
+              </select>
+              <div className="flex items-center justify-between gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-lg border-slate-200"
+                >
+                  Previous
+                </Button>
+                <span className="min-w-20 text-center text-xs text-slate-500">
+                  Page <span className="font-semibold text-slate-700">{currentPage}</span> of{" "}
+                  <span className="font-semibold text-slate-700">{totalPages}</span>
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg border-slate-200"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <ConfirmDialog
