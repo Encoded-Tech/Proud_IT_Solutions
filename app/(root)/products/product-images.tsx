@@ -256,6 +256,8 @@ const ProductImages = ({
               sizes="(min-width: 1024px) 70vw, 100vw"
               quality={100}
               priority
+              unoptimized
+              placeholder="empty"
               className={cn(
                 "object-contain object-center transition-transform duration-300 ease-out",
                 isZoomActive ? "scale-[2.9]" : "scale-100"
@@ -312,6 +314,8 @@ const ProductImages = ({
                 alt={`Product thumbnail ${index + 1}`}
                 fill
                 sizes="96px"
+                unoptimized
+                placeholder="empty"
                 className="rounded-xl object-cover"
               />
             </button>
@@ -371,6 +375,8 @@ const ProductImages = ({
                   alt={`Preview ${index + 1}`}
                   fill
                   sizes="64px"
+                  unoptimized
+                  placeholder="empty"
                   className="object-cover"
                 />
               </button>
@@ -406,6 +412,8 @@ const ProductImages = ({
               fill
               sizes="100vw"
               quality={100}
+              unoptimized
+              placeholder="empty"
               className="select-none object-contain"
               draggable={false}
               onLoad={(event) => {

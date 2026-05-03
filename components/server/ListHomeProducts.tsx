@@ -25,15 +25,20 @@ export default async function HomeProducts({
   media,
   
 }: HomeProductsProps) {
-  // fetch all 3 categories in parallel
+  if (!showBestSellers && !showHotDeals && !showNewArrivals) {
+    return null;
+  }
 
-    const [bestRes, hotRes, newRes] = await Promise.all([
-    fetchPublicBestSellers(),
-    fetchPublicHotDeals(),
-    fetchPublicNewArrivals()
+  const [bestRes, hotRes, newRes, mediaRes] = await Promise.all([
+    showBestSellers ? fetchPublicBestSellers() : Promise.resolve({ data: [] }),
+    showHotDeals ? fetchPublicHotDeals() : Promise.resolve({ data: [] }),
+    showNewArrivals ? fetchPublicNewArrivals() : Promise.resolve({ data: [] }),
+    media || (!showBestSellers && !showHotDeals)
+      ? Promise.resolve({ data: media || [] })
+      : getPublicMedia(),
   ]);
 
-  const mediaItems = media ?? ((await getPublicMedia()).data || []);
+  const mediaItems = mediaRes.data || [];
 
   const bestSellers = bestRes.data || [];
 

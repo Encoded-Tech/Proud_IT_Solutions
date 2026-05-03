@@ -4,9 +4,7 @@ import ProductPageClient from "../products/productPageClient";
 import HomeProducts from "./ListHomeProducts";
 import { getReviewsAction } from "@/lib/server/fetchers/fetchReview";
 import { auth } from "@/auth";
-import { getProductVariants } from "@/lib/server/actions/admin/variants/variantsActions";
-import { productType } from "@/types/product";
-import { connection } from "next/server";
+import { productType, ProductVariantType } from "@/types/product";
 
 
 export const revalidate = 60;
@@ -28,22 +26,37 @@ export default async function ListSingleProduct({
   }
 
   const product = res.data || {};
-
-  await connection();
-
-  const productId = product.id;
-  const variantRes = await getProductVariants(productId);
-  const variants = variantRes.success ? variantRes.data : [];
+  const [reviewData, session] = await Promise.all([
+    getReviewsAction(slug),
+    auth(),
+  ]);
+  const variants: ProductVariantType[] = (product.variants || []).map((variant) => ({
+    id: variant.id,
+    productId: product.id,
+    productName: product.name,
+    specs: variant.specs,
+    price: variant.price,
+    discountPercent: 0,
+    offeredPrice: 0,
+    isOfferActive: false,
+    offerStartDate: null,
+    offerEndDate: null,
+    stock: variant.stock,
+    reservedStock: 0,
+    sku: "",
+    images: variant.images,
+    isActive: variant.isActive,
+    createdAt: "",
+    updatedAt: "",
+  }));
 
 
    const category = product.category;
 
    
 
-  const reviewData = await getReviewsAction(slug);
 
   // 🔥 get current logged-in user ID
-  const session = await auth();
   const currentUserId = session?.user?.id;
 
   // pass currentUserId along with reviewData

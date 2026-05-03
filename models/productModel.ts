@@ -1,5 +1,31 @@
 import { Schema, Document, model, models, Types } from "mongoose";
 
+const PRODUCT_SLUG_WORD_LIMIT = 3;
+const PRODUCT_SLUG_BASE_LIMIT = 48;
+
+function buildShortProductSlug(name: string, id: Types.ObjectId) {
+  const base = name
+    .toLowerCase()
+    .trim()
+    .replace(/%/g, "percent")
+    .replace(/&/g, "and")
+    .replace(/@/g, "at")
+    .replace(/~/g, "-to-")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .split("-")
+    .filter(Boolean)
+    .slice(0, PRODUCT_SLUG_WORD_LIMIT)
+    .join("-")
+    .slice(0, PRODUCT_SLUG_BASE_LIMIT)
+    .replace(/-+$/g, "");
+
+  const suffix = id.toString().slice(-6);
+  return base ? `${base}-${suffix}` : `product-${suffix}`;
+}
+
 export interface IProduct extends Document {
   _id: Types.ObjectId;
     name: string;
@@ -116,6 +142,8 @@ discountPercent: { type: Number, default: 0 },
     if (this.slug.length > 100) {
       this.slug = this.slug.substring(0, 100).replace(/-+$/, '');
     }
+
+    this.slug = buildShortProductSlug(this.name, this._id);
   }
     next();
   });

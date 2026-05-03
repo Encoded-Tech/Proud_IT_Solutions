@@ -60,7 +60,10 @@ const ProductCard = ({ product, label, avgRating }: ProductCardProps) => {
       alt={name}
       width={1000}
       height={500}
+      unoptimized
+      loading="eager"
       sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+      placeholder="empty"
       className="sm:h-[15em] h-[8em] object-cover hover:scale-110 hover:brightness-75 ease-in-out duration-300"
     />
   </figure>

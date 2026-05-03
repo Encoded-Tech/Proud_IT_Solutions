@@ -9,7 +9,6 @@ import { APP_NAME } from "@/config/env";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Script from "next/script";
-import { Suspense } from "react";
 
 export async function generateStaticParams() {
   const slugs = await fetchPublicProductSlugs();
@@ -96,9 +95,7 @@ export default async function ProductPage({
         }}
       />
 
-      <Suspense fallback={<div className="mx-auto max-w-7xl px-4 py-12 text-sm text-slate-500">Loading product details...</div>}>
-        <ListSingleProduct slug={slug} initialProduct={product} />
-      </Suspense>
+      <ListSingleProduct slug={slug} initialProduct={product} />
     </>
   );
 }

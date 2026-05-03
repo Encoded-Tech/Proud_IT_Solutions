@@ -174,9 +174,8 @@ export const POST = withAuth(
       /*                                   SLUG                                     */
       /* -------------------------------------------------------------------------- */
 
-      const slug = name.toLowerCase().replace(/\s+/g, "-");
       const existingProduct = await Product.findOne({
-        $or: [{ name }, { slug }],
+        name,
       });
 
       if (existingProduct) {
@@ -204,7 +203,6 @@ export const POST = withAuth(
 
       const product = await Product.create({
         name,
-        slug,
         description,
         price: priceNumber,
         stock,
