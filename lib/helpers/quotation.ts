@@ -12,7 +12,7 @@ export const DEFAULT_QUOTATION_ASSETS = {
 } as const;
 
 export const DEFAULT_QUOTATION_TERMS =
-  "Prices are valid for 7 days from the quotation date. Delivery timelines depend on stock availability. Warranty and support follow the respective product brand policy.";
+  "1 Year Part Replacement Warranty in Printer\n13% VAT Included\nFree Laptop Bag, Mouse and Mousepad";
 
 export const STATIC_QUOTATION_HIGHLIGHTS = [
   "1 Year Part Replacement Warranty in Printer",
@@ -30,6 +30,10 @@ export const STATIC_QUOTATION_PREPARED_BY = {
 
 export const ELECTRONIC_SIGNATURE_NOTE =
   "Electronic Signature is Valid Under the Quotation Stamp or Sign";
+
+export const FIRST_PAGE_NON_FINAL_ITEM_LIMIT = 18;
+export const CONTINUATION_PAGE_NON_FINAL_ITEM_LIMIT = 24;
+export const FINAL_PAGE_ITEM_LIMIT = 10;
 
 export function formatCurrency(value: number, currency = "NPR") {
   const normalizedCurrency = currency.trim().toUpperCase();
@@ -95,13 +99,44 @@ export function getExpandedQuotationRowHeightMm(itemCount: number) {
 
 export function buildQuotationPages(draft: QuotationDraft): QuotationPageSlice[] {
   const computedItems = computeQuotationItems(draft);
-  return [
-    {
-      pageNumber: 1,
-      totalPages: 1,
-      items: computedItems,
-      isFirstPage: true,
-      isLastPage: true,
-    },
-  ];
+  const pageItems: QuotationItemComputed[][] = [];
+
+  if (computedItems.length <= FINAL_PAGE_ITEM_LIMIT) {
+    pageItems.push(computedItems);
+  } else {
+    let remainingItems = computedItems;
+    let isFirstChunk = true;
+
+    while (remainingItems.length > FINAL_PAGE_ITEM_LIMIT) {
+      const pageLimit = isFirstChunk
+        ? FIRST_PAGE_NON_FINAL_ITEM_LIMIT
+        : CONTINUATION_PAGE_NON_FINAL_ITEM_LIMIT;
+      const reservedFinalItems = Math.min(FINAL_PAGE_ITEM_LIMIT, remainingItems.length);
+      const takeCount = Math.min(pageLimit, remainingItems.length - reservedFinalItems);
+
+      if (takeCount <= 0) break;
+
+      pageItems.push(remainingItems.slice(0, takeCount));
+      remainingItems = remainingItems.slice(takeCount);
+      isFirstChunk = false;
+    }
+
+    pageItems.push(remainingItems);
+  }
+
+  const totalPages = pageItems.length;
+
+  return pageItems.map((items, index) => {
+    const isFinalPage = index === totalPages - 1;
+
+    return {
+      pageNumber: index + 1,
+      totalPages,
+      items,
+      isFirstPage: index === 0,
+      isLastPage: isFinalPage,
+      isFinalPage,
+      isContinuationPage: index > 0 && !isFinalPage,
+    };
+  });
 }

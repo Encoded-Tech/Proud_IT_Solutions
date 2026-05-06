@@ -71,4 +71,6 @@ export interface QuotationPageSlice {
   items: QuotationItemComputed[];
   isFirstPage: boolean;
   isLastPage: boolean;
+  isFinalPage: boolean;
+  isContinuationPage: boolean;
 }

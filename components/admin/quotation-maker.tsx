@@ -238,11 +238,6 @@ export default function QuotationMaker({
   };
 
   const addItem = () => {
-    if (draft.items.length >= 10) {
-      toast.error("Maximum 10 items are allowed in one quotation. Create another quotation for more items.");
-      return;
-    }
-
     setDraft((current) => ({
       ...current,
       items: [...current.items, createItem()],
@@ -574,25 +569,18 @@ export default function QuotationMaker({
                       Quotation Items
                     </h3>
                     <p className="text-sm text-slate-500">
-                      Add line items with description, quantity, unit price, and totals. Maximum
-                      10 items per quotation.
+                      Add line items with description, quantity, unit price, and totals.
                     </p>
                   </div>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={addItem}
-                    disabled={draft.items.length >= 10}
                     className="rounded-xl border-slate-200"
                   >
                     Add Item
                   </Button>
                 </div>
-                {draft.items.length >= 10 ? (
-                  <p className="mb-3 text-sm text-amber-700">
-                    Maximum 10 items reached. Create another quotation for additional items.
-                  </p>
-                ) : null}
                 <div className="space-y-3">
                   {draft.items.map((item, index) => (
                     <QuotationItemRow
@@ -607,77 +595,79 @@ export default function QuotationMaker({
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">
-                    Pricing Controls
-                  </h3>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
-                        Currency
-                      </label>
-                      <Input
-                        value={draft.currency}
-                        onChange={(event) => setField("currency", event.target.value.toUpperCase())}
-                        className="border-slate-200 bg-white"
-                      />
+              <div>
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">
+                      Pricing Controls
+                    </h3>
+                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                          Currency
+                        </label>
+                        <Input
+                          value={draft.currency}
+                          onChange={(event) => setField("currency", event.target.value.toUpperCase())}
+                          className="h-11 rounded-xl border-slate-200 bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                          Discount Type
+                        </label>
+                        <select
+                          value={draft.discountMode}
+                          onChange={(event) =>
+                            setField("discountMode", event.target.value as QuotationDraft["discountMode"])
+                          }
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-red-300 focus:ring-2 focus:ring-red-200"
+                        >
+                          <option value="amount">Fixed Amount</option>
+                          <option value="percentage">Percentage</option>
+                        </select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                          Discount Value
+                        </label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={draft.discountValue}
+                          onChange={(event) =>
+                            setField("discountValue", Math.max(0, Number(event.target.value) || 0))
+                          }
+                          className="h-11 rounded-xl border-slate-200 bg-white"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
-                        Discount Type
-                      </label>
-                      <select
-                        value={draft.discountMode}
-                        onChange={(event) =>
-                          setField("discountMode", event.target.value as QuotationDraft["discountMode"])
-                        }
-                        className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:border-red-300 focus:ring-2 focus:ring-red-200"
-                      >
-                        <option value="amount">Fixed Amount</option>
-                        <option value="percentage">Percentage</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
-                        Discount Value
-                      </label>
-                      <Input
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={draft.discountValue}
-                        onChange={(event) =>
-                          setField("discountValue", Math.max(0, Number(event.target.value) || 0))
-                        }
-                        className="border-slate-200 bg-white"
-                      />
+
+                    <div className="mt-4 flex-1 rounded-[24px] border border-slate-200 bg-white p-4 text-sm shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+                      <div className="flex h-full flex-col justify-end space-y-2">
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span>Subtotal</span>
+                          <span>{formatCurrency(totals.subtotal, draft.currency)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span>Discount</span>
+                          <span>- {formatCurrency(totals.discountAmount, draft.currency)}</span>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-slate-200 pt-2 font-black uppercase tracking-[0.08em] text-slate-900">
+                          <span>Payable Total</span>
+                          <span>{formatCurrency(totals.grandTotal, draft.currency)}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 space-y-2 rounded-2xl border border-slate-200 bg-white p-4 text-sm">
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span>Subtotal</span>
-                      <span>{formatCurrency(totals.subtotal, draft.currency)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span>Discount</span>
-                      <span>- {formatCurrency(totals.discountAmount, draft.currency)}</span>
-                    </div>
-                    <div className="flex items-center justify-between border-t border-slate-200 pt-2 font-black uppercase tracking-[0.08em] text-slate-900">
-                      <span>Payable Total</span>
-                      <span>{formatCurrency(totals.grandTotal, draft.currency)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">
-                    Letterhead & Signature
-                  </h3>
-                  <div className="mt-4 grid items-start gap-4">
-                    <div className="rounded-[24px] border border-slate-200 bg-white/80 p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
-                      <div className="space-y-4">
+                  <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">
+                      Letterhead & Signature
+                    </h3>
+                    <div className="mt-4 flex-1 rounded-[24px] border border-slate-200 bg-white/80 p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+                      <div className="flex h-full flex-col gap-4">
                         <div className="space-y-1.5">
                           <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
                             Signature Image Path
@@ -688,63 +678,77 @@ export default function QuotationMaker({
                             className="h-11 w-full rounded-xl border-slate-200 bg-white px-3 text-sm leading-5 text-slate-700 focus-visible:border-red-300 focus-visible:ring-red-200"
                           />
                         </div>
-                      </div>
-                    </div>
-
-                    <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-[linear-gradient(160deg,#ffffff,#f8fafc)] shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
-                      <div className="border-b border-slate-200 bg-white/70 px-5 py-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-red-600">
-                          Regards Block
-                        </p>
-                      </div>
-                      <div className="space-y-3 p-4">
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div className="space-y-1.5">
-                            <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
-                              Regards Status
-                            </label>
-                            <Input
-                              value={draft.preparedBy.heading || ""}
-                              onChange={(event) => setPreparedByField("heading", event.target.value)}
-                              className="h-11 rounded-xl border-slate-200 bg-white"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
-                              Team / Name
-                            </label>
-                            <Input
-                              value={draft.preparedBy.name || ""}
-                              onChange={(event) => setPreparedByField("name", event.target.value)}
-                              className="h-11 rounded-xl border-slate-200 bg-white"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
-                              Number
-                            </label>
-                            <Input
-                              value={draft.preparedBy.contact || ""}
-                              onChange={(event) => setPreparedByField("contact", event.target.value)}
-                              className="h-11 rounded-xl border-slate-200 bg-white"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
-                              Email
-                            </label>
-                            <Input
-                              value={draft.preparedBy.email || ""}
-                              onChange={(event) => setPreparedByField("email", event.target.value)}
-                              className="h-11 rounded-xl border-slate-200 bg-white"
-                            />
-                          </div>
+                        <div className="flex flex-1 flex-col space-y-1.5">
+                          <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                            Warranty / Highlight Notes
+                          </label>
+                          <Textarea
+                            rows={5}
+                            value={draft.terms || ""}
+                            onChange={(event) => setField("terms", event.target.value)}
+                            className="min-h-[130px] flex-1 border-slate-200 bg-white"
+                          />
+                          <p className="text-xs leading-5 text-slate-500">
+                            Each line appears as a separate checked note on the final quotation page.
+                          </p>
                         </div>
-                        <p className="text-xs leading-5 text-slate-500">
-                          Website stays fixed as {STATIC_QUOTATION_PREPARED_BY.website}.
-                        </p>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 overflow-hidden rounded-[24px] border border-slate-200 bg-[linear-gradient(160deg,#ffffff,#f8fafc)] shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
+                  <div className="border-b border-slate-200 bg-white/70 px-5 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                      Regards Block
+                    </p>
+                  </div>
+                  <div className="space-y-3 p-4">
+                    <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                          Regards Status
+                        </label>
+                        <Input
+                          value={draft.preparedBy.heading || ""}
+                          onChange={(event) => setPreparedByField("heading", event.target.value)}
+                          className="h-11 rounded-xl border-slate-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                          Team / Name
+                        </label>
+                        <Input
+                          value={draft.preparedBy.name || ""}
+                          onChange={(event) => setPreparedByField("name", event.target.value)}
+                          className="h-11 rounded-xl border-slate-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                          Number
+                        </label>
+                        <Input
+                          value={draft.preparedBy.contact || ""}
+                          onChange={(event) => setPreparedByField("contact", event.target.value)}
+                          className="h-11 rounded-xl border-slate-200 bg-white"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold uppercase tracking-widest text-slate-500">
+                          Email
+                        </label>
+                        <Input
+                          value={draft.preparedBy.email || ""}
+                          onChange={(event) => setPreparedByField("email", event.target.value)}
+                          className="h-11 rounded-xl border-slate-200 bg-white"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs leading-5 text-slate-500">
+                      Website stays fixed as {STATIC_QUOTATION_PREPARED_BY.website}.
+                    </p>
                   </div>
                 </div>
               </div>

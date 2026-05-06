@@ -94,9 +94,8 @@ const quotationSchema = new Schema<IQuotation>(
       type: [quotationItemSchema],
       default: [],
       validate: {
-        validator: (items: IQuotationItem[]) => items.length > 0 && items.length <= 10,
-        message:
-          "Maximum 10 items are allowed in one quotation. Create another quotation for more items.",
+        validator: (items: IQuotationItem[]) => items.length > 0,
+        message: "Add at least one quotation item.",
       },
     },
     currency: {

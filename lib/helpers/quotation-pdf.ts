@@ -230,9 +230,20 @@ async function waitForImages(root: HTMLElement) {
   );
 }
 
-function getQuotationPageRoot(quotationElement: HTMLElement) {
-  if (quotationElement.matches(".quotation-page")) {
-    return quotationElement;
+function getQuotationExportPages(quotationElement: HTMLElement) {
+  const pageElements = Array.from(
+    quotationElement.querySelectorAll<HTMLElement>("[data-quotation-export-page='true']")
+  );
+
+  if (pageElements.length > 0) {
+    return pageElements;
+  }
+
+  if (
+    quotationElement.matches("[data-quotation-export-page='true']") ||
+    quotationElement.matches(".quotation-page")
+  ) {
+    return [quotationElement];
   }
 
   const page = quotationElement.querySelector<HTMLElement>(".quotation-page");
@@ -240,7 +251,7 @@ function getQuotationPageRoot(quotationElement: HTMLElement) {
     throw new Error("Quotation preview is not ready for export.");
   }
 
-  return page;
+  return [page];
 }
 
 export async function downloadQuotationPdf(
@@ -248,21 +259,23 @@ export async function downloadQuotationPdf(
   draft: QuotationDraft,
   filename: string
 ): Promise<void> {
-  const quotationPage = getQuotationPageRoot(quotationElement);
+  const exportPages = getQuotationExportPages(quotationElement);
 
   if (document.fonts?.ready) {
     await document.fonts.ready;
   }
 
-  await waitForImages(quotationPage);
-  logQuotationAssetDiagnostics(quotationPage);
+  for (const page of exportPages) {
+    await waitForImages(page);
+    logQuotationAssetDiagnostics(page);
 
-  const badColors = findUnsupportedColors(quotationPage);
-  if (badColors.length > 0) {
-    console.table(badColors);
-    throw new Error(
-      "Quotation PDF export still contains lab/oklch/lch/color-mix colors. Replace these Tailwind/theme colors with hex/rgb/rgba before html2canvas."
-    );
+    const badColors = findUnsupportedColors(page);
+    if (badColors.length > 0) {
+      console.table(badColors);
+      throw new Error(
+        "Quotation PDF export still contains lab/oklch/lch/color-mix colors. Replace these Tailwind/theme colors with hex/rgb/rgba before html2canvas."
+      );
+    }
   }
 
   const { stampDataUrl, signatureDataUrl } = await loadQuotationAssetData(draft);
@@ -275,138 +288,6 @@ export async function downloadQuotationPdf(
     throw new Error("Failed to load the quotation signature for PDF export.");
   }
 
-  const canvas = await html2canvas(quotationPage, {
-    scale: Math.max(4, window.devicePixelRatio || 1),
-    useCORS: true,
-    allowTaint: false,
-    backgroundColor: "#ffffff",
-    logging: false,
-    imageTimeout: 15000,
-    removeContainer: true,
-    foreignObjectRendering: false,
-    onclone: (clonedDocument) => {
-      clonedDocument.documentElement.style.backgroundColor = "#ffffff";
-      clonedDocument.body.style.backgroundColor = "#ffffff";
-      clonedDocument.body.style.color = "#0f172a";
-
-      const clonedRoot = clonedDocument.querySelector<HTMLElement>('[data-quotation-export="true"]');
-      if (!clonedRoot) {
-        return;
-      }
-
-      clonedRoot.style.width = "210mm";
-      clonedRoot.style.height = "297mm";
-      clonedRoot.style.minHeight = "297mm";
-      clonedRoot.style.maxHeight = "297mm";
-      clonedRoot.style.overflow = "hidden";
-      clonedRoot.style.backgroundColor = "#ffffff";
-      clonedRoot.style.color = "#0f172a";
-      clonedRoot.style.boxShadow = "none";
-      clonedRoot.style.setProperty("-webkit-print-color-adjust", "exact");
-      clonedRoot.style.printColorAdjust = "exact";
-
-      const clonedImages = Array.from(clonedRoot.querySelectorAll("img"));
-      for (const img of clonedImages) {
-        img.removeAttribute("srcset");
-        img.removeAttribute("sizes");
-        img.crossOrigin = "anonymous";
-      }
-
-      const stamp = clonedRoot.querySelector<HTMLImageElement>("[data-stamp-image]");
-      if (stamp && stampDataUrl) {
-        stamp.src = stampDataUrl;
-      }
-
-      const signature = clonedRoot.querySelector<HTMLImageElement>("[data-signature-image]");
-      if (signature && signatureDataUrl) {
-        signature.src = signatureDataUrl;
-        if (!stampDataUrl) {
-          signature.style.display = "block";
-          signature.style.width = "25mm";
-          signature.style.height = "auto";
-          signature.style.maxWidth = "none";
-          signature.style.maxHeight = "none";
-          signature.style.objectFit = "contain";
-          signature.style.objectPosition = "center";
-          signature.style.margin = "0 auto 0.4mm";
-          signature.style.transform = "none";
-          signature.style.position = "static";
-        }
-      }
-
-      const all = [clonedRoot, ...Array.from(clonedRoot.querySelectorAll("*"))] as HTMLElement[];
-      for (const el of all) {
-        if (el.closest("[data-letterhead-chrome]")) {
-          for (const prop of COLOR_SCAN_PROPERTIES) {
-            const inlineValue = el.style.getPropertyValue(prop);
-            if (inlineValue && UNSUPPORTED_COLOR_RE.test(inlineValue)) {
-              el.style.setProperty(prop, replaceUnsupportedColorFunctions(inlineValue));
-            }
-          }
-          continue;
-        }
-
-        el.style.color = el.style.color || "#0f172a";
-        el.style.borderColor = "#cbd5e1";
-        el.style.outlineColor = "#cbd5e1";
-        el.style.textDecorationColor = "#0f172a";
-
-        for (const prop of COLOR_SCAN_PROPERTIES) {
-          const inlineValue = el.style.getPropertyValue(prop);
-          if (inlineValue && UNSUPPORTED_COLOR_RE.test(inlineValue)) {
-            el.style.setProperty(prop, replaceUnsupportedColorFunctions(inlineValue));
-          }
-        }
-
-        const tag = el.tagName.toLowerCase();
-
-        if (tag === "th") {
-          el.style.backgroundColor = "#dc2626";
-          el.style.color = "#ffffff";
-          el.style.borderColor = "#ef4444";
-        }
-
-        if (tag === "td") {
-          el.style.color = "#0f172a";
-          el.style.borderColor = "#cbd5e1";
-        }
-
-        if (el.classList.contains("total-row")) {
-          el.style.backgroundColor = "#f8fafc";
-          el.style.color = "#0f172a";
-        }
-
-        if (el.classList.contains("quotation-items-table")) {
-          el.style.backgroundColor = "#ffffff";
-          el.style.color = "#0f172a";
-          el.style.borderColor = "#cbd5e1";
-        }
-
-        if (el.classList.contains("q-text-white")) {
-          el.style.color = "#ffffff";
-        }
-
-        if (el.classList.contains("q-text-900")) {
-          el.style.color = "#0f172a";
-        }
-
-        if (el.classList.contains("q-text-800")) {
-          el.style.color = "#1e293b";
-        }
-
-        if (el.classList.contains("q-text-700")) {
-          el.style.color = "#334155";
-        }
-
-        if (el.classList.contains("q-text-600")) {
-          el.style.color = "#475569";
-        }
-      }
-    },
-  });
-
-  const imageData = canvas.toDataURL("image/png");
-
   const pdf = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -414,6 +295,158 @@ export async function downloadQuotationPdf(
     compress: false,
   });
 
-  pdf.addImage(imageData, "PNG", 0, 0, 210, 297, undefined, "NONE");
+  for (let index = 0; index < exportPages.length; index += 1) {
+    const page = exportPages[index];
+    await waitForImages(page);
+
+    const canvas = await html2canvas(page, {
+      scale: Math.max(4, window.devicePixelRatio || 1),
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: "#ffffff",
+      logging: false,
+      imageTimeout: 15000,
+      removeContainer: true,
+      foreignObjectRendering: false,
+      onclone: (clonedDocument) => {
+        clonedDocument.documentElement.style.backgroundColor = "#ffffff";
+        clonedDocument.body.style.backgroundColor = "#ffffff";
+        clonedDocument.body.style.color = "#0f172a";
+
+        const clonedPages = Array.from(
+          clonedDocument.querySelectorAll<HTMLElement>("[data-quotation-export-page='true']")
+        );
+        const roots = clonedPages.length
+          ? clonedPages
+          : Array.from(clonedDocument.querySelectorAll<HTMLElement>(".quotation-page"));
+
+        for (const clonedRoot of roots) {
+          clonedRoot.style.width = "210mm";
+          clonedRoot.style.height = "297mm";
+          clonedRoot.style.minHeight = "297mm";
+          clonedRoot.style.maxHeight = "297mm";
+          clonedRoot.style.overflow = "hidden";
+          clonedRoot.style.backgroundColor = "#ffffff";
+          clonedRoot.style.color = "#0f172a";
+          clonedRoot.style.boxShadow = "none";
+          clonedRoot.style.setProperty("-webkit-print-color-adjust", "exact");
+          clonedRoot.style.printColorAdjust = "exact";
+
+          const clonedImages = Array.from(clonedRoot.querySelectorAll("img"));
+          for (const img of clonedImages) {
+            img.removeAttribute("srcset");
+            img.removeAttribute("sizes");
+            img.crossOrigin = "anonymous";
+          }
+
+          const stamps = Array.from(clonedRoot.querySelectorAll<HTMLImageElement>("[data-stamp-image]"));
+          for (const stamp of stamps) {
+            if (stampDataUrl) {
+              stamp.src = stampDataUrl;
+            }
+          }
+
+          const signatures = Array.from(
+            clonedRoot.querySelectorAll<HTMLImageElement>("[data-signature-image]")
+          );
+          for (const signature of signatures) {
+            if (signatureDataUrl) {
+              signature.src = signatureDataUrl;
+              if (!stampDataUrl) {
+                signature.style.display = "block";
+                signature.style.width = "25mm";
+                signature.style.height = "auto";
+                signature.style.maxWidth = "none";
+                signature.style.maxHeight = "none";
+                signature.style.objectFit = "contain";
+                signature.style.objectPosition = "center";
+                signature.style.margin = "0 auto 0.4mm";
+                signature.style.transform = "none";
+                signature.style.position = "static";
+              }
+            }
+          }
+
+          const all = [clonedRoot, ...Array.from(clonedRoot.querySelectorAll("*"))] as HTMLElement[];
+          for (const el of all) {
+            if (el.closest("[data-letterhead-chrome]")) {
+              for (const prop of COLOR_SCAN_PROPERTIES) {
+                const inlineValue = el.style.getPropertyValue(prop);
+                if (inlineValue && UNSUPPORTED_COLOR_RE.test(inlineValue)) {
+                  el.style.setProperty(prop, replaceUnsupportedColorFunctions(inlineValue));
+                }
+              }
+              continue;
+            }
+
+            el.style.color = el.style.color || "#0f172a";
+            el.style.borderColor = "#cbd5e1";
+            el.style.outlineColor = "#cbd5e1";
+            el.style.textDecorationColor = "#0f172a";
+
+            for (const prop of COLOR_SCAN_PROPERTIES) {
+              const inlineValue = el.style.getPropertyValue(prop);
+              if (inlineValue && UNSUPPORTED_COLOR_RE.test(inlineValue)) {
+                el.style.setProperty(prop, replaceUnsupportedColorFunctions(inlineValue));
+              }
+            }
+
+            const tag = el.tagName.toLowerCase();
+
+            if (tag === "th") {
+              el.style.backgroundColor = "#dc2626";
+              el.style.color = "#ffffff";
+              el.style.borderColor = "#ef4444";
+            }
+
+            if (tag === "td") {
+              el.style.color = "#0f172a";
+              el.style.borderColor = "#cbd5e1";
+            }
+
+            if (el.classList.contains("total-row")) {
+              el.style.backgroundColor = "#f8fafc";
+              el.style.color = "#0f172a";
+            }
+
+            if (el.classList.contains("quotation-items-table")) {
+              el.style.backgroundColor = "#ffffff";
+              el.style.color = "#0f172a";
+              el.style.borderColor = "#cbd5e1";
+            }
+
+            if (el.classList.contains("q-text-white")) {
+              el.style.color = "#ffffff";
+            }
+
+            if (el.classList.contains("q-text-900")) {
+              el.style.color = "#0f172a";
+            }
+
+            if (el.classList.contains("q-text-800")) {
+              el.style.color = "#1e293b";
+            }
+
+            if (el.classList.contains("q-text-700")) {
+              el.style.color = "#334155";
+            }
+
+            if (el.classList.contains("q-text-600")) {
+              el.style.color = "#475569";
+            }
+          }
+        }
+      },
+    });
+
+    const imageData = canvas.toDataURL("image/png");
+
+    if (index > 0) {
+      pdf.addPage("a4", "portrait");
+    }
+
+    pdf.addImage(imageData, "PNG", 0, 0, 210, 297, undefined, "NONE");
+  }
+
   pdf.save(filename.toLowerCase().endsWith(".pdf") ? filename : `${filename}.pdf`);
 }

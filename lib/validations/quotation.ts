@@ -21,8 +21,7 @@ export const quotationSchema = z.object({
   }),
   items: z
     .array(quotationItemSchema)
-    .min(1, "Add at least one quotation item.")
-    .max(10, "Maximum 10 items are allowed in one quotation. Create another quotation for more items."),
+    .min(1, "Add at least one quotation item."),
   currency: z.string().trim().min(1).max(10).default("NPR"),
   discountMode: z.enum(["amount", "percentage"]).default("amount"),
   discountValue: z.number().min(0).max(100000000).default(0),
