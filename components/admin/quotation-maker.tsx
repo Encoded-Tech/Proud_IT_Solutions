@@ -24,6 +24,8 @@ import {
   DEFAULT_QUOTATION_ASSETS,
   DEFAULT_QUOTATION_TERMS,
   formatCurrency,
+  normalizeQuotationNotes,
+  quotationNotesToList,
   STATIC_QUOTATION_PREPARED_BY,
 } from "@/lib/helpers/quotation";
 import {
@@ -79,7 +81,7 @@ function createBlankDraft(
     discountValue: 0,
     taxMode: "amount",
     taxValue: 0,
-    terms: defaults.terms || DEFAULT_QUOTATION_TERMS,
+    terms: normalizeQuotationNotes(defaults.terms || DEFAULT_QUOTATION_TERMS),
     preparedBy: {
       heading: STATIC_QUOTATION_PREPARED_BY.heading,
       name: STATIC_QUOTATION_PREPARED_BY.name,
@@ -111,12 +113,22 @@ export default function QuotationMaker({
   nextQuotationNumber,
   defaults,
 }: QuotationMakerProps) {
-  const [quotations, setQuotations] = useState(initialQuotations);
+  const [quotations, setQuotations] = useState(() =>
+    initialQuotations.map((quotation) => ({
+      ...quotation,
+      terms: normalizeQuotationNotes(quotation.terms),
+    }))
+  );
   const [selectedQuotationId, setSelectedQuotationId] = useState<string | null>(
     initialQuotations[0]?.id ?? null
   );
   const [draft, setDraft] = useState<QuotationDraft>(() =>
-    initialQuotations[0] ?? createBlankDraft(nextQuotationNumber, defaults)
+    initialQuotations[0]
+      ? {
+          ...initialQuotations[0],
+          terms: normalizeQuotationNotes(initialQuotations[0].terms),
+        }
+      : createBlankDraft(nextQuotationNumber, defaults)
   );
   const [savedQuotationPage, setSavedQuotationPage] = useState(1);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -132,7 +144,10 @@ export default function QuotationMaker({
     const selected = quotations.find((item) => item.id === selectedQuotationId);
     if (!selected) return;
 
-    setDraft(selected);
+    setDraft({
+      ...selected,
+      terms: normalizeQuotationNotes(selected.terms),
+    });
     setFormErrors({});
   }, [quotations, selectedQuotationId]);
 
@@ -252,12 +267,16 @@ export default function QuotationMaker({
   };
 
   const handleSave = () => {
-    const parsed = quotationSchema.safeParse({
+    const draftForSave = {
       ...draft,
-      discountValue: Number(draft.discountValue) || 0,
+      terms: quotationNotesToList(draft.terms).join("\n"),
+    };
+    const parsed = quotationSchema.safeParse({
+      ...draftForSave,
+      discountValue: Number(draftForSave.discountValue) || 0,
       taxValue: 0,
       taxMode: "amount",
-      items: draft.items.map((item) => ({
+      items: draftForSave.items.map((item) => ({
         ...item,
         quantity: Number(item.quantity) || 0,
         unitPrice: Number(item.unitPrice) || 0,
@@ -279,26 +298,31 @@ export default function QuotationMaker({
 
     setFormErrors({});
     startTransition(async () => {
-      const response = await saveQuotationAction(draft);
+      const response = await saveQuotationAction(draftForSave);
 
       if (!response.success || !response.data) {
         toast.error(response.message);
         return;
       }
 
+      const savedQuotation = {
+        ...response.data,
+        terms: normalizeQuotationNotes(response.data.terms),
+      };
+
       setQuotations((current) => {
-        const exists = current.some((item) => item.id === response.data!.id);
+        const exists = current.some((item) => item.id === savedQuotation.id);
         const updated = exists
-          ? current.map((item) => (item.id === response.data!.id ? response.data! : item))
-          : [response.data!, ...current];
+          ? current.map((item) => (item.id === savedQuotation.id ? savedQuotation : item))
+          : [savedQuotation, ...current];
 
         return updated.sort(
           (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         );
       });
       setSavedQuotationPage(1);
-      setSelectedQuotationId(response.data.id);
-      setDraft(response.data);
+      setSelectedQuotationId(savedQuotation.id);
+      setDraft(savedQuotation);
       toast.success(response.message);
     });
   };
@@ -329,7 +353,10 @@ export default function QuotationMaker({
       if (selectedQuotationId && deletedIds.has(selectedQuotationId)) {
         if (remaining[0]) {
           setSelectedQuotationId(remaining[0].id);
-          setDraft(remaining[0]);
+          setDraft({
+            ...remaining[0],
+            terms: normalizeQuotationNotes(remaining[0].terms),
+          });
         } else {
           setSelectedQuotationId(null);
           setDraft(createBlankDraft(getNextQuotationNumberFromList([]), defaults));

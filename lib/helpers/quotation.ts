@@ -12,12 +12,16 @@ export const DEFAULT_QUOTATION_ASSETS = {
 } as const;
 
 export const DEFAULT_QUOTATION_TERMS =
-  "1 Year Part Replacement Warranty in Printer\n13% VAT Included\nFree Laptop Bag, Mouse and Mousepad";
+  [
+    "Prices are valid for 7 days from the quotation date.",
+    "Delivery timelines depend on stock availability.",
+    "Warranty and support follow the respective product brand policy.",
+  ].join("\n");
 
 export const STATIC_QUOTATION_HIGHLIGHTS = [
-  "1 Year Part Replacement Warranty in Printer",
-  "13% VAT Included",
-  "Free Laptop Bag, Mouse and Mousepad",
+  "Prices are valid for 7 days from the quotation date.",
+  "Delivery timelines depend on stock availability.",
+  "Warranty and support follow the respective product brand policy.",
 ] as const;
 
 export const STATIC_QUOTATION_PREPARED_BY = {
@@ -31,9 +35,30 @@ export const STATIC_QUOTATION_PREPARED_BY = {
 export const ELECTRONIC_SIGNATURE_NOTE =
   "Electronic Signature is Valid Under the Quotation Stamp or Sign";
 
+export function normalizeQuotationNotes(value?: string | null) {
+  const fallback = DEFAULT_QUOTATION_TERMS;
+  const source = value && value.trim() ? value.trim() : fallback;
+  const oldOneLineDefault =
+    "Prices are valid for 7 days from the quotation date. Delivery timelines depend on stock availability. Warranty and support follow the respective product brand policy.";
+
+  if (source === oldOneLineDefault) {
+    return DEFAULT_QUOTATION_TERMS;
+  }
+
+  return source;
+}
+
+export function quotationNotesToList(value?: string | null) {
+  return normalizeQuotationNotes(value)
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export const FIRST_PAGE_NON_FINAL_ITEM_LIMIT = 18;
 export const CONTINUATION_PAGE_NON_FINAL_ITEM_LIMIT = 24;
-export const FINAL_PAGE_ITEM_LIMIT = 10;
+export const FINAL_PAGE_ITEM_LIMIT = 8;
+export const FINAL_PAGE_MIN_ITEM_COUNT = 1;
 
 export function formatCurrency(value: number, currency = "NPR") {
   const normalizedCurrency = currency.trim().toUpperCase();
@@ -99,44 +124,54 @@ export function getExpandedQuotationRowHeightMm(itemCount: number) {
 
 export function buildQuotationPages(draft: QuotationDraft): QuotationPageSlice[] {
   const computedItems = computeQuotationItems(draft);
-  const pageItems: QuotationItemComputed[][] = [];
+  const pages: Array<{ items: QuotationItemComputed[]; isFinalPage: boolean }> = [];
+  let cursor = 0;
+  let pageIndex = 0;
 
-  if (computedItems.length <= FINAL_PAGE_ITEM_LIMIT) {
-    pageItems.push(computedItems);
-  } else {
-    let remainingItems = computedItems;
-    let isFirstChunk = true;
-
-    while (remainingItems.length > FINAL_PAGE_ITEM_LIMIT) {
-      const pageLimit = isFirstChunk
-        ? FIRST_PAGE_NON_FINAL_ITEM_LIMIT
-        : CONTINUATION_PAGE_NON_FINAL_ITEM_LIMIT;
-      const reservedFinalItems = Math.min(FINAL_PAGE_ITEM_LIMIT, remainingItems.length);
-      const takeCount = Math.min(pageLimit, remainingItems.length - reservedFinalItems);
-
-      if (takeCount <= 0) break;
-
-      pageItems.push(remainingItems.slice(0, takeCount));
-      remainingItems = remainingItems.slice(takeCount);
-      isFirstChunk = false;
-    }
-
-    pageItems.push(remainingItems);
+  if (computedItems.length === 0) {
+    pages.push({
+      items: computedItems,
+      isFinalPage: true,
+    });
   }
 
-  const totalPages = pageItems.length;
+  while (cursor < computedItems.length) {
+    const remaining = computedItems.length - cursor;
 
-  return pageItems.map((items, index) => {
-    const isFinalPage = index === totalPages - 1;
+    if (remaining <= FINAL_PAGE_ITEM_LIMIT) {
+      pages.push({
+        items: computedItems.slice(cursor),
+        isFinalPage: true,
+      });
+      break;
+    }
 
+    const pageLimit =
+      pageIndex === 0
+        ? FIRST_PAGE_NON_FINAL_ITEM_LIMIT
+        : CONTINUATION_PAGE_NON_FINAL_ITEM_LIMIT;
+    const maxTakeWithoutStealingFinal = remaining - FINAL_PAGE_MIN_ITEM_COUNT;
+    const takeCount = Math.min(pageLimit, maxTakeWithoutStealingFinal);
+
+    pages.push({
+      items: computedItems.slice(cursor, cursor + takeCount),
+      isFinalPage: false,
+    });
+    cursor += takeCount;
+    pageIndex += 1;
+  }
+
+  const totalPages = pages.length;
+
+  return pages.map((page, index) => {
     return {
       pageNumber: index + 1,
       totalPages,
-      items,
+      items: page.items,
       isFirstPage: index === 0,
-      isLastPage: isFinalPage,
-      isFinalPage,
-      isContinuationPage: index > 0 && !isFinalPage,
+      isLastPage: page.isFinalPage,
+      isFinalPage: page.isFinalPage,
+      isContinuationPage: index > 0 && !page.isFinalPage,
     };
   });
 }

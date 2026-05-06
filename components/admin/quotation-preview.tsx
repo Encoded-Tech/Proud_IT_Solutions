@@ -8,7 +8,7 @@ import {
   ELECTRONIC_SIGNATURE_NOTE,
   formatCurrency,
   getExpandedQuotationRowHeightMm,
-  DEFAULT_QUOTATION_TERMS,
+  quotationNotesToList,
   STATIC_QUOTATION_PREPARED_BY,
 } from "@/lib/helpers/quotation";
 import { QuotationDraft, QuotationPageSlice } from "@/types/quotation";
@@ -153,10 +153,7 @@ function QuotationPage({
   formattedDate: string;
 }) {
   const expandedRowHeightMm = getExpandedQuotationRowHeightMm(page.items.length);
-  const highlightNotes = (draft.terms || DEFAULT_QUOTATION_TERMS)
-    .split(/\r?\n/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const highlightNotes = quotationNotesToList(draft.terms);
 
   return (
     <article
@@ -273,7 +270,7 @@ function QuotationPage({
           ) : null}
 
           <div
-            className={`quotation-table-wrap mt-3 overflow-hidden ${
+            className={`quotation-table-wrap table-wrap mt-3 overflow-hidden ${
               page.isFinalPage ? "quotation-table-wrap-final" : ""
             } ${
               page.isFirstPage && !page.isFinalPage ? "quotation-table-wrap-first-non-final" : ""
@@ -400,9 +397,9 @@ function QuotationPage({
         </div>
 
         {page.isFinalPage ? (
-          <div className="signature-area-bottom">
+          <div className="below-table signature-area-bottom">
             <div className="space-y-3">
-              <div className="notes space-y-1.5 px-1 py-1 pl-3">
+              <div className="static-highlights notes space-y-1.5 px-1 py-1 pl-3">
                 {highlightNotes.map((item) => (
                   <div key={item} className="q-text-800 flex items-start gap-2 text-[9.5px] leading-4">
                     <span className="q-text-700 pt-[1px] text-[10px] font-semibold">
@@ -654,8 +651,10 @@ const QuotationPreview = forwardRef<HTMLDivElement, QuotationPreviewProps>(funct
           bottom: 22mm;
         }
 
-        .quotation-table-wrap {
+        .quotation-table-wrap,
+        .table-wrap {
           max-height: 178mm;
+          margin-bottom: 4mm;
         }
 
         .quotation-table-wrap-first-non-final {
@@ -670,6 +669,11 @@ const QuotationPreview = forwardRef<HTMLDivElement, QuotationPreviewProps>(funct
           max-height: 118mm;
         }
 
+        .final-page .below-table,
+        .final-page .static-highlights {
+          margin-top: 5mm;
+        }
+
         .description-cell {
           display: -webkit-box;
           max-height: 11mm;
@@ -682,14 +686,14 @@ const QuotationPreview = forwardRef<HTMLDivElement, QuotationPreviewProps>(funct
         }
 
         .signature-area-bottom {
-          position: absolute;
-          left: 0;
-          right: 0;
-          bottom: 6mm;
           display: grid;
           grid-template-columns: 1fr 64mm;
           gap: 8mm;
           align-items: end;
+        }
+
+        .final-page .regards-block {
+          margin-top: 8mm !important;
         }
 
         .notes {

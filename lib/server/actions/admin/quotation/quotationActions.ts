@@ -7,6 +7,8 @@ import {
   computeQuotationTotals,
   DEFAULT_QUOTATION_ASSETS,
   DEFAULT_QUOTATION_TERMS,
+  normalizeQuotationNotes,
+  quotationNotesToList,
   STATIC_QUOTATION_PREPARED_BY,
 } from "@/lib/helpers/quotation";
 import { quotationSchema } from "@/lib/validations/quotation";
@@ -48,7 +50,7 @@ function serializeQuotation(doc: any): QuotationRecord {
     taxableAmount: doc.taxableAmount,
     taxAmount: doc.taxAmount,
     grandTotal: doc.grandTotal,
-    terms: doc.terms ?? "",
+    terms: normalizeQuotationNotes(doc.terms),
     preparedBy: {
       heading: doc.preparedBy?.heading ?? STATIC_QUOTATION_PREPARED_BY.heading,
       name: doc.preparedBy?.name ?? STATIC_QUOTATION_PREPARED_BY.name,
@@ -129,8 +131,10 @@ export async function saveQuotationAction(
     const admin = await requireAdmin();
     await connectDB();
 
+    const sanitizedTerms = quotationNotesToList(input.terms).join("\n");
     const parsed = quotationSchema.parse({
       ...input,
+      terms: sanitizedTerms,
       discountValue: Number(input.discountValue) || 0,
       taxValue: 0,
       taxMode: "amount",
@@ -165,7 +169,7 @@ export async function saveQuotationAction(
       taxableAmount: totals.taxableAmount,
       taxAmount: totals.taxAmount,
       grandTotal: totals.grandTotal,
-      terms: parsed.terms || null,
+      terms: sanitizedTerms || null,
       preparedBy: {
         heading: parsed.preparedBy.heading || STATIC_QUOTATION_PREPARED_BY.heading,
         name: parsed.preparedBy.name || null,
