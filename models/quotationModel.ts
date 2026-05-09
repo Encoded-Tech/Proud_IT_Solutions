@@ -50,7 +50,7 @@ export interface IQuotation extends Document {
 const quotationItemSchema = new Schema<IQuotationItem>(
   {
     id: { type: String, required: true, trim: true },
-    description: { type: String, required: true, trim: true, maxlength: 600 },
+    description: { type: String, required: true, trim: true },
     quantity: { type: Number, required: true, min: 1 },
     unitPrice: { type: Number, required: true, min: 0 },
   },

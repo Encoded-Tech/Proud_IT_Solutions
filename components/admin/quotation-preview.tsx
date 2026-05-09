@@ -675,14 +675,10 @@ const QuotationPreview = forwardRef<HTMLDivElement, QuotationPreviewProps>(funct
         }
 
         .description-cell {
-          display: -webkit-box;
-          max-height: 11mm;
-          overflow: hidden;
+          display: block;
           white-space: pre-wrap;
           overflow-wrap: anywhere;
           word-break: break-word;
-          -webkit-box-orient: vertical;
-          -webkit-line-clamp: 3;
         }
 
         .signature-area-bottom {

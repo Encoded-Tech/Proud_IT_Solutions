@@ -1,8 +1,9 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { QuotationItemInput } from "@/types/quotation";
 
 interface QuotationItemRowProps {
@@ -41,11 +42,11 @@ export default function QuotationItemRow({
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
           Description
         </label>
-        <Input
+        <Textarea
           value={item.description}
           onChange={(event) => onChange(index, "description", event.target.value)}
           placeholder="Product or service description"
-          className="border-slate-200 bg-white"
+          className="min-h-20 resize-y border-slate-200 bg-white"
         />
       </div>
 

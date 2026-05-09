@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const quotationItemSchema = z.object({
   id: z.string().trim().min(1),
-  description: z.string().trim().min(1, "Description is required.").max(600),
+  description: z.string().trim().min(1, "Description is required."),
   quantity: z.number().min(1, "Quantity must be at least 1.").max(99999),
   unitPrice: z.number().min(0, "Unit price cannot be negative.").max(999999999),
 });
