@@ -18,6 +18,7 @@ const COLOR_SCAN_PROPERTIES = [
 ] as const;
 
 type QuotationAssetData = {
+  letterpadDataUrl: string;
   stampDataUrl: string;
   signatureDataUrl: string;
 };
@@ -51,7 +52,7 @@ async function imageToDataUrl(src: string): Promise<string> {
   if (!src) return "";
   if (src.startsWith("data:")) return src;
 
-  const response = await fetch(src, { cache: "no-cache" });
+  const response = await fetch(toAbsoluteUrl(src), { cache: "no-cache" });
   if (!response.ok) {
     throw new Error(`Failed to load image: ${src}`);
   }
@@ -60,16 +61,31 @@ async function imageToDataUrl(src: string): Promise<string> {
   return await blobToDataUrl(blob);
 }
 
+async function safeImageToDataUrl(src: string, label: string): Promise<string> {
+  try {
+    return await imageToDataUrl(src);
+  } catch (error) {
+    console.warn(`Quotation PDF export could not preload ${label}.`, {
+      src,
+      error,
+    });
+    return "";
+  }
+}
+
 async function loadQuotationAssetData(draft: QuotationDraft): Promise<QuotationAssetData> {
+  const letterpadSrc = draft.assets.letterpad || "/assets/quotation/letterpad.png";
   const stampSrc = draft.assets.stamp || "";
   const signatureSrc = draft.assets.signature || "/assets/quotation/signature.png";
 
-  const [stampDataUrl, signatureDataUrl] = await Promise.all([
-    stampSrc ? imageToDataUrl(stampSrc) : Promise.resolve(""),
-    signatureSrc ? imageToDataUrl(signatureSrc) : Promise.resolve(""),
+  const [letterpadDataUrl, stampDataUrl, signatureDataUrl] = await Promise.all([
+    letterpadSrc ? safeImageToDataUrl(letterpadSrc, "the letterpad image") : Promise.resolve(""),
+    stampSrc ? safeImageToDataUrl(stampSrc, "the stamp image") : Promise.resolve(""),
+    signatureSrc ? safeImageToDataUrl(signatureSrc, "the signature image") : Promise.resolve(""),
   ]);
 
   return {
+    letterpadDataUrl,
     stampDataUrl,
     signatureDataUrl,
   };
@@ -224,7 +240,13 @@ async function waitForImages(root: HTMLElement) {
 
       return new Promise<void>((resolve) => {
         img.onload = () => resolve();
-        img.onerror = () => resolve();
+        img.onerror = () => {
+          console.warn("Quotation PDF export image failed to load.", {
+            src: img.currentSrc || img.getAttribute("src") || "",
+            alt: img.getAttribute("alt") || "",
+          });
+          resolve();
+        };
       });
     })
   );
@@ -278,7 +300,13 @@ export async function downloadQuotationPdf(
     }
   }
 
-  const { stampDataUrl, signatureDataUrl } = await loadQuotationAssetData(draft);
+  const { letterpadDataUrl, stampDataUrl, signatureDataUrl } = await loadQuotationAssetData(draft);
+
+  if (!letterpadDataUrl) {
+    console.warn("Quotation PDF export could not preload the letterpad image.", {
+      src: draft.assets.letterpad || "/assets/quotation/letterpad.png",
+    });
+  }
 
   if (draft.assets.stamp && !stampDataUrl) {
     throw new Error("Failed to load the quotation stamp for PDF export.");
@@ -343,6 +371,26 @@ export async function downloadQuotationPdf(
           for (const stamp of stamps) {
             if (stampDataUrl) {
               stamp.src = stampDataUrl;
+            }
+          }
+
+          const letterpads = Array.from(
+            clonedRoot.querySelectorAll<HTMLImageElement>("[data-letterpad-layer]")
+          );
+          for (const letterpad of letterpads) {
+            if (letterpadDataUrl) {
+              letterpad.src = letterpadDataUrl;
+              letterpad.style.display = "block";
+              letterpad.style.position = "absolute";
+              letterpad.style.inset = "0";
+              letterpad.style.width = "210mm";
+              letterpad.style.height = "297mm";
+              letterpad.style.maxWidth = "none";
+              letterpad.style.maxHeight = "none";
+              letterpad.style.objectFit = "fill";
+              letterpad.style.zIndex = "0";
+              letterpad.style.opacity = "1";
+              letterpad.style.visibility = "visible";
             }
           }
 

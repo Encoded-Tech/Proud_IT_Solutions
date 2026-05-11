@@ -175,6 +175,8 @@ function QuotationPage({
         alt=""
         className="letterpad-bg"
         data-letterpad-layer
+        crossOrigin="anonymous"
+        decoding="sync"
         draggable={false}
       />
       <div className="letterpad-footer-mask" />
