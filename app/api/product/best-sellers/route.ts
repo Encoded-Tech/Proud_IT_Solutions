@@ -4,6 +4,7 @@ import { IProduct, Product } from "@/models/productModel";
 import { FilterQuery } from "mongoose";
 
 import { withDB } from "@/lib/HOF";
+import { getCategoryAndDescendantIds } from "@/lib/server/helpers/categoryDescendants";
 
 export const GET = 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -19,7 +20,10 @@ const filter: FilterQuery<IProduct> = {
   isActive: true,
   totalSales: { $gt: 0 }
 };
-  if (category) filter.category = category;
+  if (category) {
+    const categoryIds = await getCategoryAndDescendantIds(category);
+    filter.category = categoryIds.length > 0 ? { $in: categoryIds } : category;
+  }
 
   const products = await Product.find(filter)
     .sort({ totalSales: -1 })

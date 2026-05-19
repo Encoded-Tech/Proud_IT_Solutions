@@ -2,6 +2,7 @@ import { FilterQuery } from "mongoose";
 import { Product, IProduct } from "@/models/productModel";
 import {  NextResponse } from "next/server";
 import { withDB } from "@/lib/HOF";
+import { getCategoryAndDescendantIds } from "@/lib/server/helpers/categoryDescendants";
 
 
  export const GET = 
@@ -19,7 +20,10 @@ import { withDB } from "@/lib/HOF";
     discountPercent: { $gt: 0 },
   };
 
-  if (category) filter.category = category;
+  if (category) {
+    const categoryIds = await getCategoryAndDescendantIds(category);
+    filter.category = categoryIds.length > 0 ? { $in: categoryIds } : category;
+  }
 
   const hotDeals = await Product.find(filter)
     .sort({ discountPercent: -1 }) 

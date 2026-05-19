@@ -25,11 +25,15 @@ import Image from "@/components/ui/optimized-image";
 import { Upload, X, Loader2, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { CategoryType } from "@/types/product";
+import { formatCategoryDisplayName, isValidCategoryName, normalizeCategoryName } from "@/lib/helpers/category";
 
 
 
 const categorySchema = z.object({
-  categoryName: z.string().min(1, "Category name is required"),
+  categoryName: z
+    .string()
+    .refine((value) => normalizeCategoryName(value).length > 0, "Category name is required")
+    .refine((value) => isValidCategoryName(normalizeCategoryName(value)), "Category name contains unsupported characters"),
   parentId: z.string().optional(),
   categoryImage: z.instanceof(File).optional(),
 });
@@ -39,10 +43,6 @@ interface EditCategoryFormProps {
   categories: CategoryType[]; // parent dropdown
   onSubmit: (formData: FormData) => Promise<{ success: boolean; message: string }>;
   onCancel?: () => void;
-}
-
-function normalizeAdminLabel(value: string) {
-  return value.trim().toUpperCase();
 }
 
 export default function EditCategoryForm({
@@ -59,7 +59,7 @@ export default function EditCategoryForm({
   const form = useForm<z.infer<typeof categorySchema>>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
-      categoryName: category.categoryName,
+      categoryName: formatCategoryDisplayName(category.categoryName),
    parentId: category.parentId || "",
 
       categoryImage: undefined,
@@ -99,7 +99,7 @@ export default function EditCategoryForm({
     try {
       setButtonState("loading");
       const formData = new FormData();
-      formData.append("categoryName", normalizeAdminLabel(values.categoryName));
+      formData.append("categoryName", normalizeCategoryName(values.categoryName));
       formData.append("parentId", values.parentId || "");
       if (values.categoryImage) formData.append("categoryImage", values.categoryImage);
 
@@ -132,9 +132,6 @@ export default function EditCategoryForm({
                 <FormControl>
                   <Input
                     {...field}
-                    onChange={(event) =>
-                      field.onChange(normalizeAdminLabel(event.target.value))
-                    }
                     className="h-12"
                   />
                 </FormControl>
@@ -159,7 +156,7 @@ export default function EditCategoryForm({
                     <SelectItem value="null">None (Top Level)</SelectItem>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
-                        {cat.categoryName}
+                        {formatCategoryDisplayName(cat.categoryName)}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -6,6 +6,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { connectDB } from "@/db";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { requireAdmin } from "@/lib/auth/requireSession";
+import { createCategorySlug, formatCategoryDisplayName, isValidCategoryName, normalizeCategoryName } from "@/lib/helpers/category";
 import { mapCategoryToFrontend } from "@/lib/server/mappers/MapCategory";
 import { Category } from "@/models/categoryModel";
 
@@ -34,10 +35,6 @@ function revalidateCategoryCaches() {
   revalidateTag("homepage", "max");
 }
 
-function normalizeAdminLabel(value: string) {
-  return value.trim().toUpperCase();
-}
-
 export async function getCategories(): Promise<{
   success: boolean;
   message?: string;
@@ -55,7 +52,7 @@ export async function getCategories(): Promise<{
       message: "Categories fetched successfully",
       data: categories.map((category) => ({
         _id: category._id.toString(),
-        categoryName: category.categoryName,
+        categoryName: formatCategoryDisplayName(category.categoryName),
         parentId: category.parentId
           ? {
               _id: category.parentId.toString(),
@@ -74,7 +71,8 @@ export async function createCategory(fd: FormData) {
   await connectDB();
   await requireAdmin();
 
-  const categoryName = normalizeAdminLabel((fd.get("categoryName") as string) || "");
+  const categoryName = normalizeCategoryName((fd.get("categoryName") as string) || "");
+  const slug = createCategorySlug(categoryName);
   const parentIdRaw = fd.get("parentId") as string | null;
   const image = fd.get("categoryImage") as File | null;
 
@@ -82,6 +80,13 @@ export async function createCategory(fd: FormData) {
     return {
       success: false,
       message: "Category name is required",
+    };
+  }
+
+  if (!isValidCategoryName(categoryName)) {
+    return {
+      success: false,
+      message: "Category name contains unsupported characters",
     };
   }
 
@@ -95,7 +100,9 @@ export async function createCategory(fd: FormData) {
     imageUrl = await uploadToCloudinary(image);
   }
 
-  const existingCategory = await Category.findOne({ categoryName });
+  const existingCategory = await Category.findOne({
+    $or: [{ categoryName }, { slug }],
+  });
   if (existingCategory) {
     return {
       success: false,
@@ -104,7 +111,8 @@ export async function createCategory(fd: FormData) {
   }
 
   const category = await Category.create({
-    categoryName: categoryName.trim(),
+    categoryName,
+    slug,
     parentId,
     categoryImage: imageUrl,
   });
@@ -127,13 +135,18 @@ export async function updateCategory(id: string, fd: FormData) {
     return { success: false, message: "Category not found" };
   }
 
-  const name = normalizeAdminLabel((fd.get("categoryName") as string) || "");
+  const name = normalizeCategoryName((fd.get("categoryName") as string) || "");
+  const slug = createCategorySlug(name);
   const parentId = fd.get("parentId") as string;
   const image = fd.get("categoryImage") as File | null;
 
   if (name) {
+    if (!isValidCategoryName(name)) {
+      return { success: false, message: "Category name contains unsupported characters" };
+    }
+
     const duplicateCategory = await Category.findOne({
-      categoryName: name,
+      $or: [{ categoryName: name }, { slug }],
       _id: { $ne: id },
     });
 
@@ -142,8 +155,9 @@ export async function updateCategory(id: string, fd: FormData) {
     }
 
     category.categoryName = name;
+    category.slug = slug;
   }
-  category.parentId = parentId || null;
+  category.parentId = parentId && parentId !== "null" ? parentId : null;
 
   if (image && image.size > 0) {
     if (category.categoryImage) {

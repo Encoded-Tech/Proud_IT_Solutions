@@ -25,6 +25,7 @@ import Image from "@/components/ui/optimized-image";
 
 import { Check, Loader2, Upload, X, FolderTree, ImageIcon, Tag } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { formatCategoryDisplayName, isValidCategoryName, normalizeCategoryName } from "@/lib/helpers/category";
 import { createCategory, getCategories } from "@/lib/server/actions/admin/category/categoryAction";
 
 export interface Category {
@@ -40,12 +41,11 @@ export interface Category {
   updatedAt?: string;
 }
 
-function normalizeAdminLabel(value: string) {
-  return value.trim().toUpperCase();
-}
-
 const categorySchema = z.object({
-  categoryName: z.string().min(1, "Category name is required"),
+  categoryName: z
+    .string()
+    .refine((value) => normalizeCategoryName(value).length > 0, "Category name is required")
+    .refine((value) => isValidCategoryName(normalizeCategoryName(value)), "Category name contains unsupported characters"),
   parentId: z.string().optional(),
   categoryImage: z
     .instanceof(File, { message: "Image file is required" })
@@ -99,7 +99,7 @@ const onSubmit = async (values: z.infer<typeof categorySchema>) => {
     setButtonState('loading');
 
     const formData = new FormData();
-    formData.append("categoryName", normalizeAdminLabel(values.categoryName));
+    formData.append("categoryName", normalizeCategoryName(values.categoryName));
     if (values.categoryImage) formData.append("categoryImage", values.categoryImage);
     if (values.parentId && values.parentId !== NO_PARENT) {
   formData.append("parentId", values.parentId);
@@ -235,9 +235,6 @@ const onSubmit = async (values: z.infer<typeof categorySchema>) => {
                             placeholder="e.g., Electronics, Fashion, Home & Garden"
                             className="h-12 border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl text-base"
                             {...field}
-                            onChange={(event) =>
-                              field.onChange(normalizeAdminLabel(event.target.value))
-                            }
                           />
                         </FormControl>
                         <FormMessage className="text-sm" />
@@ -279,7 +276,7 @@ const onSubmit = async (values: z.infer<typeof categorySchema>) => {
                               <SelectItem key={cat._id} value={cat._id}>
                                 <div className="flex items-center gap-2">
                                   <div className="w-2 h-2 rounded-full bg-red-500" />
-                                  <span>{cat.categoryName}</span>
+                                  <span>{formatCategoryDisplayName(cat.categoryName)}</span>
                                 </div>
                               </SelectItem>
                             ))}

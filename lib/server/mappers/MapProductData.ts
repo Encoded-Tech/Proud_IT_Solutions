@@ -1,6 +1,7 @@
 
 import { IProduct } from "@/models/productModel";
 import { productType, VariantType } from "@/types/product";
+import { formatCategoryDisplayName } from "@/lib/helpers/category";
 import { sanitizeProductHighlights } from "@/lib/helpers/productHighlights";
 
 // types/server/product-populated.ts
@@ -94,7 +95,7 @@ export function mapProductToFrontend(
       })) || [],
     category: {
       id: category?._id.toString() ?? "",
-      categoryName: category?.categoryName ?? "",
+      categoryName: category?.categoryName ? formatCategoryDisplayName(category.categoryName) : "",
       slug: category?.slug ?? "",
       categoryImage: category?.categoryImage ?? "",
       productCount: 0,

@@ -4,6 +4,7 @@ import { Product, IProduct } from "@/models/productModel";
 import { FilterQuery } from "mongoose";
 
 import { withDB } from "@/lib/HOF";
+import { getCategoryAndDescendantIds } from "@/lib/server/helpers/categoryDescendants";
 
 export const GET =
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -20,7 +21,10 @@ export const GET =
 
   // Filter only active products
   const filter: FilterQuery<IProduct> = { isActive: true };
-  if (category) filter.category = category;
+  if (category) {
+    const categoryIds = await getCategoryAndDescendantIds(category);
+    filter.category = categoryIds.length > 0 ? { $in: categoryIds } : category;
+  }
 
   // Fetch products sorted by createdAt descending (newest first)
   const newArrivals = await Product.find(filter)

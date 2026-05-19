@@ -1,6 +1,7 @@
 // mappers/MapCategory.ts
 
 import { CategoryType } from "@/types/product";
+import { formatCategoryDisplayName } from "@/lib/helpers/category";
 export interface ICategoryWithCountPlain {
   _id: string;
   categoryName: string;
@@ -17,7 +18,7 @@ export interface ICategoryWithCountPlain {
 export function mapCategoryToFrontend(category: ICategoryWithCountPlain): CategoryType {
   return {
     id: category._id.toString(), // ObjectId -> string
-    categoryName: category.categoryName,
+    categoryName: formatCategoryDisplayName(category.categoryName),
     slug: category.slug,
     categoryImage: category.categoryImage || "",
     parentId: category.parentId?.toString() || undefined,

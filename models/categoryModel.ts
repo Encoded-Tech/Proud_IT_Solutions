@@ -1,5 +1,6 @@
 
 import { Schema, Document, model, models, Types } from "mongoose";
+import { createCategorySlug, normalizeCategoryName } from "@/lib/helpers/category";
 
 export interface ICategory extends Document {
   _id: Types.ObjectId;
@@ -24,6 +25,7 @@ const categorySchema = new Schema<ICategory>(
       required: true,
       unique: true,
       trim: true,
+      set: normalizeCategoryName,
     },
     categoryImage: {
       type: String,
@@ -54,7 +56,8 @@ const categorySchema = new Schema<ICategory>(
 // Pre-save Middleware (auto-generate slug)
 categorySchema.pre("save", function (next) {
   if (this.isModified("categoryName")) {
-    this.slug = this.categoryName.toLowerCase().replace(/\s+/g, "-");
+    this.categoryName = normalizeCategoryName(this.categoryName);
+    this.slug = createCategorySlug(this.categoryName);
   }
   next();
 });

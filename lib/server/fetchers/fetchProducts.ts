@@ -2,10 +2,10 @@
 
 import { FilterQuery } from "mongoose";
 import { connectDB } from "@/db";
-import { Category } from "@/models";
 import { IProduct, Product } from "@/models/productModel";
 import { productType } from "@/types/product";
 import { mapProductToFrontend } from "../mappers/MapProductData";
+import { getCategoryAndDescendantIds } from "@/lib/server/helpers/categoryDescendants";
 
 export interface PaginationMeta {
   page: number;
@@ -70,7 +70,8 @@ async function queryProducts(
   }
 
   if (options?.categoryId) {
-    filter.category = options.categoryId;
+    const categoryIds = await getCategoryAndDescendantIds(options.categoryId);
+    filter.category = categoryIds.length > 0 ? { $in: categoryIds } : options.categoryId;
   }
 
   if (options?.brandName) {
@@ -154,7 +155,8 @@ async function queryRankedProducts(
   }
 
   if (category) {
-    filter.category = category;
+    const categoryIds = await getCategoryAndDescendantIds(category);
+    filter.category = categoryIds.length > 0 ? { $in: categoryIds } : category;
   }
 
   const total = await Product.countDocuments(filter);
@@ -239,8 +241,8 @@ export async function fetchFilteredProducts({
 
   if (brand) query.brandName = brand;
   if (category) {
-    const cat = await Category.findOne({ slug: category }).select("_id");
-    if (cat) query.category = cat._id;
+    const categoryIds = await getCategoryAndDescendantIds(category);
+    if (categoryIds.length > 0) query.category = { $in: categoryIds };
   }
 
   if (rating !== null && rating !== undefined) {

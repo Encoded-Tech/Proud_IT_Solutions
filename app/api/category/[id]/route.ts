@@ -2,6 +2,7 @@
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
 import { withDB } from "@/lib/HOF";
 import { withAuth } from "@/lib/HOF/withAuth";
+import { createCategorySlug, formatCategoryDisplayName, isValidCategoryName, normalizeCategoryName } from "@/lib/helpers/category";
 import { Category } from "@/models";
 import { ICategory } from "@/models/categoryModel";
 import { ApiResponse } from "@/types/api";
@@ -35,6 +36,9 @@ export const GET = withDB(async (req, _context?) => {
     })
   }
   const singleCategory = await Category.findById(id).populate("parentId", "categoryName");
+  if (singleCategory) {
+    singleCategory.categoryName = formatCategoryDisplayName(singleCategory.categoryName);
+  }
   const hasCategory = !!singleCategory;
   const response: ApiResponse<ICategory[]> = {
     success: hasCategory,
@@ -60,12 +64,33 @@ export const PUT = withAuth(
       }, { status: 404 });
     }
     const formData = await req.formData();
-    const categoryName = formData.get("categoryName") as string;
+    const categoryName = normalizeCategoryName((formData.get("categoryName") as string) || "");
+    const slug = createCategorySlug(categoryName);
     const categoryImage = formData.get("categoryImage") as File;
     const parentId = formData.get("parentId") as string | null;
 
     if (categoryName) {
+      if (!isValidCategoryName(categoryName)) {
+        return NextResponse.json(
+          { success: false, message: "Category name contains unsupported characters" },
+          { status: 400 }
+        );
+      }
+
+      const duplicateCategory = await Category.findOne({
+        $or: [{ categoryName }, { slug }],
+        _id: { $ne: id },
+      });
+
+      if (duplicateCategory) {
+        return NextResponse.json(
+          { success: false, message: "Category already exists" },
+          { status: 409 }
+        );
+      }
+
       categoryToUpdate.categoryName = categoryName;
+      categoryToUpdate.slug = slug;
 
     }
     if (categoryImage && categoryImage.size > 0) {

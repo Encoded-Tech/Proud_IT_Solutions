@@ -1,5 +1,6 @@
 import { uploadToCloudinary } from "@/config/cloudinary";
 
+import { createCategorySlug, formatCategoryDisplayName, isValidCategoryName, normalizeCategoryName } from "@/lib/helpers/category";
 import { checkRequiredFields } from "@/lib/helpers/validateRequiredFields";
 import { withDB } from "@/lib/HOF";
 import { withAuth } from "@/lib/HOF/withAuth";
@@ -58,6 +59,7 @@ export const GET = withDB(async () => {
   // 3) Merge categories + counts
   const categoriesWithCount = categories.map((cat) => ({
     ...cat,
+    categoryName: formatCategoryDisplayName(cat.categoryName),
     productCount: countMap.get(cat._id.toString()) || 0,
   }));
 
@@ -78,7 +80,8 @@ export const POST = withAuth(
   withDB(async (req: NextRequest, context?) => {
 
     const formData = await req.formData();
-    const categoryName = formData.get("categoryName") as string;
+    const categoryName = normalizeCategoryName((formData.get("categoryName") as string) || "");
+    const slug = createCategorySlug(categoryName);
     const categoryImage = formData.get("categoryImage") as File;
     const parentId = formData.get("parentId") as string | null;
 
@@ -86,9 +89,18 @@ export const POST = withAuth(
     const missingFields = checkRequiredFields(requiredFields);
     if (missingFields) return missingFields;
 
+    if (!isValidCategoryName(categoryName)) {
+      return NextResponse.json(
+        { success: false, message: "Category name contains unsupported characters" },
+        { status: 400 }
+      );
+    }
+
     const normalizedParentId =
       parentId && parentId !== "null" && parentId !== "" ? parentId : null;
-    const existingCategory = await Category.findOne({ categoryName });
+    const existingCategory = await Category.findOne({
+      $or: [{ categoryName }, { slug }],
+    });
     if (existingCategory) {
       return NextResponse.json(
         { success: false, message: `Category with name '${categoryName}' already exists` },
@@ -100,7 +112,7 @@ export const POST = withAuth(
     if (categoryImage && categoryImage.size > 0) {
       imageUrl = await uploadToCloudinary(categoryImage);
     }
-    const createCategory = await Category.create({ categoryName, categoryImage: imageUrl, parentId: normalizedParentId });
+    const createCategory = await Category.create({ categoryName, slug, categoryImage: imageUrl, parentId: normalizedParentId });
     revalidateCategoryCaches();
     return NextResponse.json({
       success: true,
