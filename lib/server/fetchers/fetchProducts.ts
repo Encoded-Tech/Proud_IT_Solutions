@@ -61,6 +61,106 @@ function escapeRegex(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+type SearchRankingData = {
+  searchOr: FilterQuery<IProduct>[];
+  exactRegex: RegExp;
+  startsWithRegex: RegExp;
+  containsRegex: RegExp;
+  variantProductIdSet: Set<string>;
+};
+
+type ProductWithSearchCategory = IProduct & {
+  category?:
+    | IProduct["category"]
+    | {
+        categoryName?: string;
+      };
+};
+
+function getCategoryName(product: ProductWithSearchCategory) {
+  const category = product.category;
+  if (typeof category === "object" && category !== null && "categoryName" in category) {
+    return category.categoryName || "";
+  }
+  return "";
+}
+
+function scoreSearchProduct(product: ProductWithSearchCategory, ranking: SearchRankingData) {
+  let score = 0;
+  const name = product.name || "";
+  const brandName = product.brandName || "";
+  const categoryName = getCategoryName(product);
+
+  if (ranking.exactRegex.test(name)) score += 100;
+  else if (ranking.startsWithRegex.test(name)) score += 80;
+  else if (ranking.containsRegex.test(name)) score += 60;
+
+  if (ranking.containsRegex.test(categoryName)) score += 50;
+  if (ranking.variantProductIdSet.has(product._id.toString())) score += 40;
+  if (ranking.containsRegex.test(brandName)) score += 25;
+
+  return score;
+}
+
+function sortProductsBySearchRelevance<T extends ProductWithSearchCategory>(
+  products: T[],
+  ranking: SearchRankingData
+) {
+  return products
+    .map((product) => ({
+      product,
+      score: scoreSearchProduct(product, ranking),
+    }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if ((b.product.stock > 0 ? 1 : 0) !== (a.product.stock > 0 ? 1 : 0)) {
+        return (b.product.stock > 0 ? 1 : 0) - (a.product.stock > 0 ? 1 : 0);
+      }
+      return (
+        new Date(b.product.createdAt || 0).getTime() -
+        new Date(a.product.createdAt || 0).getTime()
+      );
+    })
+    .map(({ product }) => product);
+}
+
+async function buildSearchRankingData(search: string): Promise<SearchRankingData> {
+  const trimmedSearch = search.trim();
+  const safeSearch = escapeRegex(trimmedSearch);
+  const containsRegex = new RegExp(safeSearch, "i");
+  const exactRegex = new RegExp(`^${safeSearch}$`, "i");
+  const startsWithRegex = new RegExp(`^${safeSearch}`, "i");
+
+  const [matchingCategories, matchingVariants] = await Promise.all([
+    Category.find({ isActive: true, categoryName: containsRegex })
+      .select("_id")
+      .limit(25)
+      .lean<{ _id: unknown }[]>(),
+    ProductVariant.find({ isActive: true, sku: containsRegex })
+      .select("product")
+      .limit(100)
+      .lean<{ product: unknown }[]>(),
+  ]);
+
+  const variantProductIds = matchingVariants.map((variant) => variant.product);
+
+  return {
+    exactRegex,
+    startsWithRegex,
+    containsRegex,
+    variantProductIdSet: new Set(variantProductIds.map((id) => String(id))),
+    searchOr: [
+      { name: containsRegex },
+      { brandName: containsRegex },
+      ...(matchingCategories.length > 0
+        ? [{ category: { $in: matchingCategories.map((category) => category._id) } }]
+        : []),
+      ...(variantProductIds.length > 0 ? [{ _id: { $in: variantProductIds } }] : []),
+    ],
+  };
+}
+
 async function queryProducts(
   page: number,
   limit: number,
@@ -70,31 +170,11 @@ async function queryProducts(
 
   const skip = (page - 1) * limit;
   const filter: FilterQuery<IProduct> = {};
+  let searchRanking: SearchRankingData | null = null;
 
   if (options?.search) {
-    const safeSearch = escapeRegex(options.search.trim());
-    const [matchingCategories, matchingVariants] = await Promise.all([
-      Category.find({ isActive: true, categoryName: { $regex: safeSearch, $options: "i" } })
-        .select("_id")
-        .limit(25)
-        .lean<{ _id: unknown }[]>(),
-      ProductVariant.find({ isActive: true, sku: { $regex: safeSearch, $options: "i" } })
-        .select("product")
-        .limit(25)
-        .lean<{ product: unknown }[]>(),
-    ]);
-
-    filter.$or = [
-      { name: { $regex: safeSearch, $options: "i" } },
-      { brandName: { $regex: safeSearch, $options: "i" } },
-      { "tags.name": { $regex: safeSearch, $options: "i" } },
-      ...(matchingCategories.length > 0
-        ? [{ category: { $in: matchingCategories.map((category) => category._id) } }]
-        : []),
-      ...(matchingVariants.length > 0
-        ? [{ _id: { $in: matchingVariants.map((variant) => variant.product) } }]
-        : []),
-    ];
+    searchRanking = await buildSearchRankingData(options.search);
+    filter.$or = searchRanking.searchOr;
   }
 
   if (options?.categoryId) {
@@ -131,10 +211,8 @@ async function queryProducts(
   }
 
   const total = await Product.countDocuments(filter);
-  const products = await Product.find(filter)
-    .sort(sortQuery)
-    .skip(skip)
-    .limit(limit)
+  const productsQuery = Product.find(filter)
+    .sort(searchRanking ? { createdAt: -1 } : sortQuery)
     .select(PRODUCT_CARD_SELECT)
     .populate({
       path: "category",
@@ -146,6 +224,13 @@ async function queryProducts(
       select: "price stock specs images isActive",
     })
     .lean<IProduct[]>();
+
+  const products = searchRanking
+    ? sortProductsBySearchRelevance(
+        await productsQuery.limit(Math.max(page * limit, 120)),
+        searchRanking
+      ).slice(skip, skip + limit)
+    : await productsQuery.skip(skip).limit(limit);
 
   return {
     success: true,
@@ -267,32 +352,12 @@ export async function fetchFilteredProducts({
   await connectDB();
 
   const query: FilterQuery<IProduct> = { isActive: true };
+  let searchRanking: SearchRankingData | null = null;
 
   if (brand) query.brandName = brand;
   if (search?.trim()) {
-    const safeSearch = escapeRegex(search.trim());
-    const [matchingCategories, matchingVariants] = await Promise.all([
-      Category.find({ isActive: true, categoryName: { $regex: safeSearch, $options: "i" } })
-        .select("_id")
-        .limit(25)
-        .lean<{ _id: unknown }[]>(),
-      ProductVariant.find({ isActive: true, sku: { $regex: safeSearch, $options: "i" } })
-        .select("product")
-        .limit(25)
-        .lean<{ product: unknown }[]>(),
-    ]);
-
-    query.$or = [
-      { name: { $regex: safeSearch, $options: "i" } },
-      { brandName: { $regex: safeSearch, $options: "i" } },
-      { "tags.name": { $regex: safeSearch, $options: "i" } },
-      ...(matchingCategories.length > 0
-        ? [{ category: { $in: matchingCategories.map((category) => category._id) } }]
-        : []),
-      ...(matchingVariants.length > 0
-        ? [{ _id: { $in: matchingVariants.map((variant) => variant.product) } }]
-        : []),
-    ];
+    searchRanking = await buildSearchRankingData(search);
+    query.$or = searchRanking.searchOr;
   }
   if (category) {
     const categoryIds = await getCategoryAndDescendantIds(category);
@@ -310,10 +375,8 @@ export async function fetchFilteredProducts({
   }
 
   const total = await Product.countDocuments(query);
-  const products = await Product.find(query)
+  const productsQuery = Product.find(query)
     .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit)
     .select(PRODUCT_CARD_SELECT)
     .populate("category", "categoryName slug categoryImage isActive")
     .populate({
@@ -322,6 +385,14 @@ export async function fetchFilteredProducts({
       select: "price stock specs images isActive",
     })
     .lean<IProduct[]>();
+
+  const skip = (page - 1) * limit;
+  const products = searchRanking
+    ? sortProductsBySearchRelevance(
+        await productsQuery.limit(Math.max(page * limit, 120)),
+        searchRanking
+      ).slice(skip, skip + limit)
+    : await productsQuery.skip(skip).limit(limit);
 
   return {
     success: true,
