@@ -17,6 +17,7 @@ import {
 import { signOut } from "next-auth/react";
 import { selectWishlistCount } from "@/redux/features/wishlist/wishListSlice";
 import Image from "@/components/ui/optimized-image";
+import SearchBar from "@/components/client/searchBar";
 
 const BottomCategory = () => {
   const pathname = usePathname();
@@ -206,20 +207,9 @@ const BottomCategory = () => {
         </div>
 
         {/* MOBILE SEARCH */}
-        <form className="lg:hidden flex relative p-1 border border-zinc-200 bg-white text-black rounded-full text-base w-full">
-          <input
-            className="flex-1 pl-4 outline-none"
-            type="text"
-            placeholder="Search"
-            required
-          />
-          <button
-            type="submit"
-            className="p-1 text-white rounded-full bg-primary cursor-pointer"
-          >
-            <Icon icon="ri:search-line" width="20" height="20" />
-          </button>
-        </form>
+        <div className="lg:hidden w-full">
+          <SearchBar mobile />
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { Monitor, Cpu, Keyboard, Zap, ChevronRight } from "lucide-react";
 import Link from "next/link";

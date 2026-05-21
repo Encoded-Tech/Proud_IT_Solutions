@@ -6,13 +6,24 @@ import {
   VideoMediaItem,
   AnyMediaItem,
 } from "@/types/media";
+import { Types } from "mongoose";
+
+type MediaLike = Pick<
+  IMedia,
+  "type" | "imageUrl" | "videoUrl" | "publicId" | "placement" | "isActive" | "createdAt" | "updatedAt"
+> & {
+  id?: string;
+  _id?: Types.ObjectId;
+};
 
 /**
  * Maps a backend Media document (IMedia) to frontend-safe MediaItem
  */
-export const mapMediaToFrontend = (media: IMedia): AnyMediaItem => {
+export const mapMediaToFrontend = (media: MediaLike): AnyMediaItem => {
+  const id = media.id || media._id?.toString() || "";
+
   const base = {
-    id: media.id.toString(),
+    id,
     type: media.type,
     placement: media.placement,
     isActive: media.isActive,

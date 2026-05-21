@@ -92,6 +92,7 @@ const MediaSchema = new Schema<IMedia>(
 );
 
 MediaSchema.index({ isActive: 1, createdAt: 1 });
+MediaSchema.index({ isActive: 1, placement: 1 });
 
 const MediaModel = models.Media || model<IMedia>("Media", MediaSchema);
 

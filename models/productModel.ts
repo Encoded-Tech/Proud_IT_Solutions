@@ -166,8 +166,13 @@ discountPercent: { type: Number, default: 0 },
   });
 
   productSchema.index({ isActive: 1, createdAt: -1 });
+  productSchema.index({ name: 1, isActive: 1 });
+  productSchema.index({ slug: 1, isActive: 1 });
   productSchema.index({ category: 1, isActive: 1, createdAt: -1 });
   productSchema.index({ brandName: 1, isActive: 1 });
+  productSchema.index({ "tags.name": 1, isActive: 1 });
+  productSchema.index({ price: 1, isActive: 1 });
+  productSchema.index({ avgRating: -1, isActive: 1 });
   productSchema.index({ totalSales: -1, isActive: 1 });
   productSchema.index({ discountPercent: -1, isActive: 1 });
   

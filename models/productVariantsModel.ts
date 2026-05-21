@@ -94,6 +94,8 @@ variantSchema.pre("save", async function (next) {
   next();
 });
 
+variantSchema.index({ sku: 1, isActive: 1 });
+variantSchema.index({ product: 1, isActive: 1 });
 
 
 

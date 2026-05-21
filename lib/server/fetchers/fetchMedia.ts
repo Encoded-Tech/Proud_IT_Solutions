@@ -2,7 +2,7 @@
 
 import { cacheLife, cacheTag } from "next/cache";
 import { connectDB } from "@/db";
-import { Media } from "@/models/promotionModel";
+import { IMedia, Media } from "@/models/promotionModel";
 import { AnyMediaItem } from "@/types/media";
 import { mapMediaToFrontend } from "../mappers/MapMedia";
 
@@ -22,7 +22,7 @@ export async function getPublicMedia(): Promise<MediaResponse> {
 
   try {
     await connectDB();
-    const media = await Media.find({ isActive: true }).sort({ createdAt: 1 });
+    const media = await Media.find({ isActive: true }).sort({ createdAt: 1 }).lean<IMedia[]>();
 
     return {
       success: true,

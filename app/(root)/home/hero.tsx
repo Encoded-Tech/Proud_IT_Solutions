@@ -48,6 +48,7 @@ function HeroCardLink({ item, priority }: { item: HeroCard; priority?: boolean }
           alt={item.title}
           fill
           priority={priority}
+          sizes="(max-width: 1024px) 100vw, 58vw"
           className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-slate-950/35 to-red-900/35" />

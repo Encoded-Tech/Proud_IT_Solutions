@@ -3,6 +3,7 @@
 import { FilterQuery } from "mongoose";
 import { connectDB } from "@/db";
 import { IProduct, Product } from "@/models/productModel";
+import { Category, ProductVariant } from "@/models";
 import { productType } from "@/types/product";
 import { mapProductToFrontend } from "../mappers/MapProductData";
 import { getCategoryAndDescendantIds } from "@/lib/server/helpers/categoryDescendants";
@@ -44,13 +45,21 @@ interface FilteredParams {
   limit: number;
   brand?: string | null;
   category?: string | null;
+  search?: string | null;
   minPrice?: number;
   maxPrice?: number;
   rating?: number | null;
 }
 
-const PRODUCT_SELECT =
+const PRODUCT_CARD_SELECT =
+  "name slug highlights price stock reservedStock category images variants avgRating totalReviews totalSales offeredPrice brandName isOfferedPriceActive discountPercent offerStartDate offerEndDate isActive createdAt updatedAt";
+
+const PRODUCT_DETAIL_SELECT =
   "name slug description highlights price stock reservedStock category images variants reviews avgRating totalReviews totalSales offeredPrice tags brandName isOfferedPriceActive discountPercent offerStartDate offerEndDate isActive createdAt updatedAt";
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 async function queryProducts(
   page: number,
@@ -63,9 +72,28 @@ async function queryProducts(
   const filter: FilterQuery<IProduct> = {};
 
   if (options?.search) {
+    const safeSearch = escapeRegex(options.search.trim());
+    const [matchingCategories, matchingVariants] = await Promise.all([
+      Category.find({ isActive: true, categoryName: { $regex: safeSearch, $options: "i" } })
+        .select("_id")
+        .limit(25)
+        .lean<{ _id: unknown }[]>(),
+      ProductVariant.find({ isActive: true, sku: { $regex: safeSearch, $options: "i" } })
+        .select("product")
+        .limit(25)
+        .lean<{ product: unknown }[]>(),
+    ]);
+
     filter.$or = [
-      { name: { $regex: options.search, $options: "i" } },
-      { brandName: { $regex: options.search, $options: "i" } },
+      { name: { $regex: safeSearch, $options: "i" } },
+      { brandName: { $regex: safeSearch, $options: "i" } },
+      { "tags.name": { $regex: safeSearch, $options: "i" } },
+      ...(matchingCategories.length > 0
+        ? [{ category: { $in: matchingCategories.map((category) => category._id) } }]
+        : []),
+      ...(matchingVariants.length > 0
+        ? [{ _id: { $in: matchingVariants.map((variant) => variant.product) } }]
+        : []),
     ];
   }
 
@@ -107,7 +135,7 @@ async function queryProducts(
     .sort(sortQuery)
     .skip(skip)
     .limit(limit)
-    .select(PRODUCT_SELECT)
+    .select(PRODUCT_CARD_SELECT)
     .populate({
       path: "category",
       select: "categoryName slug categoryImage isActive",
@@ -115,7 +143,7 @@ async function queryProducts(
     .populate({
       path: "variants",
       match: { isActive: true },
-      select: "price stock specs images",
+      select: "price stock specs images isActive",
     })
     .lean<IProduct[]>();
 
@@ -171,7 +199,7 @@ async function queryRankedProducts(
     .sort(sortQuery)
     .skip(skip)
     .limit(limit)
-    .select(PRODUCT_SELECT)
+    .select(PRODUCT_CARD_SELECT)
     .populate("category", "categoryName slug categoryImage isActive")
     .populate({
       path: "variants",
@@ -197,7 +225,7 @@ async function queryProductBySlug(slug: string): Promise<ApiSingleProductRespons
   await connectDB();
 
   const product = await Product.findOne({ slug, isActive: true })
-    .select(PRODUCT_SELECT)
+    .select(PRODUCT_DETAIL_SELECT)
     .populate({
       path: "category",
       select: "categoryName slug categoryImage isActive createdAt",
@@ -234,12 +262,38 @@ export async function fetchFilteredProducts({
   minPrice,
   maxPrice,
   rating,
+  search,
 }: FilteredParams) {
   await connectDB();
 
   const query: FilterQuery<IProduct> = { isActive: true };
 
   if (brand) query.brandName = brand;
+  if (search?.trim()) {
+    const safeSearch = escapeRegex(search.trim());
+    const [matchingCategories, matchingVariants] = await Promise.all([
+      Category.find({ isActive: true, categoryName: { $regex: safeSearch, $options: "i" } })
+        .select("_id")
+        .limit(25)
+        .lean<{ _id: unknown }[]>(),
+      ProductVariant.find({ isActive: true, sku: { $regex: safeSearch, $options: "i" } })
+        .select("product")
+        .limit(25)
+        .lean<{ product: unknown }[]>(),
+    ]);
+
+    query.$or = [
+      { name: { $regex: safeSearch, $options: "i" } },
+      { brandName: { $regex: safeSearch, $options: "i" } },
+      { "tags.name": { $regex: safeSearch, $options: "i" } },
+      ...(matchingCategories.length > 0
+        ? [{ category: { $in: matchingCategories.map((category) => category._id) } }]
+        : []),
+      ...(matchingVariants.length > 0
+        ? [{ _id: { $in: matchingVariants.map((variant) => variant.product) } }]
+        : []),
+    ];
+  }
   if (category) {
     const categoryIds = await getCategoryAndDescendantIds(category);
     if (categoryIds.length > 0) query.category = { $in: categoryIds };
@@ -260,7 +314,13 @@ export async function fetchFilteredProducts({
     .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(limit)
-    .select(PRODUCT_SELECT)
+    .select(PRODUCT_CARD_SELECT)
+    .populate("category", "categoryName slug categoryImage isActive")
+    .populate({
+      path: "variants",
+      match: { isActive: true },
+      select: "price stock specs images isActive",
+    })
     .lean<IProduct[]>();
 
   return {

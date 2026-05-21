@@ -4,6 +4,11 @@ import { Product } from "@/models/productModel";
 import { ReviewState } from "@/types/product";
 import { mapReviewArray } from "../mappers/mapReview";
 
+type ReviewProductResult = {
+  reviews: Parameters<typeof mapReviewArray>[0];
+  totalReviews?: number;
+  avgRating?: number;
+};
 
 export async function getReviewsAction(slug: string): Promise<ReviewState> {
   "use cache";
@@ -12,10 +17,13 @@ export async function getReviewsAction(slug: string): Promise<ReviewState> {
   cacheTag("products");
   cacheTag(`product:${slug}`);
 
-  const product = await Product.findOne({ slug }).populate({
-    path: "reviews.user",
-    select: "name image",
-  });
+  const product = await Product.findOne({ slug })
+    .select("reviews totalReviews avgRating")
+    .populate({
+      path: "reviews.user",
+      select: "name email image",
+    })
+    .lean<ReviewProductResult | null>();
 
   if (!product) {
     return { reviews: [], totalReviews: 0, avgRating: 0 };
@@ -25,7 +33,7 @@ export async function getReviewsAction(slug: string): Promise<ReviewState> {
 
   return {
     reviews,
-    totalReviews: product.totalReviews,
-    avgRating: product.avgRating,
+    totalReviews: product.totalReviews ?? reviews.length,
+    avgRating: product.avgRating ?? 0,
   };
 }

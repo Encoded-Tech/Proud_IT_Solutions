@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { Types } from "mongoose";
 import { Category } from "@/models";
 
@@ -17,6 +18,11 @@ function categoryMatches(category: CategoryTreeItem, categoryIdOrSlug: string) {
 }
 
 export async function getCategoryAndDescendantIds(categoryIdOrSlug: string) {
+  "use cache";
+
+  cacheLife("hours");
+  cacheTag("categories");
+
   const selected = categoryIdOrSlug.trim();
   if (!selected) return [];
 
@@ -38,14 +44,14 @@ export async function getCategoryAndDescendantIds(categoryIdOrSlug: string) {
     childrenByParentId.set(parentId, siblings);
   }
 
-  const ids: Types.ObjectId[] = [];
+  const ids: string[] = [];
   const stack = [rootCategory];
 
   while (stack.length > 0) {
     const category = stack.pop();
     if (!category) continue;
 
-    ids.push(category._id);
+    ids.push(category._id.toString());
     stack.push(...(childrenByParentId.get(category._id.toString()) || []));
   }
 

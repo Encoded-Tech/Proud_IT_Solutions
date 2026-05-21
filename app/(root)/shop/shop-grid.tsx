@@ -40,6 +40,7 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
   const [selectedCategorySlug, setSelectedCategorySlug] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
@@ -49,12 +50,14 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
   useEffect(() => {
     const categoryFromUrl = searchParams.get("category");
     const brandFromUrl = searchParams.get("brand");
+    const searchFromUrl = searchParams.get("search");
     if (categoryFromUrl) {
       setSelectedCategorySlug(categoryFromUrl);
     }
     if (brandFromUrl) {
       setSelectedBrand(brandFromUrl);
     }
+    setSearchQuery(searchFromUrl?.trim() || null);
   }, [searchParams]);
 
   /* -------------------- UPDATE URL WHEN CATEGORY CHANGES (NEW) -------------------- */
@@ -73,8 +76,14 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
       params.delete("brand");
     }
 
+    if (searchQuery) {
+      params.set("search", searchQuery);
+    } else {
+      params.delete("search");
+    }
+
     router.replace(`/shop?${params.toString()}`, { scroll: false });
-  }, [selectedCategorySlug, selectedBrand]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedCategorySlug, selectedBrand, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ----------------------------- FETCH STATIC BRANDS ------------------------ */
   useEffect(() => {
@@ -102,6 +111,7 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
         limit: 6,
         brand: selectedBrand,
         category: selectedCategorySlug,
+        search: searchQuery,
         minPrice,
         maxPrice,
         rating: selectedRating,
@@ -116,7 +126,7 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
     };
 
     applyFilters();
-  }, [selectedBrand, selectedCategorySlug, minPrice, maxPrice, selectedRating]);
+  }, [selectedBrand, selectedCategorySlug, searchQuery, minPrice, maxPrice, selectedRating]);
 
   /* ----------------------------- PAGINATION HANDLERS ---------------------------- */
   const goToPage = async (pageNum: number) => {
@@ -127,6 +137,7 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
       limit: 6,
       brand: selectedBrand,
       category: selectedCategorySlug,
+      search: searchQuery,
       minPrice,
       maxPrice,
       rating: selectedRating,
@@ -153,6 +164,7 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
   const resetFilters = async () => {
     setSelectedBrand(null);
     setSelectedCategorySlug(null);
+    setSearchQuery(null);
     setMinPrice(undefined);
     setMaxPrice(undefined);
     setSelectedRating(null);
@@ -465,7 +477,8 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
         <section className="col-span-5">
   <div className="grid sm:grid-cols-2 sm:justify-between sm:items-center mb-4">
   <div className="hidden sm:block text-sm text-gray-600">
-    Showing {allProducts.length} product{allProducts.length !== 1 ? 's' : ''} 
+    Showing {allProducts.length} product{allProducts.length !== 1 ? 's' : ''}
+    {searchQuery ? ` for "${searchQuery}"` : ""}
   </div>
   
   {/* ----------------- PAGINATION ----------------- */}
@@ -541,7 +554,7 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
             ) : (
               <div className="col-span-full text-center py-12">
                 <Icon icon="mdi:package-variant-closed-remove" className="text-gray-300 text-6xl mx-auto mb-4" />
-                <p className="text-gray-500 text-lg font-medium">No products match your filters</p>
+                <p className="text-gray-500 text-lg font-medium">No products found</p>
                 <button onClick={resetFilters} className="mt-4 text-primary underline hover:no-underline">
                   Clear filters
                 </button>

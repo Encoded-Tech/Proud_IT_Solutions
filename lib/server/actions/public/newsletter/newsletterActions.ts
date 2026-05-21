@@ -230,6 +230,9 @@ export async function getPublishedPromotionsAction() {
       publishedToSite: true,
       status: { $in: ["completed", "partial"] },
     })
+      .select(
+        "slug subject previewText imageUrl ctaLabel ctaUrl targetPath targetLabel publishedAt createdAt audience"
+      )
       .sort({ publishedAt: -1, createdAt: -1 })
       .lean();
 
@@ -240,7 +243,7 @@ export async function getPublishedPromotionsAction() {
         slug: campaign.slug,
         subject: campaign.subject,
         previewText: campaign.previewText ?? "",
-        body: campaign.body,
+        summary: campaign.previewText ?? "",
         imageUrl: (campaign as { imageUrl?: string | null }).imageUrl ?? "",
         ctaLabel: campaign.ctaLabel ?? "",
         ctaUrl: campaign.ctaUrl ?? "",

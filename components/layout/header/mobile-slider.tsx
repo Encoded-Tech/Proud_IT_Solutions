@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import React, { useEffect } from "react";
 
 import { signOut, useSession } from "next-auth/react";
+import SearchBar from "@/components/client/searchBar";
 
 const MobileSlider = ({
   setIsOpen,
@@ -55,6 +56,10 @@ const isAdmin = isLoggedIn && user?.role === "admin";
         >
           <Icon icon="fluent-mdl2:cancel" width="20" height="20" />
         </button>
+      </div>
+
+      <div className="mt-4">
+        <SearchBar mobile onNavigate={() => setIsOpen(false)} />
       </div>
 
       {/* NAV ITEMS */}

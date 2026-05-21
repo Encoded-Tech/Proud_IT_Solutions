@@ -4,6 +4,8 @@ import {  NextResponse } from "next/server";
 import { withDB } from "@/lib/HOF";
 import { getCategoryAndDescendantIds } from "@/lib/server/helpers/categoryDescendants";
 
+const PRODUCT_CARD_SELECT =
+  "name slug highlights price stock reservedStock category images variants avgRating totalReviews totalSales offeredPrice brandName isOfferedPriceActive discountPercent offerStartDate offerEndDate isActive createdAt updatedAt";
 
  export const GET = 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -29,12 +31,14 @@ import { getCategoryAndDescendantIds } from "@/lib/server/helpers/categoryDescen
     .sort({ discountPercent: -1 }) 
     .skip(skip)
     .limit(limit)
+    .select(PRODUCT_CARD_SELECT)
     .populate("category", "categoryName")
     .populate({
       path: "variants",
       match: { isActive: true },
       select: "price stock specs images isActive",
-    });
+    })
+    .lean();
 
   return NextResponse.json({
     success: true,

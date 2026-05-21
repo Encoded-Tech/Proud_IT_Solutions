@@ -214,5 +214,7 @@ emailCampaignSchema.pre("validate", function (next) {
   next();
 });
 
+emailCampaignSchema.index({ publishedToSite: 1, status: 1, publishedAt: -1, createdAt: -1 });
+
 export default models.EmailCampaign ||
   model<IEmailCampaign>("EmailCampaign", emailCampaignSchema);

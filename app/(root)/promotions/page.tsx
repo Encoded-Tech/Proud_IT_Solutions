@@ -29,14 +29,15 @@ function formatDate(value: string | Date | null | undefined) {
     : "—";
 }
 
-function getSummary(promotion: { previewText?: string | null; body: string }) {
-  return (
-    promotion.previewText ||
-    promotion.body
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 180)
-  );
+function getSummary(promotion: {
+  previewText?: string | null;
+  summary?: string | null;
+  body?: string | null;
+}) {
+  return (promotion.previewText || promotion.summary || promotion.body || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 180);
 }
 
 function clampPage(value: number, totalPages: number) {
@@ -253,7 +254,7 @@ export default async function PromotionsPage({
 
                       <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
                         <span className="text-xs font-medium text-slate-400">
-                          {promotion.previewText ? "Preview text included" : "Full campaign body"}
+                          {promotion.previewText ? "Preview text included" : "Campaign summary"}
                         </span>
                         <span className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700 transition group-hover:text-red-600">
                           Open

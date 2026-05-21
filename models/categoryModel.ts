@@ -63,6 +63,8 @@ categorySchema.pre("save", function (next) {
 });
 
 categorySchema.index({ isActive: 1, createdAt: -1 });
+categorySchema.index({ categoryName: 1, isActive: 1 });
+categorySchema.index({ slug: 1, isActive: 1 });
 categorySchema.index({ parentId: 1, isActive: 1 });
 
 
