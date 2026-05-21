@@ -471,8 +471,8 @@ export default function QuotationMaker({
         </Button>
       </div>
 
-      <div className="grid gap-6 2xl:grid-cols-[0.95fr_1.05fr]">
-        <div className="admin-no-print space-y-6">
+      <div className="grid grid-cols-1 gap-6 overflow-hidden [@media(min-width:2200px)]:grid-cols-[minmax(0,1fr)_minmax(720px,0.85fr)]">
+        <div className="admin-no-print min-w-0 w-full space-y-6">
           <section className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
@@ -830,7 +830,7 @@ export default function QuotationMaker({
           ref={(node) => {
             previewRef.current = node;
           }}
-          className="quotation-print-stage space-y-5 2xl:pt-1"
+          className="quotation-print-stage min-w-0 w-full space-y-5 [@media(min-width:2200px)]:sticky [@media(min-width:2200px)]:top-6"
         >
           <div className="admin-no-print overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
             <div className="grid gap-5 p-5 lg:grid-cols-[1fr_auto] lg:p-6">
@@ -911,13 +911,15 @@ export default function QuotationMaker({
               </div>
             </div>
           </div>
-          <div className="overflow-x-auto px-2 pb-2 sm:px-4 2xl:px-6">
-            <QuotationPreview
-              ref={(node) => {
-                quotationPageRef.current = node;
-              }}
-              draft={draft}
-            />
+          <div className="w-full max-w-full min-w-0 overflow-x-auto rounded-3xl bg-slate-100 p-3 sm:p-4 print:overflow-visible print:bg-transparent print:p-0">
+            <div className="mx-auto w-fit">
+              <QuotationPreview
+                ref={(node) => {
+                  quotationPageRef.current = node;
+                }}
+                draft={draft}
+              />
+            </div>
           </div>
         </section>
       </div>

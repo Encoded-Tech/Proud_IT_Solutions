@@ -28,8 +28,8 @@ export default function QuotationItemRow({
   const lineTotal = Math.max(0, Number(item.quantity) || 0) * Math.max(0, Number(item.unitPrice) || 0);
 
   return (
-    <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-[64px_minmax(0,1fr)_100px_130px_130px_56px]">
-      <div>
+    <div className="grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-2 [@media(min-width:2200px)]:grid-cols-[72px_minmax(360px,1fr)_110px_150px_150px_72px]">
+      <div className="min-w-0">
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
           S.N.
         </label>
@@ -38,7 +38,7 @@ export default function QuotationItemRow({
         </div>
       </div>
 
-      <div>
+      <div className="min-w-0 md:col-span-2 [@media(min-width:2200px)]:col-span-1">
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
           Description
         </label>
@@ -46,11 +46,11 @@ export default function QuotationItemRow({
           value={item.description}
           onChange={(event) => onChange(index, "description", event.target.value)}
           placeholder="Product or service description"
-          className="min-h-20 resize-y border-slate-200 bg-white"
+          className="min-h-24 w-full min-w-0 resize-y border-slate-200 bg-white"
         />
       </div>
 
-      <div>
+      <div className="min-w-0">
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
           Qty
         </label>
@@ -60,11 +60,11 @@ export default function QuotationItemRow({
           step="1"
           value={item.quantity}
           onChange={(event) => onChange(index, "quantity", Number(event.target.value))}
-          className="border-slate-200 bg-white"
+          className="w-full min-w-0 border-slate-200 bg-white"
         />
       </div>
 
-      <div>
+      <div className="min-w-0">
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
           Unit Price
         </label>
@@ -74,20 +74,20 @@ export default function QuotationItemRow({
           step="0.01"
           value={item.unitPrice}
           onChange={(event) => onChange(index, "unitPrice", Number(event.target.value))}
-          className="border-slate-200 bg-white"
+          className="w-full min-w-0 border-slate-200 bg-white"
         />
       </div>
 
-      <div>
+      <div className="min-w-0">
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
           Total
         </label>
-        <div className="flex h-10 items-center justify-end rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700">
+        <div className="flex h-10 w-full min-w-0 items-center justify-end rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-700">
           {lineTotal.toFixed(2)}
         </div>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
           Remove
         </label>

@@ -57,35 +57,6 @@ function htmlToText(html: string) {
     .trim();
 }
 
-function getProviderMessageId(responseBody: unknown) {
-  if (
-    responseBody &&
-    typeof responseBody === "object" &&
-    "id" in responseBody &&
-    typeof (responseBody as { id?: unknown }).id === "string"
-  ) {
-    return (responseBody as { id: string }).id;
-  }
-
-  return null;
-}
-
-function logEmailDebug(input: {
-  from: string;
-  replyTo?: string;
-  to: string;
-  subject: string;
-  providerMessageId: string | null;
-}) {
-  console.log("email.delivery.debug", {
-    from: input.from,
-    replyTo: input.replyTo || null,
-    to: input.to,
-    subject: input.subject,
-    providerMessageId: input.providerMessageId,
-  });
-}
-
 function assertNoProductionLocalhostLinks(opts: {
   html: string;
   text?: string;
@@ -154,15 +125,7 @@ export async function sendEmail(opts: {
       );
     }
 
-    const responseBody = responseText ? JSON.parse(responseText) : null;
-    logEmailDebug({
-      from,
-      replyTo,
-      to: opts.to,
-      subject: opts.subject,
-      providerMessageId: getProviderMessageId(responseBody),
-    });
-    return responseBody;
+    return responseText ? JSON.parse(responseText) : null;
   } catch (error) {
     console.error("sendEmail failed:", error);
     throw new Error(

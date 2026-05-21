@@ -580,14 +580,6 @@ async function sendCampaignToRecipients(input: {
       if (recipient.userId) {
         userIdsToUpdate.push(recipient.userId);
       }
-
-      console.log("email.campaign.recipient_sent", {
-        to: recipient.email,
-        sentCount,
-        failedCount: failures.length,
-        skippedCount,
-        totalRecipients: input.recipients.length,
-      });
     } catch (error) {
       const reason = truncateLogReason(getSafeErrorMessage(error, "Email delivery failed."));
       failures.push({
