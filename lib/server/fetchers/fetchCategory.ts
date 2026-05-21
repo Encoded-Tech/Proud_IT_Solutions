@@ -8,6 +8,12 @@ import { cacheLife, cacheTag } from "next/cache";
 
 
 
+function sortCategoriesByName(categories: CategoryType[]): CategoryType[] {
+  return [...categories].sort((a, b) =>
+    a.categoryName.localeCompare(b.categoryName, undefined, { sensitivity: "base" })
+  );
+}
+
 export interface ApiCategoryResponse {
   success: boolean;
   message: string;
@@ -57,7 +63,7 @@ async function queryPublicCategories(): Promise<ApiCategoryResponse> {
   return {
     success: true,
     message: "Categories fetched successfully",
-    data: categoriesWithCount.map(mapCategoryToFrontend),
+    data: sortCategoriesByName(categoriesWithCount.map(mapCategoryToFrontend)),
     error: null,
   };
 }
@@ -106,7 +112,7 @@ export async function fetchCategories(): Promise<ApiCategoryResponse> {
       productCount: countMap.get(cat._id.toString()) || 0,
     }));
 
-    const frontendCategories = categoriesWithCount.map(mapCategoryToFrontend);
+    const frontendCategories = sortCategoriesByName(categoriesWithCount.map(mapCategoryToFrontend));
 
     return {
       success: true,

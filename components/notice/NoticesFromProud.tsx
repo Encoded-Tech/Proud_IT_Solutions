@@ -29,6 +29,7 @@ interface TimeLeft {
 // ── constants ─────────────────────────────────────────────────────────────────
 const TARGET_DATE = new Date("2026-05-14T23:59:59");
 const OFFER_END_LABEL = "Last Day of Baisakh 2083 - May 14, 2026";
+const OFFER_IS_ACTIVE = false;
 
 const OFFER_ITEMS = [
   { icon: Monitor, label: "Gaming PCs" },
@@ -49,6 +50,10 @@ function getTimeLeft(): TimeLeft {
     minutes: Math.floor((diff % 3_600_000) / 60_000),
     seconds: Math.floor((diff % 60_000) / 1_000),
   };
+}
+
+function isOfferActive(): boolean {
+  return OFFER_IS_ACTIVE && TARGET_DATE.getTime() > Date.now();
 }
 
 function pad(n: number): string {
@@ -159,21 +164,35 @@ function OfferTicker() {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function NewYearOfferModal() {
+  const [offerActive, setOfferActive] = useState<boolean>(isOfferActive);
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
-  const [timeLeft, setTimeLeft] = useState<TimeLeft>(getTimeLeft());
+  const [timeLeft, setTimeLeft] = useState<TimeLeft>(() => getTimeLeft());
 
   useEffect(() => {
+    if (!offerActive) return;
+
     setMounted(true);
     setIsOpen(true);
     setTimeout(() => setVisible(true), 20);
-  }, []);
+  }, [offerActive]);
 
   useEffect(() => {
-    const id = setInterval(() => setTimeLeft(getTimeLeft()), 1_000);
+    if (!offerActive) return;
+
+    const id = setInterval(() => {
+      setTimeLeft(getTimeLeft());
+
+      if (!isOfferActive()) {
+        setVisible(false);
+        setIsOpen(false);
+        setOfferActive(false);
+      }
+    }, 1_000);
+
     return () => clearInterval(id);
-  }, []);
+  }, [offerActive]);
 
   const handleClose = useCallback(() => {
     setVisible(false);
@@ -181,12 +200,14 @@ export default function NewYearOfferModal() {
   }, []);
 
   useEffect(() => {
+    if (!offerActive) return;
+
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && handleClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [handleClose]);
+  }, [handleClose, offerActive]);
 
-  if (!mounted) return null;
+  if (!offerActive || !mounted) return null;
 
   const showBanner = !isOpen;
 
