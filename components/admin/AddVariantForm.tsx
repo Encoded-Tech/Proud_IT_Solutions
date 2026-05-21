@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import Image from "@/components/ui/optimized-image";
 import {
@@ -14,6 +14,7 @@ import {
   Calendar,
   Tag,
   ChevronDown,
+  Search,
   Sparkles,
   ImageIcon,
 } from "lucide-react";
@@ -60,6 +61,7 @@ export function VariantForm({ products, variant }: VariantFormProps) {
   const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [buttonState, setButtonState] = useState<"idle" | "loading" | "success">("idle");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
   const [isDragging, setIsDragging] = useState(false);
 
   const { register, handleSubmit, control, reset, setValue, watch } =
@@ -221,6 +223,16 @@ export function VariantForm({ products, variant }: VariantFormProps) {
   };
 
   const selectedProduct = products.find(p => p.id === watchedProductId);
+  const filteredProducts = useMemo(() => {
+    const query = productSearch.trim().toLowerCase();
+    if (!query) return products;
+
+    return products.filter((product) =>
+      [product.name, product.brandName, product.category?.categoryName]
+        .filter(Boolean)
+        .some((value) => value!.toLowerCase().includes(query))
+    );
+  }, [productSearch, products]);
 
   return (
   
@@ -264,7 +276,11 @@ export function VariantForm({ products, variant }: VariantFormProps) {
     <div className="relative" ref={dropdownRef}>
       <button
         type="button"
-        onClick={() => !variant && setIsDropdownOpen(!isDropdownOpen)}
+        onClick={() => {
+          if (variant) return;
+          setProductSearch("");
+          setIsDropdownOpen((open) => !open);
+        }}
         disabled={!!variant}
         className={`w-full h-14 rounded-xl px-5 text-left flex items-center justify-between transition-all border-2 ${
           isDropdownOpen
@@ -295,18 +311,43 @@ export function VariantForm({ products, variant }: VariantFormProps) {
 
       {isDropdownOpen && !variant && (
         <div className="absolute z-50 w-full mt-2 bg-white border-2 border-rose-200 rounded-xl shadow-2xl overflow-hidden">
-          <div className="max-h-80 overflow-y-auto">
+          <div className="border-b border-rose-100 p-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                type="search"
+                value={productSearch}
+                onChange={(event) => setProductSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") event.preventDefault();
+                }}
+                placeholder="Search products..."
+                className="h-10 rounded-lg border-rose-200 pl-9"
+                autoFocus
+              />
+            </div>
+            <p className="mt-2 text-xs text-gray-500">
+              Showing {filteredProducts.length} of {products.length} products
+            </p>
+          </div>
+
+          <div className="max-h-96 overflow-y-auto overscroll-contain">
             {products.length === 0 ? (
               <div className="px-5 py-8 text-center text-gray-500">
                 No products available
               </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="px-5 py-8 text-center text-gray-500">
+                No matching products
+              </div>
             ) : (
-              products.map((product) => (
+              filteredProducts.map((product) => (
                 <button
                   key={product.id}
                   type="button"
                   onClick={() => {
                     setValue("productId", product.id);
+                    setProductSearch("");
                     setIsDropdownOpen(false);
                   }}
                   className={`w-full px-5 py-4 text-left transition-colors border-b border-gray-100 last:border-b-0 hover:bg-red-50 ${
