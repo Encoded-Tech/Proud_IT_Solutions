@@ -25,7 +25,7 @@ export async function searchProducts(query: string) {
     ],
   })
     .select("name slug")
-    .limit(10)
+    .limit(50)
     .lean<{ _id: Types.ObjectId; name: string; slug: string }[]>();
 
   return products.map((p) => ({

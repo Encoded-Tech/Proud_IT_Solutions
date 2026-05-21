@@ -111,7 +111,6 @@ export async function GET(request: Request) {
         new Date(a.product.createdAt || 0).getTime()
       );
     })
-    .slice(0, 10)
     .map(({ product }) => ({
       id: product._id.toString(),
       name: product.name,
