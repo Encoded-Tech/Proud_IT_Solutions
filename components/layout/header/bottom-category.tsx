@@ -63,7 +63,7 @@ const BottomCategory = () => {
   }, [pathname]);
 
   return (
-    <div className="lg:bg-primary bg-blue-100 lg:p-4 p-2 text-white relative z-[50]">
+    <div className="relative z-[70] bg-blue-100 p-2 text-white lg:bg-primary lg:p-4">
       <div className="max-w-7xl mx-auto flex justify-between items-center gap-6">
         
         {/* NAV ITEMS */}
@@ -207,7 +207,7 @@ const BottomCategory = () => {
         </div>
 
         {/* MOBILE SEARCH */}
-        <div className="lg:hidden w-full">
+        <div className="relative z-[80] w-full lg:hidden">
           <SearchBar mobile />
         </div>
       </div>

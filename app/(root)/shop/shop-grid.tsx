@@ -210,7 +210,7 @@ const ShopGrid = ({ products: initialProducts, categories, pagination }: ShopGri
 
       {/* Mobile Filter Drawer */}
       {mobileFilterOpen && (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-[60] flex">
           <div
             className="fixed inset-0 bg-black/40"
             onClick={() => setMobileFilterOpen(false)}

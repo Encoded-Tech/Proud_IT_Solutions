@@ -58,7 +58,7 @@ const isAdmin = isLoggedIn && user?.role === "admin";
         </button>
       </div>
 
-      <div className="mt-4">
+      <div className="relative z-[80] mt-4">
         <SearchBar mobile onNavigate={() => setIsOpen(false)} />
       </div>
 

@@ -16,7 +16,7 @@ const isLoggedIn = status === "authenticated";
 
 
   return (
-    <div className="bg-white relative">
+    <div className="relative z-[70] bg-white">
       <nav className="max-w-7xl xl:mx-auto mx-4 py-2 flex justify-between  items-center">
         {/* hamburger icon */}
         <div onClick={() => setIsOpen(true)} className="lg:hidden block">
@@ -73,7 +73,7 @@ const isLoggedIn = status === "authenticated";
 
       </nav>
 
-      <div className="sticky h-fit top-20">
+      <div className="sticky top-20 z-[70] h-fit">
         <BottomCategory />
       </div>
 

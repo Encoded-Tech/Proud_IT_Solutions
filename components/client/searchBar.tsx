@@ -3,7 +3,7 @@
 import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "@/components/ui/optimized-image";
 
 export type SearchResultType = {
@@ -25,6 +25,7 @@ type SearchBarProps = {
 
 export default function SearchBar({ mobile = false, onNavigate }: SearchBarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResultType[]>([]);
   const [loading, setLoading] = useState(false);
@@ -86,6 +87,10 @@ export default function SearchBar({ mobile = false, onNavigate }: SearchBarProps
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
   const goToSearchPage = () => {
     if (!trimmedQuery) return;
 
@@ -108,10 +113,17 @@ export default function SearchBar({ mobile = false, onNavigate }: SearchBarProps
   const showDropdown = open && trimmedQuery.length >= 2;
 
   return (
-    <div ref={wrapperRef} className="relative w-full">
+    <div ref={wrapperRef} className="relative z-[80] w-full">
+      {mobile && showDropdown && (
+        <div
+          className="fixed inset-0 z-[70] bg-black/10 md:hidden"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
       <form
         onSubmit={handleSubmit}
-        className={`relative flex w-full items-center border border-zinc-200 bg-white text-black ${
+        className={`relative z-[81] flex w-full items-center border border-zinc-200 bg-white text-black ${
           mobile ? "rounded-full p-1" : "rounded-full"
         }`}
       >
@@ -149,7 +161,7 @@ export default function SearchBar({ mobile = false, onNavigate }: SearchBarProps
       </form>
 
       {showDropdown && (
-        <div className="absolute left-0 right-0 top-full z-[100] mt-2 max-h-[70vh] overflow-y-auto rounded-lg border border-gray-200 bg-white text-black shadow-xl">
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[90] max-h-[70vh] overflow-x-hidden overflow-y-auto rounded-2xl border border-slate-200 bg-white text-black shadow-2xl">
           {loading && results.length === 0 ? (
             <div className="px-4 py-3 text-sm text-gray-500">Searching...</div>
           ) : results.length > 0 ? (
@@ -158,7 +170,7 @@ export default function SearchBar({ mobile = false, onNavigate }: SearchBarProps
                 <Link
                   key={product.id}
                   href={`/products/${product.slug}`}
-                  className="flex min-h-16 items-center gap-3 px-3 py-2 hover:bg-gray-50"
+                  className="flex min-h-16 w-full min-w-0 items-center gap-3 px-3 py-2 hover:bg-gray-50"
                   onClick={() => {
                     setQuery("");
                     setOpen(false);
@@ -184,9 +196,9 @@ export default function SearchBar({ mobile = false, onNavigate }: SearchBarProps
                       {[product.categoryName, product.brandName].filter(Boolean).join(" / ")}
                     </p>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-sm font-semibold text-primary">Rs. {product.price}</p>
-                    <p className={`text-xs ${product.available ? "text-green-600" : "text-red-500"}`}>
+                  <div className="min-w-0 shrink-0 text-right">
+                    <p className="truncate text-sm font-semibold text-primary">Rs. {product.price}</p>
+                    <p className={`truncate text-xs ${product.available ? "text-green-600" : "text-red-500"}`}>
                       {product.available ? "In stock" : "Out of stock"}
                     </p>
                   </div>
