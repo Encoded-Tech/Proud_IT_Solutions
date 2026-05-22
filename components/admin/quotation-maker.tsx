@@ -400,7 +400,7 @@ export default function QuotationMaker({
   };
 
   return (
-    <div className="quotation-admin-shell space-y-6">
+    <div className="quotation-admin-shell min-w-0 space-y-6 overflow-hidden">
       <style jsx global>{`
         @page {
           size: A4;
@@ -471,9 +471,9 @@ export default function QuotationMaker({
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 overflow-hidden [@media(min-width:2200px)]:grid-cols-[minmax(0,1fr)_minmax(720px,0.85fr)]">
-        <div className="admin-no-print min-w-0 w-full space-y-6">
-          <section className="rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="grid min-w-0 grid-cols-1 gap-6 overflow-hidden 2xl:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] 2xl:items-start">
+        <div className="admin-no-print min-w-0 w-full max-w-full space-y-6 overflow-hidden">
+          <section className="min-w-0 overflow-hidden rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-lg font-black tracking-tight text-slate-900">
@@ -483,7 +483,7 @@ export default function QuotationMaker({
                   Fill the client, pricing, and asset fields. The A4 preview updates instantly.
                 </p>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
+              <div className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-600">
                 Grand Total:{" "}
                 <span className="font-black text-slate-900">
                   {formatCurrency(totals.grandTotal, draft.currency)}
@@ -491,9 +491,9 @@ export default function QuotationMaker({
               </div>
             </div>
 
-            <div className="mt-5 space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
+            <div className="mt-5 min-w-0 space-y-6 overflow-hidden">
+              <div className="grid min-w-0 gap-4 md:grid-cols-2">
+                <div className="min-w-0">
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
                     Quotation Number
                   </label>
@@ -506,7 +506,7 @@ export default function QuotationMaker({
                     <p className="mt-1 text-xs text-red-600">{formErrors.quotationNumber}</p>
                   ) : null}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
                     Quotation Date
                   </label>
@@ -517,7 +517,7 @@ export default function QuotationMaker({
                     className="border-slate-200 bg-white"
                   />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
                     Client Name
                   </label>
@@ -530,7 +530,7 @@ export default function QuotationMaker({
                     <p className="mt-1 text-xs text-red-600">{formErrors.party}</p>
                   ) : null}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
                     Client Company
                   </label>
@@ -540,7 +540,7 @@ export default function QuotationMaker({
                     className="border-slate-200 bg-white"
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div className="min-w-0 md:col-span-2">
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
                     Client Address
                   </label>
@@ -551,7 +551,7 @@ export default function QuotationMaker({
                     className="border-slate-200 bg-white"
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div className="min-w-0 md:col-span-2">
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
                     Client Phone / Email
                   </label>
@@ -562,7 +562,7 @@ export default function QuotationMaker({
                     className="border-slate-200 bg-white"
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div className="min-w-0 md:col-span-2">
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
                     Subject / Title
                   </label>
@@ -575,7 +575,7 @@ export default function QuotationMaker({
                     <p className="mt-1 text-xs text-red-600">{formErrors.subject}</p>
                   ) : null}
                 </div>
-                <div className="md:col-span-2">
+                <div className="min-w-0 md:col-span-2">
                   <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">
                     Introduction / Message
                   </label>
@@ -589,9 +589,9 @@ export default function QuotationMaker({
                 </div>
               </div>
 
-              <div>
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div>
+              <div className="min-w-0">
+                <div className="mb-3 flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
                     <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">
                       Quotation Items
                     </h3>
@@ -603,12 +603,12 @@ export default function QuotationMaker({
                     type="button"
                     variant="outline"
                     onClick={addItem}
-                    className="rounded-xl border-slate-200"
+                    className="max-w-full rounded-xl border-slate-200"
                   >
                     Add Item
                   </Button>
                 </div>
-                <div className="space-y-3">
+                <div className="min-w-0 space-y-3 overflow-hidden">
                   {draft.items.map((item, index) => (
                     <QuotationItemRow
                       key={item.id}
@@ -622,9 +622,9 @@ export default function QuotationMaker({
                 </div>
               </div>
 
-              <div>
-                <div className="grid gap-4 xl:grid-cols-2">
-                  <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <div className="min-w-0 overflow-hidden">
+                <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+                  <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                     <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">
                       Pricing Controls
                     </h3>
@@ -689,7 +689,7 @@ export default function QuotationMaker({
                     </div>
                   </div>
 
-                  <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                  <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                     <h3 className="text-sm font-black uppercase tracking-widest text-slate-700">
                       Letterhead & Signature
                     </h3>
@@ -724,7 +724,7 @@ export default function QuotationMaker({
                   </div>
                 </div>
 
-                <div className="mt-4 overflow-hidden rounded-[24px] border border-slate-200 bg-[linear-gradient(160deg,#ffffff,#f8fafc)] shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
+                <div className="mt-4 min-w-0 overflow-hidden rounded-[24px] border border-slate-200 bg-[linear-gradient(160deg,#ffffff,#f8fafc)] shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
                   <div className="border-b border-slate-200 bg-white/70 px-5 py-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
                       Regards Block
@@ -780,12 +780,12 @@ export default function QuotationMaker({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:flex-wrap">
+              <div className="flex min-w-0 flex-col gap-3 overflow-hidden border-t border-slate-200 pt-4 sm:flex-row sm:flex-wrap">
                 <Button
                   type="button"
                   onClick={handleSave}
                   disabled={isPending}
-                  className="rounded-xl bg-red-600 hover:bg-red-700"
+                  className="max-w-full whitespace-normal rounded-xl bg-red-600 hover:bg-red-700"
                 >
                   {isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -798,7 +798,7 @@ export default function QuotationMaker({
                   type="button"
                   variant="outline"
                   onClick={scrollToPreview}
-                  className="rounded-xl border-slate-200"
+                  className="max-w-full whitespace-normal rounded-xl border-slate-200"
                 >
                   <Eye className="h-4 w-4" />
                   Preview Quotation
@@ -807,7 +807,7 @@ export default function QuotationMaker({
                   type="button"
                   variant="outline"
                   onClick={handlePrint}
-                  className="rounded-xl border-slate-200"
+                  className="max-w-full whitespace-normal rounded-xl border-slate-200"
                 >
                   <Printer className="h-4 w-4" />
                   Print PDF
@@ -816,7 +816,7 @@ export default function QuotationMaker({
                   type="button"
                   variant="outline"
                   onClick={handleDownloadPdf}
-                  className="rounded-xl border-slate-200"
+                  className="max-w-full whitespace-normal rounded-xl border-slate-200"
                 >
                   <Download className="h-4 w-4" />
                   Download PDF
@@ -830,7 +830,7 @@ export default function QuotationMaker({
           ref={(node) => {
             previewRef.current = node;
           }}
-          className="quotation-print-stage min-w-0 w-full space-y-5 [@media(min-width:2200px)]:sticky [@media(min-width:2200px)]:top-6"
+          className="quotation-print-stage min-w-0 w-full max-w-full space-y-5 overflow-hidden 2xl:sticky 2xl:top-6"
         >
           <div className="admin-no-print overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
             <div className="grid gap-5 p-5 lg:grid-cols-[1fr_auto] lg:p-6">
@@ -911,8 +911,8 @@ export default function QuotationMaker({
               </div>
             </div>
           </div>
-          <div className="w-full max-w-full min-w-0 overflow-x-auto rounded-3xl bg-slate-100 p-3 sm:p-4 print:overflow-visible print:bg-transparent print:p-0">
-            <div className="mx-auto w-fit">
+          <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden rounded-3xl bg-slate-100 p-3 sm:p-4 xl:overflow-x-hidden print:overflow-visible print:bg-transparent print:p-0">
+            <div className="mx-auto w-fit max-w-full 2xl:[zoom:.94] print:[zoom:1]">
               <QuotationPreview
                 ref={(node) => {
                   quotationPageRef.current = node;

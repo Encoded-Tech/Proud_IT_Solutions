@@ -133,7 +133,7 @@ export function AddProductForm({
   const { register, handleSubmit, watch, setValue, control, reset } = useForm<ProductFormData>({
     defaultValues: {
       name: editProduct?.name || "",
-      price: editProduct?.price || 0,
+      price: editProduct?.price,
       stock: editProduct?.stock || 0,
       description: editProduct?.description || "",
       category: editProduct?.category?.id || "",

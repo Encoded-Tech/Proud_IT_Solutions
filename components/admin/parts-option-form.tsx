@@ -36,7 +36,7 @@ export default function PartForm({ part, onSuccess, partTypes  }: Props) {
     name: part?.name || "",
     type: part?.type || "processor",
     brand: part?.brand || "",
-    price: part?.price || 0,    
+    price: part?.price,
     modelName: part?.modelName || "",
     socket: part?.socket,
     chipset: part?.chipset,
@@ -186,7 +186,7 @@ export default function PartForm({ part, onSuccess, partTypes  }: Props) {
             name: "",
             type: "processor",
             brand: "",
-            price: 0,
+            price: undefined,
             modelName: "",
             isActive: true,
           });

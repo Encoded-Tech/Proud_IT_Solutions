@@ -72,7 +72,7 @@ export function VariantForm({ products, variant }: VariantFormProps) {
         ram: variant?.specs.ram ?? "",
         storage: variant?.specs.storage ?? "",
         color: variant?.specs.color ?? "",
-        price: variant?.price ?? 0,
+        price: variant?.price,
         stock: variant?.stock ?? 0,
         reservedStock: variant?.reservedStock ?? 0,
         discountPercent: variant?.discountPercent ?? 0,
