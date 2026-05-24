@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 
@@ -137,6 +137,11 @@ export default function RichTextEditor({ value = "", onChange }: Props) {
       onChange?.(editor.getHTML());
     },
   });
+
+  useEffect(() => {
+    if (!editor || editor.getHTML() === value) return;
+    editor.commands.setContent(value || "", { emitUpdate: false });
+  }, [editor, value]);
 
   const setLink = useCallback(() => {
     if (!editor) return;

@@ -280,11 +280,14 @@ function QuotationPage({
               page.isContinuationPage ? "quotation-table-wrap-continuation" : ""
             }`}
             style={{
-              border: "1px solid #cbd5e1",
+              border: "0.75px solid #64748b",
               backgroundColor: "rgba(255, 255, 255, 0.96)",
             }}
           >
-            <table className="quotation-items-table w-full border-collapse table-fixed">
+            <table
+              className="quotation-items-table w-full border-collapse table-fixed"
+              style={{ border: "0.75px solid #64748b" }}
+            >
               <thead>
                 <tr
                   className="q-text-white"
@@ -292,25 +295,25 @@ function QuotationPage({
                 >
                   <th
                     className="q-text-white w-[8%] px-2 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-[0.12em]"
-                    style={{ borderRight: "1px solid #ef4444", color: "#ffffff" }}
+                    style={{ borderRight: "1px solid #334155", color: "#ffffff" }}
                   >
                     S.N.
                   </th>
                   <th
                     className="q-text-white w-[52%] px-2 py-1.5 text-left text-[9.5px] font-bold uppercase tracking-[0.12em]"
-                    style={{ borderRight: "1px solid #ef4444", color: "#ffffff" }}
+                    style={{ borderRight: "1px solid #334155", color: "#ffffff" }}
                   >
                     Description
                   </th>
                   <th
                     className="q-text-white w-[12%] px-2 py-1.5 text-right text-[9.5px] font-bold uppercase tracking-[0.12em]"
-                    style={{ borderRight: "1px solid #ef4444", color: "#ffffff" }}
+                    style={{ borderRight: "1px solid #334155", color: "#ffffff" }}
                   >
                     Qty
                   </th>
                   <th
                     className="q-text-white w-[14%] px-2 py-1.5 text-right text-[9.5px] font-bold uppercase tracking-[0.12em]"
-                    style={{ borderRight: "1px solid #ef4444", color: "#ffffff" }}
+                    style={{ borderRight: "1px solid #334155", color: "#ffffff" }}
                   >
                     Price
                   </th>
@@ -329,8 +332,8 @@ function QuotationPage({
                       className="q-text-800 px-2 py-1.5 text-[10px] font-medium"
                       style={{
                         ...(expandedRowHeightMm ? { height: `${expandedRowHeightMm}mm` } : {}),
-                        borderTop: "1px solid #cbd5e1",
-                        borderRight: "1px solid #cbd5e1",
+                        borderTop: "1px solid #334155",
+                        borderRight: "1px solid #334155",
                       }}
                     >
                       {item.serialNumber}
@@ -339,8 +342,8 @@ function QuotationPage({
                       className="q-text-800 px-2 py-1.5 text-[10px] leading-4"
                       style={{
                         ...(expandedRowHeightMm ? { height: `${expandedRowHeightMm}mm` } : {}),
-                        borderTop: "1px solid #cbd5e1",
-                        borderRight: "1px solid #cbd5e1",
+                        borderTop: "1px solid #334155",
+                        borderRight: "1px solid #334155",
                       }}
                     >
                       <span className="description-cell">{item.description}</span>
@@ -349,8 +352,8 @@ function QuotationPage({
                       className="q-text-800 px-2 py-1.5 text-right text-[10px]"
                       style={{
                         ...(expandedRowHeightMm ? { height: `${expandedRowHeightMm}mm` } : {}),
-                        borderTop: "1px solid #cbd5e1",
-                        borderRight: "1px solid #cbd5e1",
+                        borderTop: "1px solid #334155",
+                        borderRight: "1px solid #334155",
                       }}
                     >
                       {item.quantity}
@@ -359,8 +362,8 @@ function QuotationPage({
                       className="q-text-800 px-2 py-1.5 text-right text-[10px]"
                       style={{
                         ...(expandedRowHeightMm ? { height: `${expandedRowHeightMm}mm` } : {}),
-                        borderTop: "1px solid #cbd5e1",
-                        borderRight: "1px solid #cbd5e1",
+                        borderTop: "1px solid #334155",
+                        borderRight: "1px solid #334155",
                       }}
                     >
                       {formatCurrency(item.unitPrice, draft.currency)}
@@ -369,7 +372,7 @@ function QuotationPage({
                       className="q-text-900 px-2 py-1.5 text-right text-[10px] font-semibold"
                       style={{
                         ...(expandedRowHeightMm ? { height: `${expandedRowHeightMm}mm` } : {}),
-                        borderTop: "1px solid #cbd5e1",
+                        borderTop: "1px solid #334155",
                       }}
                     >
                       {formatCurrency(item.lineTotal, draft.currency)}
@@ -381,13 +384,13 @@ function QuotationPage({
                     <td
                       colSpan={4}
                       className="q-text-800 px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.08em]"
-                      style={{ borderTop: "1px solid #cbd5e1" }}
+                      style={{ borderTop: "1px solid #334155", borderRight: "1px solid #334155" }}
                     >
                       Total
                     </td>
                     <td
                       className="q-text-900 px-2 py-2 text-right text-[10.2px] font-bold"
-                      style={{ borderTop: "1px solid #cbd5e1" }}
+                      style={{ borderTop: "1px solid #334155" }}
                     >
                       {formatCurrency(totals.grandTotal, draft.currency)}
                     </td>
@@ -541,24 +544,32 @@ const QuotationPreview = forwardRef<HTMLDivElement, QuotationPreviewProps>(funct
         .quotation-export-safe .quotation-items-table {
           background-color: #ffffff !important;
           color: #0f172a !important;
-          border-color: #cbd5e1 !important;
+          border: 0.75px solid #64748b !important;
+          border-color: #64748b !important;
+        }
+
+        .quotation-export-safe .quotation-table-wrap {
+          border: 0.75px solid #64748b !important;
+          border-color: #64748b !important;
         }
 
         .quotation-export-safe .quotation-items-table th {
           background-color: #dc2626 !important;
           color: #ffffff !important;
-          border-color: #ef4444 !important;
+          border-color: #334155 !important;
+          border-width: 1px !important;
         }
 
         .quotation-export-safe .quotation-items-table td {
           color: #0f172a !important;
-          border-color: #cbd5e1 !important;
+          border-color: #334155 !important;
+          border-width: 1px !important;
         }
 
         .quotation-export-safe .total-row td {
           background-color: #f8fafc !important;
           color: #0f172a !important;
-          border-color: #cbd5e1 !important;
+          border-color: #334155 !important;
         }
 
         .quotation-export-safe .stamp-image,

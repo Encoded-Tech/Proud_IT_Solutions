@@ -33,6 +33,7 @@ export interface ApiSingleProductResponse {
 
 interface ProductQueryOptions {
   includeInactive?: boolean;
+  includeDetails?: boolean;
   search?: string;
   status?: "active" | "inactive" | "all";
   categoryId?: string;
@@ -53,6 +54,9 @@ interface FilteredParams {
 
 const PRODUCT_CARD_SELECT =
   "name slug highlights price stock reservedStock category images variants avgRating totalReviews totalSales offeredPrice brandName isOfferedPriceActive discountPercent offerStartDate offerEndDate isActive createdAt updatedAt";
+
+const PRODUCT_ADMIN_SELECT =
+  `${PRODUCT_CARD_SELECT} description tags`;
 
 const PRODUCT_DETAIL_SELECT =
   "name slug description highlights price stock reservedStock category images variants reviews avgRating totalReviews totalSales offeredPrice tags brandName isOfferedPriceActive discountPercent offerStartDate offerEndDate isActive createdAt updatedAt";
@@ -213,7 +217,7 @@ async function queryProducts(
   const total = await Product.countDocuments(filter);
   const productsQuery = Product.find(filter)
     .sort(searchRanking ? { createdAt: -1 } : sortQuery)
-    .select(PRODUCT_CARD_SELECT)
+    .select(options?.includeDetails ? PRODUCT_ADMIN_SELECT : PRODUCT_CARD_SELECT)
     .populate({
       path: "category",
       select: "categoryName slug categoryImage isActive",

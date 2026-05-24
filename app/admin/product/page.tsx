@@ -202,6 +202,7 @@ export default async function ProductPage({
 
   const res = await fetchAllProducts(page, limit, {
     includeInactive: true,
+    includeDetails: true,
     search,
     status,
     sort: params?.sort,

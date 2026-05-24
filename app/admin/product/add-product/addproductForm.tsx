@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import Image from "@/components/ui/optimized-image";
 import { 
@@ -59,6 +59,15 @@ function normalizeAdminLabel(value: string) {
   return value.trim().toUpperCase();
 }
 
+function formatDateForInput(value?: string | Date | null) {
+  if (!value) return "";
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toISOString().substring(0, 10);
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Category {
   id: string;
@@ -83,8 +92,8 @@ export interface Product {
   discountPercent: number;
   offeredPrice: number;
   isOfferedPriceActive: boolean;
-  offerStartDate: string;
-  offerEndDate: string;
+  offerStartDate?: string | Date | null;
+  offerEndDate?: string | Date | null;
   isActive: boolean;
   createdAt: string;
   totalSales: number;
@@ -142,11 +151,35 @@ export function AddProductForm({
       tags: editProduct?.tags?.map(t => t.name) || [],
       brandName: editProduct?.brandName || "",
       discountPercent: editProduct?.discountPercent || 0,
-      offerStartDate: editProduct?.offerStartDate || "",
-      offerEndDate: editProduct?.offerEndDate || "",
+      offerStartDate: formatDateForInput(editProduct?.offerStartDate),
+      offerEndDate: formatDateForInput(editProduct?.offerEndDate),
       isActive: editProduct?.isActive ?? true,
     },
   });
+
+  useEffect(() => {
+    if (!editProduct) return;
+
+    reset({
+      name: editProduct.name || "",
+      price: editProduct.price,
+      stock: editProduct.stock || 0,
+      description: editProduct.description || "",
+      category: editProduct.category?.id || "",
+      images: [],
+      variants: editProduct.variants || [],
+      tags: editProduct.tags?.map((tag) => tag.name) || [],
+      brandName: editProduct.brandName || "",
+      discountPercent: editProduct.discountPercent || 0,
+      offerStartDate: formatDateForInput(editProduct.offerStartDate),
+      offerEndDate: formatDateForInput(editProduct.offerEndDate),
+      isActive: editProduct.isActive ?? true,
+    });
+    setImages([]);
+    setImagePreview(editProduct.images || []);
+    setTagsList(editProduct.tags?.map((tag) => tag.name) || []);
+    setHighlights(sanitizeProductHighlights(editProduct.highlights));
+  }, [editProduct, reset]);
 
   const watchDiscount = watch("discountPercent");
   const watchPrice = watch("price");

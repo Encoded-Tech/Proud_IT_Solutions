@@ -483,6 +483,12 @@ export default function ProductTable({
 
 /* ---------------- Mapper (UNCHANGED) ---------------- */
 export function mapProductTypeToFormProduct(p: productType): Product {
+  const formatDate = (value?: string | Date | null) => {
+    if (!value) return "";
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString().substring(0, 10);
+  };
+
   return {
     id: p.id,
     name: p.name,
@@ -492,17 +498,17 @@ export function mapProductTypeToFormProduct(p: productType): Product {
     highlights: p.highlights ?? [],
     category: {
       id: p.category?.id || "",
-      categoryName: p.category.categoryName,
+      categoryName: p.category?.categoryName || "",
     },
     images: p.images || [],
     variants: p.variants || [],
-    tags: p.tags.map((t) => ({ id: t.id, name: t.name })),
+    tags: p.tags?.map((t) => ({ id: t.id, name: t.name })) || [],
     brandName: p.brandName,
     discountPercent: p.discountPercent,
     offeredPrice: p.offeredPrice,
     isOfferedPriceActive: p.isOfferedPriceActive,
-    offerStartDate: p.offerStartDate?.toISOString() || "",
-    offerEndDate: p.offerEndDate?.toISOString() || "",
+    offerStartDate: formatDate(p.offerStartDate),
+    offerEndDate: formatDate(p.offerEndDate),
     isActive: p.isActive,
     createdAt: p.createdAt,
     totalSales: p.totalSales || 0,

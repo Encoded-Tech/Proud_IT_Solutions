@@ -444,12 +444,16 @@ export async function downloadQuotationPdf(
             if (tag === "th") {
               el.style.backgroundColor = "#dc2626";
               el.style.color = "#ffffff";
-              el.style.borderColor = "#ef4444";
+              el.style.borderColor = "#334155";
+              el.style.borderWidth = "1px";
+              el.style.borderStyle = "solid";
             }
 
             if (tag === "td") {
               el.style.color = "#0f172a";
-              el.style.borderColor = "#cbd5e1";
+              el.style.borderColor = "#334155";
+              el.style.borderWidth = "1px";
+              el.style.borderStyle = "solid";
             }
 
             if (el.classList.contains("total-row")) {
@@ -460,7 +464,13 @@ export async function downloadQuotationPdf(
             if (el.classList.contains("quotation-items-table")) {
               el.style.backgroundColor = "#ffffff";
               el.style.color = "#0f172a";
-              el.style.borderColor = "#cbd5e1";
+              el.style.border = "0.75px solid #64748b";
+              el.style.borderColor = "#64748b";
+            }
+
+            if (el.classList.contains("quotation-table-wrap")) {
+              el.style.border = "0.75px solid #64748b";
+              el.style.borderColor = "#64748b";
             }
 
             if (el.classList.contains("q-text-white")) {
