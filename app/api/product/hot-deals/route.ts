@@ -24,7 +24,7 @@ const PRODUCT_CARD_SELECT =
 
   if (category) {
     const categoryIds = await getCategoryAndDescendantIds(category);
-    filter.category = categoryIds.length > 0 ? { $in: categoryIds } : category;
+    filter.category = { $in: categoryIds };
   }
 
   const hotDeals = await Product.find(filter)

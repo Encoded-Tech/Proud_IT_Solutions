@@ -1,5 +1,8 @@
 export function normalizeCategoryName(value: string) {
-  return value.trim().replace(/\s+/g, " ");
+  return String(value || "")
+    .replace(/_/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
 export function formatCategoryDisplayName(value: string) {

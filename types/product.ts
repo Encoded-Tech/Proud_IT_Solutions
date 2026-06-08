@@ -120,8 +120,10 @@ export interface CategoryType {
   id: string;
   categoryName: string;
   slug: string;
+  path?: string;
   categoryImage: string;
   parentId?: string | null;
+  directProductCount?: number;
   productCount: number;
   isActive: boolean;
   createdAt: string;

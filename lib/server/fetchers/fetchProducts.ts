@@ -6,7 +6,10 @@ import { IProduct, Product } from "@/models/productModel";
 import { Category, ProductVariant } from "@/models";
 import { productType } from "@/types/product";
 import { mapProductToFrontend } from "../mappers/MapProductData";
-import { getCategoryAndDescendantIds } from "@/lib/server/helpers/categoryDescendants";
+import {
+  getCategoryAndDescendantIds,
+  getCategoryIdsByGlobalName,
+} from "@/lib/server/helpers/categoryDescendants";
 
 export interface PaginationMeta {
   page: number;
@@ -36,6 +39,7 @@ interface ProductQueryOptions {
   includeDetails?: boolean;
   search?: string;
   status?: "active" | "inactive" | "all";
+  category?: string;
   categoryId?: string;
   brandName?: string;
   sort?: "newest" | "oldest" | "price_asc" | "price_desc";
@@ -46,6 +50,8 @@ interface FilteredParams {
   limit: number;
   brand?: string | null;
   category?: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
   search?: string | null;
   minPrice?: number;
   maxPrice?: number;
@@ -182,8 +188,17 @@ async function queryProducts(
   }
 
   if (options?.categoryId) {
-    const categoryIds = await getCategoryAndDescendantIds(options.categoryId);
-    filter.category = categoryIds.length > 0 ? { $in: categoryIds } : options.categoryId;
+    const categoryIds = await getCategoryAndDescendantIds(
+      options.categoryId,
+      !options.includeInactive
+    );
+    filter.category = { $in: categoryIds };
+  } else if (options?.category) {
+    const categoryIds = await getCategoryAndDescendantIds(
+      options.category,
+      !options.includeInactive
+    );
+    filter.category = { $in: categoryIds };
   }
 
   if (options?.brandName) {
@@ -214,7 +229,6 @@ async function queryProducts(
       sortQuery = { createdAt: -1 };
   }
 
-  const total = await Product.countDocuments(filter);
   const productsQuery = Product.find(filter)
     .sort(searchRanking ? { createdAt: -1 } : sortQuery)
     .select(options?.includeDetails ? PRODUCT_ADMIN_SELECT : PRODUCT_CARD_SELECT)
@@ -229,17 +243,21 @@ async function queryProducts(
     })
     .lean<IProduct[]>();
 
-  const products = searchRanking
-    ? sortProductsBySearchRelevance(
-        await productsQuery.limit(Math.max(page * limit, 120)),
-        searchRanking
-      ).slice(skip, skip + limit)
-    : await productsQuery.skip(skip).limit(limit);
+  const [total, products] = await Promise.all([
+    Product.countDocuments(filter),
+    searchRanking
+      ? productsQuery.limit(Math.max(page * limit, 120))
+      : productsQuery.skip(skip).limit(limit),
+  ]);
+
+  const paginatedProducts = searchRanking
+    ? sortProductsBySearchRelevance(products, searchRanking).slice(skip, skip + limit)
+    : products;
 
   return {
     success: true,
     message: "Products fetched successfully",
-    data: products.map(mapProductToFrontend),
+    data: paginatedProducts.map(mapProductToFrontend),
     pagination: {
       page,
       limit,
@@ -273,10 +291,9 @@ async function queryRankedProducts(
 
   if (category) {
     const categoryIds = await getCategoryAndDescendantIds(category);
-    filter.category = categoryIds.length > 0 ? { $in: categoryIds } : category;
+    filter.category = { $in: categoryIds };
   }
 
-  const total = await Product.countDocuments(filter);
   let sortQuery: Record<string, 1 | -1> = { createdAt: -1 };
   if (kind === "best") {
     sortQuery = { totalSales: -1 };
@@ -284,10 +301,8 @@ async function queryRankedProducts(
     sortQuery = { discountPercent: -1 };
   }
 
-  const products = await Product.find(filter)
+  const productsQuery = Product.find(filter)
     .sort(sortQuery)
-    .skip(skip)
-    .limit(limit)
     .select(PRODUCT_CARD_SELECT)
     .populate("category", "categoryName slug categoryImage isActive")
     .populate({
@@ -296,6 +311,11 @@ async function queryRankedProducts(
       select: "price stock specs images isActive",
     })
     .lean<IProduct[]>();
+
+  const [total, products] = await Promise.all([
+    Product.countDocuments(filter),
+    productsQuery.skip(skip).limit(limit),
+  ]);
 
   return {
     success: true,
@@ -348,6 +368,8 @@ export async function fetchFilteredProducts({
   limit,
   brand,
   category,
+  categoryId,
+  categoryName,
   minPrice,
   maxPrice,
   rating,
@@ -363,9 +385,15 @@ export async function fetchFilteredProducts({
     searchRanking = await buildSearchRankingData(search);
     query.$or = searchRanking.searchOr;
   }
-  if (category) {
+  if (categoryId) {
+    const categoryIds = await getCategoryAndDescendantIds(categoryId);
+    query.category = { $in: categoryIds };
+  } else if (categoryName) {
+    const categoryIds = await getCategoryIdsByGlobalName(categoryName);
+    query.category = { $in: categoryIds };
+  } else if (category) {
     const categoryIds = await getCategoryAndDescendantIds(category);
-    if (categoryIds.length > 0) query.category = { $in: categoryIds };
+    query.category = { $in: categoryIds };
   }
 
   if (rating !== null && rating !== undefined) {
@@ -378,7 +406,6 @@ export async function fetchFilteredProducts({
     if (maxPrice !== undefined) query.price.$lte = maxPrice;
   }
 
-  const total = await Product.countDocuments(query);
   const productsQuery = Product.find(query)
     .sort({ createdAt: -1 })
     .select(PRODUCT_CARD_SELECT)
@@ -391,17 +418,21 @@ export async function fetchFilteredProducts({
     .lean<IProduct[]>();
 
   const skip = (page - 1) * limit;
-  const products = searchRanking
-    ? sortProductsBySearchRelevance(
-        await productsQuery.limit(Math.max(page * limit, 120)),
-        searchRanking
-      ).slice(skip, skip + limit)
-    : await productsQuery.skip(skip).limit(limit);
+  const [total, products] = await Promise.all([
+    Product.countDocuments(query),
+    searchRanking
+      ? productsQuery.limit(Math.max(page * limit, 120))
+      : productsQuery.skip(skip).limit(limit),
+  ]);
+
+  const paginatedProducts = searchRanking
+    ? sortProductsBySearchRelevance(products, searchRanking).slice(skip, skip + limit)
+    : products;
 
   return {
     success: true,
     message: "Products fetched successfully",
-    data: products.map(mapProductToFrontend),
+    data: paginatedProducts.map(mapProductToFrontend),
     pagination: {
       page,
       limit,

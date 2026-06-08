@@ -26,7 +26,7 @@ export const GET =
   const filter: FilterQuery<IProduct> = { isActive: true };
   if (category) {
     const categoryIds = await getCategoryAndDescendantIds(category);
-    filter.category = categoryIds.length > 0 ? { $in: categoryIds } : category;
+    filter.category = { $in: categoryIds };
   }
 
   // Fetch products sorted by createdAt descending (newest first)

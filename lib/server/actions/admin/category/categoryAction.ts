@@ -25,6 +25,18 @@ export interface CategoryLean {
   parentId?: Types.ObjectId | null;
 }
 
+function normalizeParentObjectId(value?: string | null) {
+  if (!value || value === "null" || !mongoose.Types.ObjectId.isValid(value)) {
+    return null;
+  }
+
+  return new mongoose.Types.ObjectId(value);
+}
+
+function hasInvalidParentValue(value?: string | null) {
+  return Boolean(value && value !== "null" && value.trim() !== "" && !mongoose.Types.ObjectId.isValid(value));
+}
+
 function revalidateCategoryCaches() {
   revalidatePath("/admin/category");
   revalidatePath("/admin", "layout");
@@ -33,6 +45,48 @@ function revalidateCategoryCaches() {
   revalidateTag("categories", "max");
   revalidateTag("products", "max");
   revalidateTag("homepage", "max");
+}
+
+type DuplicateKeyErrorShape = {
+  code?: number;
+  keyPattern?: Record<string, unknown>;
+  keyValue?: Record<string, unknown>;
+  message?: string;
+};
+
+function isDuplicateKeyError(error: unknown): error is DuplicateKeyErrorShape {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as DuplicateKeyErrorShape).code === 11000
+  );
+}
+
+function duplicateCategoryMessage(error?: DuplicateKeyErrorShape) {
+  if (
+    error?.keyPattern?.categoryName ||
+    error?.message?.includes("categoryName_1")
+  ) {
+    return "The database still has the old global categoryName unique index. Run npm run sync:category-indexes, or drop db.categories.dropIndex(\"categoryName_1\") from MongoDB.";
+  }
+
+  return "A category with this name already exists under the selected parent.";
+}
+
+async function validateParentCategory(parentId: Types.ObjectId | null, currentId?: string) {
+  if (!parentId) return null;
+
+  const parent = await Category.findById(parentId).select("_id").lean<{ _id: Types.ObjectId }>();
+  if (!parent) {
+    return "Invalid parent category selected.";
+  }
+
+  if (currentId && parent._id.toString() === currentId) {
+    return "A category cannot be its own parent";
+  }
+
+  return null;
 }
 
 export async function getCategories(): Promise<{
@@ -75,6 +129,7 @@ export async function createCategory(fd: FormData) {
   const slug = createCategorySlug(categoryName);
   const parentIdRaw = fd.get("parentId") as string | null;
   const image = fd.get("categoryImage") as File | null;
+  const isActiveRaw = fd.get("isActive") as string | null;
 
   if (!categoryName || !categoryName.trim()) {
     return {
@@ -90,9 +145,20 @@ export async function createCategory(fd: FormData) {
     };
   }
 
-  let parentId: mongoose.Types.ObjectId | null = null;
-  if (parentIdRaw && mongoose.Types.ObjectId.isValid(parentIdRaw)) {
-    parentId = new mongoose.Types.ObjectId(parentIdRaw);
+  const parentId = normalizeParentObjectId(parentIdRaw);
+  if (hasInvalidParentValue(parentIdRaw)) {
+    return {
+      success: false,
+      message: "Invalid parent category selected.",
+    };
+  }
+
+  const parentError = await validateParentCategory(parentId);
+  if (parentError) {
+    return {
+      success: false,
+      message: parentError,
+    };
   }
 
   let imageUrl = "";
@@ -101,29 +167,42 @@ export async function createCategory(fd: FormData) {
   }
 
   const existingCategory = await Category.findOne({
-    $or: [{ categoryName }, { slug }],
+    parentId,
+    slug,
   });
   if (existingCategory) {
     return {
       success: false,
-      message: "Category already exists",
+      message: duplicateCategoryMessage(),
     };
   }
 
-  const category = await Category.create({
-    categoryName,
-    slug,
-    parentId,
-    categoryImage: imageUrl,
-  });
+  try {
+    const category = await Category.create({
+      categoryName,
+      slug,
+      parentId,
+      categoryImage: imageUrl,
+      isActive: isActiveRaw === null ? true : isActiveRaw === "true",
+    });
 
-  revalidateCategoryCaches();
+    revalidateCategoryCaches();
 
-  return {
-    success: true,
-    message: "Category created successfully",
-    data: mapCategoryToFrontend(category),
-  };
+    return {
+      success: true,
+      message: "Category created successfully",
+      data: mapCategoryToFrontend(category),
+    };
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      return {
+        success: false,
+        message: duplicateCategoryMessage(error),
+      };
+    }
+
+    throw error;
+  }
 }
 
 export async function updateCategory(id: string, fd: FormData) {
@@ -135,29 +214,43 @@ export async function updateCategory(id: string, fd: FormData) {
     return { success: false, message: "Category not found" };
   }
 
-  const name = normalizeCategoryName((fd.get("categoryName") as string) || "");
-  const slug = createCategorySlug(name);
-  const parentId = fd.get("parentId") as string;
+  const incomingName = normalizeCategoryName((fd.get("categoryName") as string) || "");
+  const parentIdRaw = fd.get("parentId") as string | null;
   const image = fd.get("categoryImage") as File | null;
+  const isActiveRaw = fd.get("isActive") as string | null;
+  const parentId = normalizeParentObjectId(parentIdRaw);
+  const name = incomingName || category.categoryName;
+  const slug = createCategorySlug(name);
 
-  if (name) {
-    if (!isValidCategoryName(name)) {
-      return { success: false, message: "Category name contains unsupported characters" };
-    }
-
-    const duplicateCategory = await Category.findOne({
-      $or: [{ categoryName: name }, { slug }],
-      _id: { $ne: id },
-    });
-
-    if (duplicateCategory) {
-      return { success: false, message: "Category already exists" };
-    }
-
-    category.categoryName = name;
-    category.slug = slug;
+  if (hasInvalidParentValue(parentIdRaw)) {
+    return { success: false, message: "Invalid parent category selected." };
   }
-  category.parentId = parentId && parentId !== "null" ? parentId : null;
+
+  const parentError = await validateParentCategory(parentId, id);
+  if (parentError) {
+    return { success: false, message: parentError };
+  }
+
+  if (!isValidCategoryName(name)) {
+    return { success: false, message: "Category name contains unsupported characters" };
+  }
+
+  const duplicateCategory = await Category.findOne({
+    parentId,
+    slug,
+    _id: { $ne: id },
+  });
+
+  if (duplicateCategory) {
+    return { success: false, message: duplicateCategoryMessage() };
+  }
+
+  category.categoryName = name;
+  category.slug = slug;
+  category.parentId = parentId;
+  if (isActiveRaw !== null) {
+    category.isActive = isActiveRaw === "true";
+  }
 
   if (image && image.size > 0) {
     if (category.categoryImage) {
@@ -166,8 +259,19 @@ export async function updateCategory(id: string, fd: FormData) {
     category.categoryImage = await uploadToCloudinary(image);
   }
 
-  await category.save();
-  revalidateCategoryCaches();
+  try {
+    await category.save();
+    revalidateCategoryCaches();
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      return {
+        success: false,
+        message: duplicateCategoryMessage(error),
+      };
+    }
+
+    throw error;
+  }
 
   return {
     success: true,

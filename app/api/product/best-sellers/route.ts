@@ -25,7 +25,7 @@ const filter: FilterQuery<IProduct> = {
 };
   if (category) {
     const categoryIds = await getCategoryAndDescendantIds(category);
-    filter.category = categoryIds.length > 0 ? { $in: categoryIds } : category;
+    filter.category = { $in: categoryIds };
   }
 
   const products = await Product.find(filter)

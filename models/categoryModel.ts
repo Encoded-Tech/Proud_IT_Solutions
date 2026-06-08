@@ -23,7 +23,6 @@ const categorySchema = new Schema<ICategory>(
     categoryName: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
       set: normalizeCategoryName,
     },
@@ -34,7 +33,6 @@ const categorySchema = new Schema<ICategory>(
     slug: {
       type: String,
       lowercase: true,
-      unique: true,
       trim: true,
     },
     parentId: {
@@ -63,6 +61,10 @@ categorySchema.pre("save", function (next) {
 });
 
 categorySchema.index({ isActive: 1, createdAt: -1 });
+categorySchema.index(
+  { parentId: 1, slug: 1 },
+  { unique: true, name: "parent_slug_unique" }
+);
 categorySchema.index({ categoryName: 1, isActive: 1 });
 categorySchema.index({ slug: 1, isActive: 1 });
 categorySchema.index({ parentId: 1, isActive: 1 });

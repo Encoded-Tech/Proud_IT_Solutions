@@ -1,16 +1,12 @@
 import React from "react";
-
-
-
-
-import ListCategories from "@/components/server/ListCategories";
-
-import HomeProducts from "@/components/server/ListHomeProducts";
-
-import ListProducts from "@/components/server/ListProducts";
 import { Metadata } from "next";
 import { APP_NAME, SERVER_PRODUCTION_URL } from "@/config/env";
-import { Suspense } from "react";
+import ShopCategories from "./shop-category";
+import ShopGrid from "./shop-grid";
+import { fetchPublicCategories } from "@/lib/server/fetchers/fetchCategory";
+import { fetchPublicAllProducts } from "@/lib/server/fetchers/fetchPublicProducts";
+import { fetchPublicBrands } from "@/lib/server/fetchers/fetchBrands";
+import { fetchFilteredProducts } from "@/lib/server/fetchers/fetchProducts";
 
 export const metadata: Metadata = {
   title: {
@@ -62,7 +58,51 @@ export const metadata: Metadata = {
 };
 
 
-const page = () => {
+const page = async ({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    category?: string;
+    categoryId?: string;
+    categoryName?: string;
+    brand?: string;
+    search?: string;
+  }>;
+}) => {
+  const params = await searchParams;
+  const legacyGlobalCategoryName = params?.category?.startsWith("name:")
+    ? params.category.slice("name:".length)
+    : null;
+  const effectiveCategoryName = params?.categoryName || legacyGlobalCategoryName;
+  const legacyCategory = legacyGlobalCategoryName ? null : params?.category;
+  const hasInitialFilters = Boolean(
+    params?.categoryId ||
+      effectiveCategoryName ||
+      legacyCategory ||
+      params?.brand ||
+      params?.search
+  );
+
+  const [categoriesRes, productsRes, brandsRes] = await Promise.all([
+    fetchPublicCategories(),
+    hasInitialFilters
+      ? fetchFilteredProducts({
+          page: 1,
+          limit: 6,
+          brand: params?.brand || null,
+          categoryId: params?.categoryId || null,
+          categoryName: params?.categoryId ? null : effectiveCategoryName || null,
+          category: params?.categoryId || effectiveCategoryName ? null : legacyCategory || null,
+          search: params?.search || null,
+        })
+      : fetchPublicAllProducts(1, 6),
+    fetchPublicBrands(),
+  ]);
+
+  const categories = categoriesRes.data || [];
+  const products = productsRes.data || [];
+  const brands = brandsRes.data || [];
+
   return (
     <main className="max-w-7xl xl:mx-auto mx-4 my-10 md:space-y-12 space-y-8">
       {/* Seo section */}
@@ -86,15 +126,13 @@ const page = () => {
       <h2 className="font-medium text-lighttext">
         Home / <span className="text-black "> Shop</span>
       </h2>
-      <Suspense fallback={<div className="h-28 rounded-3xl border border-slate-200 bg-slate-50" />}>
-        <ListCategories page="shop" />
-      </Suspense>
-      <Suspense fallback={<div className="grid gap-6 md:grid-cols-3"><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /></div>}>
-        <ListProducts />
-      </Suspense>
-      <Suspense fallback={<div className="grid gap-6 md:grid-cols-3"><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /><div className="h-72 rounded-3xl border border-slate-200 bg-slate-50" /></div>}>
-        <HomeProducts showHotDeals={true} showNewArrivals={false} showBestSellers={false} />
-      </Suspense>
+      <ShopCategories categories={categories} />
+      <ShopGrid
+        products={products}
+        categories={categories}
+        brands={brands}
+        pagination={productsRes.pagination}
+      />
     </main>
   );
 };

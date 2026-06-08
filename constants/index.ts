@@ -13,7 +13,7 @@ export const SERVER_URL =
   export const navitems = [
     {
       name: "Home",
-      href: "/",
+      href: "/home",
     },
     {
       name: "Shop",

@@ -3,7 +3,7 @@
 import Image from "@/components/ui/optimized-image";
 import React, { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Loader2, Search, Edit } from "lucide-react";
+import { Trash2, Search, Edit } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { CategoryType } from "@/types/product";
@@ -24,6 +24,34 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const itemsPerPage = 6;
+  const categoryById = useMemo(
+    () => new Map(categories.map((category) => [category.id, category])),
+    [categories]
+  );
+
+  const getCategoryPath = (category: CategoryType) => {
+    if (category.path) {
+      return category.path
+        .split("/")
+        .map((segment) => segment.replace(/-/g, " "))
+        .join(" / ");
+    }
+
+    const labels: string[] = [];
+    let current: CategoryType | undefined = category;
+
+    while (current) {
+      labels.unshift(current.categoryName);
+      current = current.parentId ? categoryById.get(current.parentId) : undefined;
+    }
+
+    return labels.join(" / ");
+  };
+
+  const getParentName = (category: CategoryType) => {
+    if (!category.parentId) return "Root";
+    return categoryById.get(category.parentId)?.categoryName || "Unknown";
+  };
 
   // 🔍 Filter
   const filtered = useMemo(() => {
@@ -155,8 +183,11 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
                     aria-label="Select all visible categories"
                   />
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Category</th>
-                <th className="px-6 py-4 text-center text-xs font-semibold uppercase">Image</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Name</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Parent</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold uppercase">Slug</th>
+                <th className="px-6 py-4 text-center text-xs font-semibold uppercase">Status</th>
+                <th className="px-6 py-4 text-right text-xs font-semibold uppercase">Products</th>
                 <th
                   className="px-6 py-4 text-right text-xs font-semibold uppercase cursor-pointer"
                   onClick={() => setSortDir(d => (d === "asc" ? "desc" : "asc"))}
@@ -170,7 +201,7 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
             <tbody className="divide-y">
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-gray-500">No categories found</td>
+                  <td colSpan={8} className="py-12 text-center text-gray-500">No categories found</td>
                 </tr>
               ) : (
                 paginated.map((item, index) => (
@@ -187,18 +218,48 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
                     {/* Name */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center font-bold text-red-600">
-                          {item.categoryName[0].toUpperCase()}
+                        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border bg-red-100">
+                          {item.categoryImage ? (
+                            <Image src={item.categoryImage} alt={item.categoryName} fill className="object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center font-bold text-red-600">
+                              {item.categoryName[0].toUpperCase()}
+                            </div>
+                          )}
                         </div>
-                        {item.categoryName}
+                        <div className="min-w-0">
+                          <div className="font-medium text-gray-900">{item.categoryName}</div>
+                          <div className="max-w-xs truncate text-xs text-gray-500">
+                            {getCategoryPath(item)}
+                          </div>
+                        </div>
                       </div>
                     </td>
 
-                    {/* Image */}
+                    <td className="px-6 py-4 text-sm">
+                      <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600">
+                        {getParentName(item)}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      <code className="rounded bg-gray-100 px-2 py-1 text-xs">{item.slug}</code>
+                    </td>
+
                     <td className="px-6 py-4 text-center">
-                      <div className="relative w-14 h-14 mx-auto rounded-lg overflow-hidden border">
-                        <Image src={item.categoryImage} alt={item.categoryName} fill className="object-cover" />
-                      </div>
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          item.isActive
+                            ? "bg-green-50 text-green-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {item.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4 text-right text-sm font-medium">
+                      {item.productCount || 0}
                     </td>
 
                     {/* Date */}
@@ -212,12 +273,14 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
                       <button
                         onClick={() => setEditTarget(item)}
                         className="p-2 rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100"
+                        aria-label={`Edit ${item.categoryName}`}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setDeleteTarget(item)}
                         className="p-2 rounded bg-red-50 text-red-700 hover:bg-red-100"
+                        aria-label={`Delete ${item.categoryName}`}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -258,8 +321,10 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
             onCancel={() => setEditTarget(null)}
             onSubmit={async (formData) => {
               const res = await updateCategory(editTarget.id, formData);
-              if (res.success) router.refresh();
-              setEditTarget(null);
+              if (res.success) {
+                router.refresh();
+                setEditTarget(null);
+              }
               return res;
             }}
           />

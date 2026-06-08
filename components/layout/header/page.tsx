@@ -65,9 +65,10 @@ const isLoggedIn = status === "authenticated";
         {status !== "loading" && !isLoggedIn && (
   <Link
     href="/login"
-    className="lg:hidden block bg-white p-2 rounded-full text-black"
+    className="lg:hidden flex items-center gap-2 bg-white px-3 py-2 rounded-full text-black font-medium"
   >
     <Icon icon="et:profile-male" width="22" height="22" />
+    <span className="text-sm">Login</span>
   </Link>
 )}
 

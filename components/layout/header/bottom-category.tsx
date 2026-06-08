@@ -85,8 +85,12 @@ const BottomCategory = () => {
           
           {/* LOGIN */}
           {!isLoggedIn && (
-            <Link href="/login" className="bg-white p-2 rounded-full text-black">
+            <Link
+              href="/login"
+              className="flex items-center gap-2 bg-white px-4 py-2 rounded-full text-black font-medium"
+            >
               <Icon icon="et:profile-male" width="22" height="22" />
+              <span>Login</span>
             </Link>
           )}
 

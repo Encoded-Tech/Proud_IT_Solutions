@@ -7,6 +7,7 @@ import Slider from "react-slick";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { CategoryType } from "@/types/product";
+import { buildPublicCategoryCardOptions } from "@/lib/helpers/categorySelection";
 
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -17,13 +18,16 @@ export default function SliderClient({
   categories: CategoryType[];
 }) {
   const sliderRef = useRef<Slider | null>(null);
+  const categoryCards = buildPublicCategoryCardOptions(categories);
+
+  if (categoryCards.length === 0) return null;
 
   const settings = {
-    infinite: true,
+    infinite: categoryCards.length > 5,
     speed: 800,
-    slidesToShow: 5,
+    slidesToShow: Math.min(categoryCards.length, 5),
     slidesToScroll: 1,
-    autoplay: true,
+    autoplay: categoryCards.length > 5,
     autoplaySpeed: 2500,
     centerMode: true,
     dots: false,
@@ -33,25 +37,25 @@ export default function SliderClient({
       {
         breakpoint: 1200,
         settings: {
-          slidesToShow: 5,
+          slidesToShow: Math.min(categoryCards.length, 5),
         },
       },
       {
         breakpoint: 1024,
         settings: {
-          slidesToShow: 4,
+          slidesToShow: Math.min(categoryCards.length, 4),
         },
       },
       {
         breakpoint: 768,
         settings: {
-          slidesToShow: 3,
+          slidesToShow: Math.min(categoryCards.length, 3),
         },
       },
       {
         breakpoint: 470,
         settings: {
-          slidesToShow: 2,
+          slidesToShow: Math.min(categoryCards.length, 2),
         },
       },
     ],
@@ -64,31 +68,31 @@ export default function SliderClient({
     <div className="relative">
       <PageHeader title="Popular Categories" />
 
-      {categories.length > 5 ? (
+      {categoryCards.length > 5 ? (
         <section className="relative">
           <Slider ref={sliderRef} {...settings} className="my-10">
-            {categories.map((item, index) => (
-              <div key={index} className="px-2">
-           <Link href={`/shop?category=${item.slug}`}>
+            {categoryCards.map((item) => (
+              <div key={item.id} className="px-2">
+           <Link href={item.href}>
 
                   {/* IMAGE + BADGE */}
                   <figure className="relative overflow-hidden rounded-md cursor-pointer group">
-              {item.productCount > 0 && (
+              {item.count > 0 && (
   <span
-    aria-label={`${item.productCount} ${
-      item.productCount === 1 ? "Product" : "Products"
+    aria-label={`${item.count} ${
+      item.count === 1 ? "Product" : "Products"
     }`}
     className="absolute top-2 right-2 z-10 rounded-full bg-red-500 px-3 py-1 text-xs font-semibold text-white shadow-md ring-1 ring-black/5"
   >
-    {item.productCount}{" "}
-    {item.productCount === 1 ? "Product" : "Products"}
+    {item.count}{" "}
+    {item.count === 1 ? "Product" : "Products"}
   </span>
 )}
 
 
                     <Image
-                      src={item.categoryImage}
-                      alt={item.categoryName}
+                      src={item.image}
+                      alt={item.label}
                       width={1000}
                       height={500}
                       loading="lazy"
@@ -99,7 +103,7 @@ export default function SliderClient({
                   {/* CATEGORY NAME */}
                   <div className="flex justify-center mt-3">
                     <h2 className="font-medium text-md text-center line-clamp-2 min-h-[3rem]">
-                      {item.categoryName}
+                      {item.label}
                     </h2>
                   </div>
                 </Link>
@@ -127,23 +131,23 @@ export default function SliderClient({
       ) : (
         /* FALLBACK GRID */
         <section className="grid grid-cols-2 gap-4 my-10 sm:grid-cols-3 md:grid-cols-5">
-          {categories.map((item, index) => (
-        <div key={index} className="px-2">
-              <Link  href={`/shop?category=${item.slug}`}>
+          {categoryCards.map((item) => (
+        <div key={item.id} className="px-2">
+              <Link  href={item.href}>
 
               
                 <figure className="relative overflow-hidden rounded-md cursor-pointer group">
-                  {item.productCount > 0 && (
+                  {item.count > 0 && (
                     <span className="absolute top-2 right-2 z-10 rounded-full bg-black/70 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-                      {item.productCount > 99
+                      {item.count > 99
                         ? "99+"
-                        : item.productCount}
+                        : item.count}
                     </span>
                   )}
 
                   <Image
-                    src={item.categoryImage}
-                    alt={item.categoryName}
+                    src={item.image}
+                    alt={item.label}
                     width={1000}
                     height={500}
                     loading="lazy"
@@ -152,7 +156,7 @@ export default function SliderClient({
                 </figure>
 
                 <h2 className="mt-3 text-center font-medium text-md line-clamp-2 min-h-[3rem]">
-                  {item.categoryName}
+                  {item.label}
                 </h2>
              
             </Link>

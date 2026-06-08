@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import Image from "@/components/ui/optimized-image";
 import { 
@@ -26,7 +26,9 @@ import {
   SelectTrigger,
   SelectValue,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
 } from "@/components/ui/select";
 
 import { 
@@ -38,6 +40,11 @@ import { useRouter } from "next/navigation";
 import { ProductHighlight, VariantType } from "@/types/product";
 import RichTextEditor from "@/components/admin/RichTextEditor";
 import { MAX_PRODUCT_HIGHLIGHTS, sanitizeProductHighlights } from "@/lib/helpers/productHighlights";
+import {
+  buildCategoryPathOptions,
+  CategoryPathOption,
+  CategorySelectionItem,
+} from "@/lib/helpers/categorySelection";
 
 // ─── Shared utility ───────────────────────────────────────────────────────────
 // Use this wherever you render product.description on the frontend too
@@ -69,10 +76,19 @@ function formatDateForInput(value?: string | Date | null) {
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface Category {
-  id: string;
-  categoryName: string;
+interface Category extends CategorySelectionItem {
+  id?: string;
+  _id?: string;
+  categoryName?: string;
+  name?: string;
+  slug?: string;
+  path?: string;
+  parent?: string | { id?: string; _id?: string } | null;
+  parentCategory?: string | { id?: string; _id?: string } | null;
+  parentId?: string | { id?: string; _id?: string } | null;
 }
+
+type CategoryOption = CategoryPathOption;
 
 export interface Product {
   id: string;
@@ -135,6 +151,7 @@ export function AddProductForm({
   );
   const [tagInput, setTagInput] = useState("");
   const [isDragging, setIsDragging] = useState(false);
+  const categoryOptions = useMemo(() => buildCategoryPathOptions(categories), [categories]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -377,14 +394,29 @@ export function AddProductForm({
               name="category"
               control={control}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value || ""}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value || ""}
+                >
                   <SelectTrigger className="h-12 border-2 border-blue-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 rounded-xl">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
-                  <SelectContent>
-                    {categories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>{cat.categoryName}</SelectItem>
-                    ))}
+                  <SelectContent className="max-w-[min(42rem,calc(100vw-2rem))]">
+                    {categoryOptions.length > 0 && (
+                      <SelectGroup>
+                        <SelectLabel>Exact Category Paths</SelectLabel>
+                        {categoryOptions.map((option) => (
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            title={option.label}
+                            className="whitespace-normal"
+                          >
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    )}
                   </SelectContent>
                 </Select>
               )}
