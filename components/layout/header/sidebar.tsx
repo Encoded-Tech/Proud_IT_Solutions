@@ -16,6 +16,7 @@ import {
   ComputerIcon,
   Wrench,
   MailPlus,
+  Camera,
 } from "lucide-react";
 import Image from "@/components/ui/optimized-image";
 
@@ -29,6 +30,7 @@ type MenuName =
   | "variants"
   | "posts"
   | "buildUserPC"
+  | "cctvInstall"
   ;
 
 export default function AdminSidebar({ collapsed }: AdminProps) {
@@ -39,6 +41,7 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
     variants: false,
     posts: false,
     buildUserPC: false,
+    cctvInstall: false,
    
   });
 
@@ -57,6 +60,9 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
     }
     if (pathname.startsWith("/admin/build-user-pc")) {
       setOpenMenus((prev) => ({ ...prev, buildUserPC: true }));
+    }
+    if (pathname.startsWith("/admin/cctv-install")) {
+      setOpenMenus((prev) => ({ ...prev, cctvInstall: true }));
     }
   }, [pathname]);
 
@@ -133,6 +139,49 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
                 </span>
               )}
             </Link>
+          </li>
+
+          {/* Install CCTV */}
+          <li>
+            <button
+              onClick={() => toggleMenu("cctvInstall")}
+              className={`w-full p-2 ${navLinkClass(isSectionActive(["/admin/cctv-install"]), collapsed)}`}
+            >
+              <Camera className={`w-5 h-5 ${isSectionActive(["/admin/cctv-install"]) ? "text-red-600" : "text-gray-600"}`} />
+              {!collapsed && (
+                <>
+                  <span className={isSectionActive(["/admin/cctv-install"]) ? "text-red-700 font-semibold" : "text-gray-900"}>
+                    Install CCTV
+                  </span>
+                  {openMenus.cctvInstall ? (
+                    <ChevronDown className={`ml-auto w-4 ${isSectionActive(["/admin/cctv-install"]) ? "text-red-500" : "text-gray-400"}`} />
+                  ) : (
+                    <ChevronRight className={`ml-auto w-4 ${isSectionActive(["/admin/cctv-install"]) ? "text-red-500" : "text-gray-400"}`} />
+                  )}
+                </>
+              )}
+            </button>
+
+            {openMenus.cctvInstall && !collapsed && (
+              <ul className="mt-1 ml-8 space-y-1">
+                <li>
+                  <Link
+                    href="/admin/cctv-install/parts"
+                    className={navChildLinkClass(isActivePath("/admin/cctv-install/parts"))}
+                  >
+                    CCTV Items
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/admin/cctv-install/orders"
+                    className={navChildLinkClass(isActivePath("/admin/cctv-install/orders"))}
+                  >
+                    CCTV Orders
+                  </Link>
+                </li>
+              </ul>
+            )}
           </li>
         </ul>
 

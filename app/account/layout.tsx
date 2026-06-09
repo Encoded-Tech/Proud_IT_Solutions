@@ -56,6 +56,7 @@ export default async function AccountLayout({
                   <nav className="space-y-1 text-sm">
                     <SidebarLink href="/account/orders" label="Orders" />
                     <SidebarLink href="/account/build-requests" label="Build Requests" />
+                    <SidebarLink href="/account/cctv-installations" label="CCTV Installations" />
                     <SidebarLink href="/cart" label="Cart" />
                     <SidebarLink href="/wishlist" label="Wishlist" />
                   </nav>

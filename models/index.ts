@@ -5,3 +5,4 @@ export { default as User } from "./userModel";
 export { default as NewsletterSubscriber } from "./newsletterSubscriberModel";
 export { default as EmailCampaign } from "./emailCampaignModel";
 export { default as Quotation } from "./quotationModel";
+export { CctvPart, CctvInstallationRequest } from "./cctvInstallationModel";

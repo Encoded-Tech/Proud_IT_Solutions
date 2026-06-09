@@ -36,8 +36,11 @@ export const SERVER_URL =
     {
       name: "Build My PC",
       href: "/build-my-pc",
+    },
+    {
+      name: "Install CCTV",
+      href: "/install-cctv",
     }
-    
   ]
 
 

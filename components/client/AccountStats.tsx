@@ -4,14 +4,22 @@ import { selectCartTotalItems } from "@/redux/features/cart/cartSlice";
 import { selectWishlistCount } from "@/redux/features/wishlist/wishListSlice";
 import { useAppSelector } from "@/redux/hooks";
 
-export default function AccountStats({orderCount, buildCount}: {orderCount: number, buildCount: number}) {
+export default function AccountStats({
+  orderCount,
+  buildCount,
+  cctvCount,
+}: {
+  orderCount: number;
+  buildCount: number;
+  cctvCount: number;
+}) {
   const cartItemsCount = useAppSelector(selectCartTotalItems);
   const wishlistCount = useAppSelector(selectWishlistCount);
 
   
 
   return (
-   <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
+   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-6">
       <Stat
         title="Orders"
         value={orderCount.toString()}
@@ -21,6 +29,11 @@ export default function AccountStats({orderCount, buildCount}: {orderCount: numb
         title="Build Requests"
         value={buildCount.toString()}
         subtitle="Total Requests"
+      />
+      <Stat
+        title="CCTV Requests"
+        value={cctvCount.toString()}
+        subtitle="Installations"
       />
       <Stat
         title="Wishlist"
