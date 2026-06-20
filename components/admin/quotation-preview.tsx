@@ -272,7 +272,7 @@ function QuotationPage({
           ) : null}
 
           <div
-            className={`quotation-table-wrap table-wrap mt-3 overflow-hidden ${
+            className={`quotation-table-wrap table-wrap mt-3 ${
               page.isFinalPage ? "quotation-table-wrap-final" : ""
             } ${
               page.isFirstPage && !page.isFinalPage ? "quotation-table-wrap-first-non-final" : ""
@@ -442,10 +442,12 @@ function QuotationPage({
               />
             </div>
           </div>
-        ) : (
-          <p className="continued-text q-text-900">Continued on next page...</p>
-        )}
+        ) : null}
       </div>
+
+      {!page.isFinalPage ? (
+        <p className="continued-text q-text-900">Continued on next page...</p>
+      ) : null}
     </article>
   );
 }
@@ -638,11 +640,13 @@ const QuotationPreview = forwardRef<HTMLDivElement, QuotationPreviewProps>(funct
         .page-number {
           position: absolute;
           z-index: 4;
-          right: 16mm;
-          bottom: 20.2mm;
-          font-size: 2.4mm;
-          font-weight: 700;
+          right: 18mm;
+          bottom: 33mm;
+          font-size: 2.1mm;
+          font-weight: 600;
           line-height: 1;
+          letter-spacing: 0;
+          white-space: nowrap;
         }
 
         .quotation-content {
@@ -671,11 +675,11 @@ const QuotationPreview = forwardRef<HTMLDivElement, QuotationPreviewProps>(funct
         }
 
         .quotation-table-wrap-first-non-final {
-          max-height: 158mm;
+          max-height: 166mm;
         }
 
         .quotation-table-wrap-continuation {
-          max-height: 196mm;
+          max-height: 200mm;
         }
 
         .quotation-table-wrap-final {
@@ -692,6 +696,7 @@ const QuotationPreview = forwardRef<HTMLDivElement, QuotationPreviewProps>(funct
           white-space: pre-wrap;
           overflow-wrap: anywhere;
           word-break: break-word;
+          line-height: 4.2mm;
         }
 
         .signature-area-bottom {
@@ -712,14 +717,19 @@ const QuotationPreview = forwardRef<HTMLDivElement, QuotationPreviewProps>(funct
 
         .continued-text {
           position: absolute;
-          right: 0;
-          bottom: 0;
+          z-index: 5;
+          right: 18mm;
+          bottom: 42mm;
           margin: 0;
-          color: #0f172a !important;
-          font-size: 2.7mm;
-          font-weight: 800;
+          color: #1f2937 !important;
+          font-size: 2.4mm;
+          font-weight: 600;
           line-height: 1;
+          letter-spacing: 0;
           text-align: right;
+          white-space: nowrap;
+          word-break: normal;
+          overflow-wrap: normal;
         }
 
         @media print {

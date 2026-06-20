@@ -55,10 +55,24 @@ export function quotationNotesToList(value?: string | null) {
     .filter(Boolean);
 }
 
-export const FIRST_PAGE_NON_FINAL_ITEM_LIMIT = 18;
-export const CONTINUATION_PAGE_NON_FINAL_ITEM_LIMIT = 24;
-export const FINAL_PAGE_ITEM_LIMIT = 8;
-export const FINAL_PAGE_MIN_ITEM_COUNT = 1;
+const DESCRIPTION_WRAP_CHARS_PER_LINE = 55;
+const TABLE_HEADER_HEIGHT_MM = 8;
+const TOTAL_ROW_HEIGHT_MM = 8;
+const ITEM_ROW_BASE_HEIGHT_MM = 7.4;
+const ITEM_ROW_LINE_HEIGHT_MM = 4.2;
+const MIN_ITEM_ROW_HEIGHT_MM = 7.4;
+const OVERSIZED_ROW_FUDGE_MM = 2;
+
+const FIRST_PAGE_NON_FINAL_TABLE_HEIGHT_MM = 166;
+const CONTINUATION_PAGE_NON_FINAL_TABLE_HEIGHT_MM = 200;
+const FINAL_PAGE_TABLE_HEIGHT_MM = 118;
+
+const FIRST_PAGE_NON_FINAL_ITEM_HEIGHT_BUDGET_MM =
+  FIRST_PAGE_NON_FINAL_TABLE_HEIGHT_MM - TABLE_HEADER_HEIGHT_MM - OVERSIZED_ROW_FUDGE_MM;
+const CONTINUATION_PAGE_NON_FINAL_ITEM_HEIGHT_BUDGET_MM =
+  CONTINUATION_PAGE_NON_FINAL_TABLE_HEIGHT_MM - TABLE_HEADER_HEIGHT_MM - OVERSIZED_ROW_FUDGE_MM;
+const FINAL_PAGE_ITEM_HEIGHT_BUDGET_MM =
+  FINAL_PAGE_TABLE_HEIGHT_MM - TABLE_HEADER_HEIGHT_MM - TOTAL_ROW_HEIGHT_MM - OVERSIZED_ROW_FUDGE_MM;
 
 export function formatCurrency(value: number, currency = "NPR") {
   const normalizedCurrency = currency.trim().toUpperCase();
@@ -122,6 +136,63 @@ export function getExpandedQuotationRowHeightMm(itemCount: number) {
   return 0;
 }
 
+export function estimateDescriptionLines(description: string) {
+  const text = String(description || "").trim();
+  if (!text) return 1;
+
+  return text.split(/\r?\n/).reduce((lineCount, line) => {
+    const wrappedLineCount = Math.ceil(line.trim().length / DESCRIPTION_WRAP_CHARS_PER_LINE);
+    return lineCount + Math.max(1, wrappedLineCount);
+  }, 0);
+}
+
+export function estimateItemRowHeightMm(item: Pick<QuotationItemComputed, "description">) {
+  const lines = estimateDescriptionLines(item.description);
+  return Math.max(
+    MIN_ITEM_ROW_HEIGHT_MM,
+    ITEM_ROW_BASE_HEIGHT_MM + (lines - 1) * ITEM_ROW_LINE_HEIGHT_MM
+  );
+}
+
+function estimateItemsHeightMm(items: QuotationItemComputed[]) {
+  const expandedRowHeightMm = getExpandedQuotationRowHeightMm(items.length);
+
+  return items.reduce((total, item) => {
+    const rowHeight = estimateItemRowHeightMm(item);
+    return total + Math.max(rowHeight, expandedRowHeightMm || 0);
+  }, 0);
+}
+
+function getNonFinalItemHeightBudgetMm(pageIndex: number) {
+  return pageIndex === 0
+    ? FIRST_PAGE_NON_FINAL_ITEM_HEIGHT_BUDGET_MM
+    : CONTINUATION_PAGE_NON_FINAL_ITEM_HEIGHT_BUDGET_MM;
+}
+
+function canFitItemsInBudget(items: QuotationItemComputed[], budgetMm: number) {
+  return estimateItemsHeightMm(items) <= budgetMm;
+}
+
+function takeItemsForBudget(
+  items: QuotationItemComputed[],
+  cursor: number,
+  budgetMm: number,
+  reserveAtLeastOneItem: boolean
+) {
+  const maxEnd = reserveAtLeastOneItem ? items.length - 1 : items.length;
+  let end = cursor;
+
+  while (end < maxEnd && canFitItemsInBudget(items.slice(cursor, end + 1), budgetMm)) {
+    end += 1;
+  }
+
+  if (end === cursor) {
+    return Math.min(cursor + 1, maxEnd);
+  }
+
+  return end;
+}
+
 export function buildQuotationPages(draft: QuotationDraft): QuotationPageSlice[] {
   const computedItems = computeQuotationItems(draft);
   const pages: Array<{ items: QuotationItemComputed[]; isFinalPage: boolean }> = [];
@@ -136,28 +207,31 @@ export function buildQuotationPages(draft: QuotationDraft): QuotationPageSlice[]
   }
 
   while (cursor < computedItems.length) {
-    const remaining = computedItems.length - cursor;
+    const remainingItems = computedItems.slice(cursor);
 
-    if (remaining <= FINAL_PAGE_ITEM_LIMIT) {
+    if (
+      remainingItems.length === 1 ||
+      canFitItemsInBudget(remainingItems, FINAL_PAGE_ITEM_HEIGHT_BUDGET_MM)
+    ) {
       pages.push({
-        items: computedItems.slice(cursor),
+        items: remainingItems,
         isFinalPage: true,
       });
       break;
     }
 
-    const pageLimit =
-      pageIndex === 0
-        ? FIRST_PAGE_NON_FINAL_ITEM_LIMIT
-        : CONTINUATION_PAGE_NON_FINAL_ITEM_LIMIT;
-    const maxTakeWithoutStealingFinal = remaining - FINAL_PAGE_MIN_ITEM_COUNT;
-    const takeCount = Math.min(pageLimit, maxTakeWithoutStealingFinal);
+    const takeUntil = takeItemsForBudget(
+      computedItems,
+      cursor,
+      getNonFinalItemHeightBudgetMm(pageIndex),
+      true
+    );
 
     pages.push({
-      items: computedItems.slice(cursor, cursor + takeCount),
+      items: computedItems.slice(cursor, takeUntil),
       isFinalPage: false,
     });
-    cursor += takeCount;
+    cursor = takeUntil;
     pageIndex += 1;
   }
 

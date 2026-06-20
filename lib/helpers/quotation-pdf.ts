@@ -473,6 +473,25 @@ export async function downloadQuotationPdf(
               el.style.borderColor = "#64748b";
             }
 
+            if (el.classList.contains("continued-text")) {
+              el.style.display = "block";
+              el.style.visibility = "visible";
+              el.style.opacity = "1";
+              el.style.position = "absolute";
+              el.style.right = "18mm";
+              el.style.bottom = "42mm";
+              el.style.zIndex = "5";
+              el.style.color = "#1f2937";
+              el.style.fontSize = "2.4mm";
+              el.style.fontWeight = "600";
+              el.style.lineHeight = "1";
+              el.style.letterSpacing = "0";
+              el.style.textAlign = "right";
+              el.style.whiteSpace = "nowrap";
+              el.style.wordBreak = "normal";
+              el.style.overflowWrap = "normal";
+            }
+
             if (el.classList.contains("q-text-white")) {
               el.style.color = "#ffffff";
             }
