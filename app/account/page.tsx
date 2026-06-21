@@ -114,6 +114,7 @@ export default async function AccountOverviewPage() {
             src={user.image ?? "/default-user.png"}
             alt="Profile"
             fill
+            sizes="(max-width: 768px) 80px, 136px"
             className="object-cover"
           />
         </div>

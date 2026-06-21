@@ -322,6 +322,7 @@ export default function EditOrderSheet({ order }: Props) {
                   src={order.paymentProof}
                   alt="Payment proof"
                   fill
+                  sizes="(max-width: 768px) 100vw, 448px"
                   className="object-contain"
                 />
               </div>

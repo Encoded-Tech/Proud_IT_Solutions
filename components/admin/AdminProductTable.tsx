@@ -302,6 +302,7 @@ export default function ProductTable({
                       src={product.images?.[0] ?? ""}
                       alt={product.name}
                       fill
+                      sizes="56px"
                       className="object-cover"
                     />
                   </div>

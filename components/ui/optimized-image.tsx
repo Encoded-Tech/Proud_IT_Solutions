@@ -35,6 +35,8 @@ export default function Image({
   blurDataURL,
   loading,
   quality,
+  fill,
+  sizes,
   ...props
 }: ImageProps) {
   const canUseBlur = !isNonOptimizableSource(props.src);
@@ -47,6 +49,8 @@ export default function Image({
       quality={quality ?? 85}
       placeholder={placeholder ?? (canUseBlur ? "blur" : "empty")}
       blurDataURL={blurDataURL ?? (canUseBlur ? defaultBlurDataURL : undefined)}
+      fill={fill}
+      sizes={fill ? sizes ?? "100vw" : sizes}
       {...props}
     />
   );

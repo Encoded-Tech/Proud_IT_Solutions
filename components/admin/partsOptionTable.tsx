@@ -276,6 +276,7 @@ export default function PartsTable({ initialParts, partTypes }: Props) {
                           src={part.imageUrl}
                           alt={part.name}
                           fill
+                          sizes="56px"
                           className="object-cover"
                         />
                       ) : (

@@ -313,6 +313,7 @@ export default function AdminMediaTable({
         src={item.url}
         alt={formatPlacementLabel(item.placement)}
         fill
+        sizes="96px"
         className="object-contain"
       />
     ) : (
@@ -485,6 +486,7 @@ export default function AdminMediaTable({
                       src={deleteTarget!.url}
                       alt={formatPlacementLabel(deleteTarget!.placement)}
                       fill
+                      sizes="96px"
                       className="object-cover"
                     />
                   ) : (

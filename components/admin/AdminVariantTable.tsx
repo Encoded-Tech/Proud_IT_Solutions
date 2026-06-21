@@ -433,6 +433,7 @@ export default function VariantTable({
                         src={v.images?.[0] ?? ""}
                         alt={v.sku}
                         fill
+                        sizes="56px"
                         className="object-cover"
                       />
                     </div>

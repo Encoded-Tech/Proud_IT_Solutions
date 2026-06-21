@@ -689,7 +689,7 @@ export function AddProductForm({
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {imagePreview.map((src, i) => (
                 <div key={i} className="relative aspect-square group">
-                  <Image src={src} alt={`preview ${i}`} fill
+                  <Image src={src} alt={`preview ${i}`} fill sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
                     className="object-cover rounded-xl border-2 border-violet-200 group-hover:border-violet-500 transition-all" />
                   <button type="button" onClick={() => removeImage(i)}
                     className="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-lg transition-all hover:scale-110">

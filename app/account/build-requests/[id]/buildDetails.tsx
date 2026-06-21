@@ -110,6 +110,7 @@ function PartsGrid({ parts }: { parts: IBuildPartMapped[] }) {
                             src={part.imageUrl ?? "placeholder.png"} // fallback-friendly
                             alt={part.name}
                             fill
+                            sizes="80px"
                             className="object-contain p-2"
                         />
                     </div>

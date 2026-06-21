@@ -199,7 +199,7 @@ addressFields.forEach((field: keyof IUserAddressFrontend) => {
   {/* ---------------- PROFILE IMAGE ---------------- */}
   <div className="md:col-span-2 flex flex-col items-center">
     <div className="relative w-32 h-32 rounded-full overflow-hidden border-2 border-gray-200">
-      <Image src={previewImage} alt="Profile" fill className="object-cover" />
+      <Image src={previewImage} alt="Profile" fill sizes="128px" className="object-cover" />
     </div>
     <label className="mt-3 text-sm text-red-600 cursor-pointer hover:underline">
       Change photo

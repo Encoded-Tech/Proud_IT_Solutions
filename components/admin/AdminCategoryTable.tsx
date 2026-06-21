@@ -220,7 +220,7 @@ export default function AdminCategoryTable({ categories }: { categories: Categor
                       <div className="flex items-center gap-3">
                         <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border bg-red-100">
                           {item.categoryImage ? (
-                            <Image src={item.categoryImage} alt={item.categoryName} fill className="object-cover" />
+                            <Image src={item.categoryImage} alt={item.categoryName} fill sizes="40px" className="object-cover" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center font-bold text-red-600">
                               {item.categoryName[0].toUpperCase()}

@@ -269,7 +269,13 @@ export default function CctvBuilderClient({ parts }: Props) {
                   >
                     <div className="relative aspect-[4/3] bg-slate-100">
                       {part.imageUrl ? (
-                        <Image src={part.imageUrl} alt={part.name} fill className="object-cover" />
+                        <Image
+                          src={part.imageUrl}
+                          alt={part.name}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          className="object-cover"
+                        />
                       ) : (
                         <div className="flex h-full items-center justify-center text-slate-400">
                           <Camera className="h-10 w-10" />

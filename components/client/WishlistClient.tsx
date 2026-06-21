@@ -85,7 +85,13 @@ const WishlistClient = ({ initialWishlist }: WishlistClientProps) => {
             >
               <Link href={product.deleted ? "#" : `/products/${product.slug}`}>
                 <div className="relative w-full h-56 bg-gray-50">
-                  <Image src={image} alt={product.name} fill className="object-contain p-4" />
+                  <Image
+                    src={image}
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    className="object-contain p-4"
+                  />
                   {product.deleted && (
                     <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
                       Removed

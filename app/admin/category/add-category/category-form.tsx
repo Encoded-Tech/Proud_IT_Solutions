@@ -393,6 +393,7 @@ export function CategoryForm({
                                 src={imagePreview}
                                 alt="Category preview"
                                 fill
+                                sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
                                 className="object-cover rounded-xl border-2 border-violet-200 group-hover:border-violet-500 transition-all"
                               />
                               <button

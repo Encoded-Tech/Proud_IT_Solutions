@@ -154,7 +154,13 @@ export default function CctvPartForm({ part, onSuccess }: Props) {
       <div className="grid gap-5 md:grid-cols-[220px_1fr]">
         <div className="relative aspect-[4/3] overflow-hidden rounded-xl border bg-slate-100">
           {imagePreview ? (
-            <Image src={imagePreview} alt={formData.name || "CCTV item"} fill className="object-cover" />
+            <Image
+              src={imagePreview}
+              alt={formData.name || "CCTV item"}
+              fill
+              sizes="(max-width: 768px) 100vw, 220px"
+              className="object-cover"
+            />
           ) : (
             <div className="flex h-full items-center justify-center text-slate-400">
               <Camera className="h-10 w-10" />
