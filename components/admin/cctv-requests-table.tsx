@@ -29,6 +29,12 @@ function label(value: string) {
   return value.replace(/_/g, " ");
 }
 
+function paymentMethodLabel(value?: string) {
+  if (value === "COD") return "COD";
+  if (value === "OnlineUpload") return "Online Payment";
+  return "N/A";
+}
+
 export default function CctvRequestsAdminTable({
   initialRequests,
 }: {
@@ -136,6 +142,9 @@ export default function CctvRequestsAdminTable({
                     </p>
                     <p className="mt-2 text-lg font-semibold text-slate-950">
                       {money(request.grandTotal)}
+                    </p>
+                    <p className="mt-1 text-xs font-medium text-slate-500">
+                      Payment: {paymentMethodLabel(request.paymentMethod)}
                     </p>
                   </div>
                 </div>

@@ -15,6 +15,11 @@ type ShopSearchParams = {
   categoryName?: string;
   brand?: string;
   search?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  rating?: string;
+  sort?: "newest" | "oldest" | "price_asc" | "price_desc";
+  page?: string;
 };
 
 export const metadata: Metadata = {
@@ -81,27 +86,40 @@ async function ShopGridSection({
     : null;
   const effectiveCategoryName = params?.categoryName || legacyGlobalCategoryName;
   const legacyCategory = legacyGlobalCategoryName ? null : params?.category;
+  const page = Math.max(1, Number.parseInt(params?.page || "1", 10) || 1);
+  const minPrice = params?.minPrice === undefined ? undefined : Number(params.minPrice);
+  const maxPrice = params?.maxPrice === undefined ? undefined : Number(params.maxPrice);
+  const rating = params?.rating === undefined ? null : Number(params.rating);
   const hasInitialFilters = Boolean(
     params?.categoryId ||
       effectiveCategoryName ||
       legacyCategory ||
       params?.brand ||
-      params?.search
+      params?.search ||
+      params?.minPrice ||
+      params?.maxPrice ||
+      params?.rating ||
+      params?.sort ||
+      page > 1
   );
 
   const [categoriesRes, productsRes, brandsRes] = await Promise.all([
     fetchPublicCategories(),
     hasInitialFilters
       ? fetchFilteredProducts({
-          page: 1,
+          page,
           limit: 6,
           brand: params?.brand || null,
           categoryId: params?.categoryId || null,
           categoryName: params?.categoryId ? null : effectiveCategoryName || null,
           category: params?.categoryId || effectiveCategoryName ? null : legacyCategory || null,
           search: params?.search || null,
+          minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
+          maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
+          rating: Number.isFinite(rating) ? rating : null,
+          sort: params?.sort || null,
         })
-      : fetchPublicAllProducts(1, 6),
+      : fetchPublicAllProducts(page, 6),
     fetchPublicBrands(),
   ]);
 

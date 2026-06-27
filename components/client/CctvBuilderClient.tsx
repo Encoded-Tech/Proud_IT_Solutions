@@ -25,13 +25,32 @@ import {
   Wrench,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { JSX, useMemo, useState } from "react";
+import { JSX, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 type SelectedCctvItem = {
   part: CctvPartMapped;
   quantity: number;
   notes?: string;
+};
+
+type CctvDraft = {
+  requestKey?: string;
+  items?: {
+    partId?: string;
+    quantity?: number;
+    notes?: string;
+    name?: string;
+    unitPrice?: number;
+    imageUrl?: string;
+  }[];
+  customerDetails?: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    siteAddress?: string;
+    notes?: string;
+  };
 };
 
 interface Props {
@@ -51,6 +70,101 @@ const ICONS: Record<CctvPartType, JSX.Element> = {
   accessories: <ShoppingBag className="h-5 w-5" />,
 };
 
+const CCTV_DRAFT_KEY = "proud-cctv-install-draft";
+
+const cleanDraftString = (value: unknown) =>
+  typeof value === "string" ? value.trim() : "";
+
+function createRequestKey() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function readCctvDraft(): CctvDraft | null {
+  try {
+    const rawDraft = localStorage.getItem(CCTV_DRAFT_KEY);
+    if (!rawDraft) return null;
+
+    const parsed = JSON.parse(rawDraft) as CctvDraft;
+    if (!parsed || typeof parsed !== "object") return null;
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeCctvDraft(
+  selectedItems: SelectedCctvItem[],
+  customerDetails: CctvDraft["customerDetails"],
+  requestKey: string
+) {
+  const draft: CctvDraft = {
+    requestKey,
+    items: selectedItems.map((item) => ({
+      partId: String(item.part.id),
+      quantity: Number(item.quantity || 1),
+      notes: cleanDraftString(item.notes),
+      name: String(item.part.name || ""),
+      unitPrice: Number(item.part.price || 0),
+      imageUrl: item.part.imageUrl ? String(item.part.imageUrl) : undefined,
+    })),
+    customerDetails: {
+      name: cleanDraftString(customerDetails?.name),
+      phone: cleanDraftString(customerDetails?.phone),
+      email: cleanDraftString(customerDetails?.email),
+      siteAddress: cleanDraftString(customerDetails?.siteAddress),
+      notes: cleanDraftString(customerDetails?.notes),
+    },
+  };
+
+  try {
+    localStorage.setItem(CCTV_DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    // Ignore storage failures; submit still works without a persisted draft.
+  }
+}
+
+function confirmAdminCctvCheckout() {
+  return new Promise<boolean>((resolve) => {
+    toast.custom(
+      (toastInstance) => (
+        <div className="w-[min(92vw,380px)] rounded-lg border border-slate-200 bg-white p-4 shadow-lg">
+          <p className="text-sm font-semibold text-slate-950">
+            You are admin. Are you sure you want to order from your own store?
+          </p>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                toast.dismiss(toastInstance.id);
+                resolve(false);
+              }}
+              className="rounded-md border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                toast.dismiss(toastInstance.id);
+                resolve(true);
+              }}
+              className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary/90"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: Infinity }
+    );
+  });
+}
+
 function money(value: number) {
   return `Rs. ${value.toLocaleString("en-IN")}`;
 }
@@ -62,6 +176,8 @@ export default function CctvBuilderClient({ parts }: Props) {
   const [activeType, setActiveType] = useState<CctvPartType>("camera");
   const [selected, setSelected] = useState<Record<string, SelectedCctvItem>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [requestKey, setRequestKey] = useState("");
   const [details, setDetails] = useState({
     name: user?.name || "",
     phone: user?.phone || "",
@@ -69,6 +185,10 @@ export default function CctvBuilderClient({ parts }: Props) {
     siteAddress: "",
     notes: "",
   });
+
+  const partsById = useMemo(() => {
+    return new Map(parts.map((part) => [String(part.id), part]));
+  }, [parts]);
 
   const grouped = useMemo(() => {
     return parts.reduce<Record<CctvPartType, CctvPartMapped[]>>((acc, part) => {
@@ -87,11 +207,96 @@ export default function CctvBuilderClient({ parts }: Props) {
     selectedItems.some((item) => item.part.type === type)
   );
 
-  const selectPart = (part: CctvPartMapped) => {
-    setSelected((current) => ({
+  useEffect(() => {
+    const draft = readCctvDraft();
+
+    if (draft) {
+      const restoredSelected: Record<string, SelectedCctvItem> = {};
+      const draftItems = Array.isArray(draft.items) ? draft.items : [];
+
+      for (const draftItem of draftItems) {
+        const partId = cleanDraftString(draftItem?.partId);
+        const part = partsById.get(partId);
+        const quantity = Number(draftItem?.quantity);
+
+        if (!part || !Number.isInteger(quantity) || quantity <= 0) continue;
+
+        if (restoredSelected[partId]) {
+          restoredSelected[partId].quantity += quantity;
+        } else {
+          restoredSelected[partId] = {
+            part,
+            quantity,
+            notes: cleanDraftString(draftItem?.notes) || undefined,
+          };
+        }
+      }
+
+      setSelected(restoredSelected);
+      setDetails({
+        name: cleanDraftString(draft.customerDetails?.name),
+        phone: cleanDraftString(draft.customerDetails?.phone),
+        email: cleanDraftString(draft.customerDetails?.email),
+        siteAddress: cleanDraftString(draft.customerDetails?.siteAddress),
+        notes: cleanDraftString(draft.customerDetails?.notes),
+      });
+      setRequestKey(cleanDraftString(draft.requestKey) || createRequestKey());
+    }
+
+    setDraftLoaded(true);
+  }, [partsById]);
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+    if (!user) return;
+
+    setDetails((current) => ({
       ...current,
-      [part.id]: current[part.id] || { part, quantity: 1 },
+      name: current.name || user.name || "",
+      phone: current.phone || user.phone || "",
+      email: current.email || user.email || "",
     }));
+  }, [draftLoaded, user]);
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+
+    if (selectedItems.length === 0) return;
+
+    const key = requestKey || createRequestKey();
+    if (!requestKey) {
+      setRequestKey(key);
+    }
+
+    writeCctvDraft(selectedItems, details, key);
+  }, [details, draftLoaded, requestKey, selectedItems]);
+
+  const selectPart = (part: CctvPartMapped) => {
+    const itemKey = String(part.id || part.name).trim();
+    if (!itemKey) return;
+
+    if (!requestKey) {
+      setRequestKey(createRequestKey());
+    }
+
+    setSelected((current) => {
+      const existing = current[itemKey];
+      if (existing) {
+        toast.success("Quantity increased for selected item");
+        return {
+          ...current,
+          [itemKey]: {
+            ...existing,
+            quantity: existing.quantity + 1,
+          },
+        };
+      }
+
+      return {
+        ...current,
+        [itemKey]: { part, quantity: 1 },
+      };
+    });
   };
 
   const updateQuantity = (partId: string, quantity: number) => {
@@ -117,7 +322,15 @@ export default function CctvBuilderClient({ parts }: Props) {
   };
 
   const handleSubmit = async () => {
+    if (submitting) return;
+
+    const key = requestKey || createRequestKey();
+    if (!requestKey) {
+      setRequestKey(key);
+    }
+
     if (!isLoggedIn) {
+      writeCctvDraft(selectedItems, details, key);
       toast.error("Please login first");
       router.push("/login?redirect=/install-cctv");
       return;
@@ -133,15 +346,26 @@ export default function CctvBuilderClient({ parts }: Props) {
       return;
     }
 
+    if (user?.role === "admin") {
+      const confirmed = await confirmAdminCctvCheckout();
+      if (!confirmed) return;
+    }
+
     setSubmitting(true);
     try {
+      writeCctvDraft(selectedItems, details, key);
+
       const res = await submitCctvInstallationRequest({
         items: selectedItems.map((item) => ({
-          partId: item.part.id,
-          quantity: item.quantity,
-          notes: item.notes,
+          partId: String(item.part.id),
+          name: String(item.part.name),
+          type: String(item.part.type),
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.part.price),
+          notes: item.notes ? String(item.notes) : "",
         })),
         customerDetails: details,
+        requestKey: key,
       });
 
       if (!res.success) {
@@ -149,8 +373,8 @@ export default function CctvBuilderClient({ parts }: Props) {
         return;
       }
 
-      toast.success(res.message);
-      router.push("/account/cctv-installations");
+      toast.success(res.message || "Continue to checkout");
+      router.push("/checkout?source=cctv_installation");
     } catch (error) {
       console.error(error);
       toast.error("Failed to submit CCTV installation request");
@@ -300,7 +524,6 @@ export default function CctvBuilderClient({ parts }: Props) {
                         <button
                           type="button"
                           onClick={() => selectPart(part)}
-                          disabled={isSelected}
                           className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition ${
                             isSelected
                               ? "bg-emerald-50 text-emerald-700"
@@ -310,7 +533,7 @@ export default function CctvBuilderClient({ parts }: Props) {
                           {isSelected ? (
                             <>
                               <CheckCircle2 className="h-4 w-4" />
-                              Selected
+                              Add one
                             </>
                           ) : (
                             <>
@@ -423,7 +646,7 @@ export default function CctvBuilderClient({ parts }: Props) {
               disabled={submitting || selectedItems.length === 0}
               className="mt-5 w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {submitting ? "Submitting..." : "Submit Request"}
+              {submitting ? "Preparing Checkout..." : "Continue to Checkout"}
             </button>
           </div>
         </aside>

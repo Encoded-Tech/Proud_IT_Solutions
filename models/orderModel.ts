@@ -2,13 +2,24 @@
 
 
 
-import { Schema, Document, model, models, Types } from "mongoose";
+import { Schema, Document, deleteModel, model, models, Types } from "mongoose";
 
 export interface IOrderItem {
   product: Types.ObjectId;
   variant?: Types.ObjectId;
   quantity: number;
   price: number;
+}
+
+export interface ICctvOrderItem {
+  part: Types.ObjectId;
+  type: string;
+  name: string;
+  imageUrl?: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  notes?: string;
 }
 
 export interface IDeliveryInfo {
@@ -42,7 +53,15 @@ outsideKathmanduCharge?: number; // 1000 if city != Kathmandu
 
   // inside IOrder
 buildRequest?: Types.ObjectId | null;
-orderType: "product" | "build";
+orderType: "product" | "build" | "cctv_installation";
+cctvInstallationRequest?: Types.ObjectId | null;
+cctvItems?: ICctvOrderItem[];
+cctvRequestKey?: string;
+cctvInstallation?: {
+  siteAddress: string;
+  notes?: string;
+  installationStatus: "pending_review" | "pending_confirmation" | "scheduled" | "completed" | "cancelled";
+};
 
   deliveredAt?: Date;
   cancelledAt?: Date;
@@ -54,6 +73,20 @@ const orderItemSchema = new Schema<IOrderItem>(
     variant: { type: Schema.Types.ObjectId, ref: "ProductVariant" },
     quantity: { type: Number, required: true, min: 1 },
     price: { type: Number, required: true },
+  },
+  { _id: false }
+);
+
+const cctvOrderItemSchema = new Schema<ICctvOrderItem>(
+  {
+    part: { type: Schema.Types.ObjectId, ref: "CctvPart", required: true },
+    type: { type: String, required: true },
+    name: { type: String, required: true },
+    imageUrl: { type: String },
+    quantity: { type: Number, required: true, min: 1 },
+    unitPrice: { type: Number, required: true, min: 0 },
+    lineTotal: { type: Number, required: true, min: 0 },
+    notes: { type: String },
   },
   { _id: false }
 );
@@ -76,16 +109,42 @@ const orderSchema = new Schema<IOrder>(
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     orderItems: [orderItemSchema],
     orderType: {
-    type: String,
-    enum: ["product", "build"],
-    default: "product", // 👈 backward compatible
-  },
+      type: String,
+      enum: ["product", "build", "cctv_installation"],
+      default: "product",
+    },
 
-  buildRequest: {
-    type: Schema.Types.ObjectId,
-    ref: "BuildRequest",
-    default: null,
-  },
+    buildRequest: {
+      type: Schema.Types.ObjectId,
+      ref: "BuildRequest",
+      default: null,
+    },
+
+    cctvInstallationRequest: {
+      type: Schema.Types.ObjectId,
+      ref: "CctvInstallationRequest",
+      default: null,
+    },
+
+    cctvItems: {
+      type: [cctvOrderItemSchema],
+      default: [],
+    },
+
+    cctvRequestKey: {
+      type: String,
+      trim: true,
+    },
+
+    cctvInstallation: {
+      siteAddress: { type: String },
+      notes: { type: String },
+      installationStatus: {
+        type: String,
+        enum: ["pending_review", "pending_confirmation", "scheduled", "completed", "cancelled"],
+        default: "pending_review",
+      },
+    },
 
     totalPrice: { type: Number, required: true },
 
@@ -119,7 +178,7 @@ const orderSchema = new Schema<IOrder>(
     },
 
     totalSalesUpdated: {
-      type: Boolean, 
+      type: Boolean,
       default: false },
 
     orderStatus: {
@@ -134,5 +193,9 @@ const orderSchema = new Schema<IOrder>(
   { timestamps: true }
 );
 
-export const Order = models.Order || model<IOrder>("Order", orderSchema);
+if (models.Order) {
+  deleteModel("Order");
+}
+
+export const Order = model<IOrder>("Order", orderSchema);
 

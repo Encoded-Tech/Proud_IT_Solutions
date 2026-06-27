@@ -1,130 +1,148 @@
 "use server";
 
+import { auth } from "@/auth";
 import { connectDB } from "@/db";
 import { requireUser } from "@/lib/auth/requireSession";
-import { CctvInstallationRequest, CctvPart } from "@/models/cctvInstallationModel";
+import { CctvInstallationRequest } from "@/models/cctvInstallationModel";
 import { Types } from "mongoose";
 import { revalidatePath } from "next/cache";
-import { mapCctvInstallationRequest } from "@/lib/server/mappers/MapCctv";
 
 export interface SubmitCctvItemInput {
-  partId: string;
-  quantity: number;
-  notes?: string;
+  partId?: unknown;
+  productId?: unknown;
+  itemId?: unknown;
+  categoryId?: unknown;
+  name?: unknown;
+  type?: unknown;
+  quantity?: unknown;
+  unitPrice?: unknown;
+  notes?: unknown;
 }
 
 export interface SubmitCctvInstallationInput {
   items: SubmitCctvItemInput[];
   customerDetails: {
-    name: string;
-    phone: string;
-    email: string;
-    siteAddress: string;
-    notes?: string;
+    name?: unknown;
+    phone?: unknown;
+    email?: unknown;
+    siteAddress?: unknown;
+    address?: unknown;
+    notes?: unknown;
   };
+  requestKey?: unknown;
 }
+
+const cleanString = (value: unknown) =>
+  typeof value === "string" ? value.trim() : "";
+
+const cleanId = (value: unknown) => String(value ?? "").trim();
 
 export async function submitCctvInstallationRequest(input: SubmitCctvInstallationInput) {
   try {
-    const user = await requireUser();
-    await connectDB();
+    const session = await auth();
+    const user = session?.user;
 
-    if (!input.items?.length) {
+    if (!user?.id) {
+      return { success: false, message: "Please login before submitting CCTV request." };
+    }
+
+    if (!user.emailVerified) {
+      return { success: false, message: "Please verify your email before submitting CCTV request." };
+    }
+
+    if (!["user", "admin"].includes(user.role)) {
+      return { success: false, message: "You are not allowed to submit CCTV requests." };
+    }
+
+    const userId = cleanId(user.id);
+    if (!Types.ObjectId.isValid(userId)) {
+      return { success: false, message: "Invalid user session. Please login again." };
+    }
+
+    const items = Array.isArray(input?.items) ? input.items : [];
+    const customerDetails = input?.customerDetails;
+    const requestKey = cleanId(input?.requestKey);
+
+    if (!items.length) {
       return { success: false, message: "Select at least one CCTV item" };
     }
 
+    const customerName = cleanString(customerDetails?.name);
+    const customerPhone = cleanString(customerDetails?.phone);
+    const customerEmail = cleanString(customerDetails?.email);
+    const siteAddress =
+      cleanString(customerDetails?.siteAddress) || cleanString(customerDetails?.address);
+
     const requiredFields = [
-      input.customerDetails?.name,
-      input.customerDetails?.phone,
-      input.customerDetails?.email,
-      input.customerDetails?.siteAddress,
+      customerName,
+      customerPhone,
+      customerEmail,
+      siteAddress,
     ];
 
-    if (requiredFields.some((field) => !field?.trim())) {
+    if (requiredFields.some((field) => !field)) {
       return { success: false, message: "Please complete customer and site details" };
     }
 
-    const normalizedItems = input.items
-      .filter((item) => Types.ObjectId.isValid(item.partId))
-      .map((item) => ({
-        partId: item.partId,
-        quantity: Number(item.quantity),
-        notes: item.notes?.trim(),
-      }))
-      .filter((item) => Number.isInteger(item.quantity) && item.quantity > 0);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+      return { success: false, message: "Please enter a valid email address" };
+    }
+
+    if (requestKey && requestKey.length > 120) {
+      return { success: false, message: "Invalid CCTV request key" };
+    }
+
+    const mergedItemsMap = new Map<string, { partId: string; quantity: number }>();
+
+    for (const item of items) {
+      const partId = cleanId(item.partId || item.productId || item.itemId || item.categoryId);
+      const fallbackKey = cleanString(item.name);
+      const itemKey = (partId || fallbackKey).trim();
+      const quantity = Number(item.quantity);
+
+      if (!itemKey || !Types.ObjectId.isValid(partId)) {
+        return { success: false, message: "Invalid CCTV item selection" };
+      }
+
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        return { success: false, message: "CCTV item quantity must be a positive number" };
+      }
+
+      const existing = mergedItemsMap.get(partId);
+      if (existing) {
+        existing.quantity += quantity;
+      } else {
+        mergedItemsMap.set(partId, { partId, quantity });
+      }
+    }
+
+    const normalizedItems = Array.from(mergedItemsMap.values());
 
     if (normalizedItems.length === 0) {
       return { success: false, message: "Invalid CCTV item selection" };
     }
 
-    const partIds = normalizedItems.map((item) => new Types.ObjectId(item.partId));
-    const parts = await CctvPart.find({ _id: { $in: partIds }, isActive: true })
-      .select("name type price imageUrl")
-      .lean<
-        {
-          _id: Types.ObjectId;
-          name: string;
-          type: string;
-          price: number;
-          imageUrl?: string;
-        }[]
-      >();
-
-    const partById = new Map(parts.map((part) => [part._id.toString(), part]));
-
-    if (partById.size !== normalizedItems.length) {
-      return {
-        success: false,
-        message: "One or more CCTV items are unavailable. Please refresh and try again.",
-      };
-    }
-
-    let subtotal = 0;
-    const requestItems = normalizedItems.map((item) => {
-      const part = partById.get(item.partId)!;
-      const unitPrice = part.price ?? 0;
-      const lineTotal = unitPrice * item.quantity;
-      subtotal += lineTotal;
-
-      return {
-        part: part._id,
-        type: part.type,
-        name: part.name,
-        imageUrl: part.imageUrl,
-        quantity: item.quantity,
-        unitPrice,
-        lineTotal,
-        notes: item.notes,
-      };
+    console.log("[submitCctvInstallationRequest] payload summary:", {
+      customerEmail,
+      itemCount: normalizedItems.length,
     });
-
-    const request = await CctvInstallationRequest.create({
-      user: new Types.ObjectId(user.id),
-      items: requestItems,
-      customerDetails: {
-        name: input.customerDetails.name.trim(),
-        phone: input.customerDetails.phone.trim(),
-        email: input.customerDetails.email.trim(),
-        siteAddress: input.customerDetails.siteAddress.trim(),
-        notes: input.customerDetails.notes?.trim(),
-      },
-      subtotal,
-      grandTotal: subtotal,
-      status: "pending",
-      paymentStatus: "pending",
-    });
-
-    revalidatePath("/account/cctv-installations");
-    revalidatePath("/admin/cctv-install/orders");
 
     return {
       success: true,
-      message: "CCTV installation request submitted",
-      data: mapCctvInstallationRequest(request),
+      message: "CCTV installation request is ready for checkout.",
+      requestKey,
+      itemCount: normalizedItems.length,
     };
   } catch (error) {
-    console.error("SUBMIT_CCTV_INSTALLATION_ERROR:", error);
-    return { success: false, message: "Failed to submit CCTV installation request" };
+    console.error("[submitCctvInstallationRequest] failed:", error);
+
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to submit CCTV installation request.",
+    };
   }
 }
 

@@ -26,9 +26,7 @@ export function withAuth(
   handler: RouteHandler<AuthenticatedRequest>,
   options: AuthOptions = {}
 ): RouteHandler {
-  return async (...args) => {
-    const req = args[0] as AuthenticatedRequest;
-    const context = args[1];
+  return async (req, context) => {
 
    const token = await getToken({
       req,
@@ -64,10 +62,7 @@ export function withAuth(
   providerId: (token.providerId || token.sub) as string | undefined,
 };
     
-    if (context) {
-  return handler(req, context);
-}
-return handler(req);
+    return handler(req, context);
   };
 }
 

@@ -14,7 +14,7 @@ export const metadata = buildNoIndexMetadata({
 });
 
 /* ---------------- TYPES ---------------- */
-type CheckoutSource = "cart" | "buy_now" | "build";
+type CheckoutSource = "cart" | "buy_now" | "build" | "cctv_installation";
 
 interface CheckoutCartItem {
   productId: string;
@@ -36,7 +36,8 @@ export default async function CheckoutPage({
 
   const getParam = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
 
-  const source: CheckoutSource = (getParam(params.source) as CheckoutSource) ?? "cart";
+  const sourceParam = getParam(params.source) || getParam(params.type);
+  const source: CheckoutSource = (sourceParam as CheckoutSource) ?? "cart";
 
   const productId = getParam(params.productId);
   const variantId = getParam(params.variantId);
@@ -65,7 +66,7 @@ export default async function CheckoutPage({
         productName: product.name,
         price: variant?.price ?? product.price,
         variantId: variant?._id.toString() ?? null,
-      
+
         quantity: 1,
         image: product.images?.[0],
       },
@@ -81,7 +82,7 @@ export default async function CheckoutPage({
       productName: item.product.name,
       price: item.variant?.price ?? item.product.price,
       variantId: item.variant?._id?.toString() ?? null,
- 
+
       quantity: item.quantity,
       image: item.product.images?.[0],
     }));
@@ -118,6 +119,11 @@ if (source === "build") {
   }));
 }
 
+  /* ------------------- CCTV INSTALLATION ------------------- */
+  if (source === "cctv_installation") {
+    checkoutCartItems = [];
+  }
+
 
   /* ------------------- CURRENT USER ------------------- */
   const currentUser = await getCurrentUserAction();
@@ -140,7 +146,7 @@ if (source === "build") {
             country: "",
             instructions: "",
           }}
-      
+
           source={source}
           buildId={source === "build" ? buildId : undefined}
         />

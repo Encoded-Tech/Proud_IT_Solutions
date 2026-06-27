@@ -6,7 +6,7 @@ export type ContextWithParams = {
 
 export type RouteHandler<Req extends NextRequest = NextRequest> = (
   req: Req,
-  context?: ContextWithParams
+  context: ContextWithParams
 ) => Promise<NextResponse>;
 
 export type WithDBOptions = {

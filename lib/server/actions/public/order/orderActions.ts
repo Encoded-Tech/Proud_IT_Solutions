@@ -1,10 +1,12 @@
 "use server";
 
 import { isValidObjectId, Types } from "mongoose";
-import { IOrderItem, Order } from "@/models/orderModel";
+import { ICctvOrderItem, IOrderItem, Order } from "@/models/orderModel";
 import { Product } from "@/models/productModel";
 import userModel from "@/models/userModel";
 import { IProductVariant } from "@/models/productVariantsModel";
+import { CctvInstallationRequest, CctvPart } from "@/models/cctvInstallationModel";
+import { auth } from "@/auth";
 
 import { sendEmail } from "@/lib/helpers/sendEmail";
 import {
@@ -18,6 +20,7 @@ import { requireUser } from "@/lib/auth/requireSession";
 import { resolveAuthUserId } from "@/lib/auth/resolveAuthUser";
 import { BuildRequest } from "@/models/buildMyPcModel";
 import { deleteFromCloudinary, uploadToCloudinary } from "@/config/cloudinary";
+import { revalidatePath } from "next/cache";
 
 /* -------------------------------- TYPES -------------------------------- */
 
@@ -47,6 +50,12 @@ export interface CheckoutItemInput {
   quantity: number;
 }
 
+export interface CctvCheckoutItemInput {
+  partId: string;
+  quantity: number;
+  notes?: string;
+}
+
 export interface CheckoutDeliveryInput {
   name: string;
   phone: string;
@@ -61,9 +70,18 @@ export interface CheckoutDeliveryInput {
 
 export interface CreateOrderInput {
   items: CheckoutItemInput[];
+  cctvItems?: CctvCheckoutItemInput[];
+  cctvCustomerDetails?: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    siteAddress?: string;
+    notes?: string;
+  };
+  requestKey?: string;
   deliveryInfo: CheckoutDeliveryInput;
   paymentMethod: "COD" | "OnlineUpload";
-  source: "cart" | "buy_now" | "build";
+  source: "cart" | "buy_now" | "build" | "cctv_installation";
   buildId?: string; // 👈 NEW
   paymentProof?: File | null;
 }
@@ -117,6 +135,11 @@ function validatePaymentProof(file: File | null | undefined) {
   return { valid: true, message: "" };
 }
 
+const cleanString = (value: unknown) =>
+  typeof value === "string" ? value.trim() : "";
+
+const cleanId = (value: unknown) => String(value ?? "").trim();
+
 /* -------------------------------------------------------------------------- */
 /*                            CREATE ORDER ACTION                             */
 /* -------------------------------------------------------------------------- */
@@ -127,15 +150,11 @@ export async function createOrderAction(
   let uploadedProof: string | null = null;
 
   try {
-    /* -------------------- AUTH -------------------- */
-    const user = await requireUser();
-    const userId = await resolveAuthUserId(user);
-    if (!userId) {
-      return { success: false, message: "Unauthorized" };
-    }
-
     const {
       items,
+      cctvItems,
+      cctvCustomerDetails,
+      requestKey,
       deliveryInfo,
       paymentMethod,
       source,
@@ -143,10 +162,41 @@ export async function createOrderAction(
       paymentProof,
     } = input;
 
+    /* -------------------- AUTH -------------------- */
+    let user;
+    let userId;
+
+    if (source === "cctv_installation") {
+      const session = await auth();
+      user = session?.user;
+
+      if (
+        !user?.id ||
+        !Types.ObjectId.isValid(user.id) ||
+        !user.emailVerified ||
+        !["user", "admin"].includes(user.role)
+      ) {
+        return { success: false, message: "Unauthorized" };
+      }
+
+      userId = new Types.ObjectId(user.id);
+    } else {
+      user = await requireUser();
+      userId = await resolveAuthUserId(user);
+    }
+
+    if (!userId) {
+      return { success: false, message: "Unauthorized" };
+    }
+
     /* -------------------- VALIDATION -------------------- */
 
-    if (!items || items.length === 0) {
+    if (source !== "cctv_installation" && (!items || items.length === 0)) {
       return { success: false, message: "Cart is empty" };
+    }
+
+    if (source === "cctv_installation" && (!cctvItems || cctvItems.length === 0)) {
+      return { success: false, message: "CCTV installation item list is empty" };
     }
 
     if (!["COD", "OnlineUpload"].includes(paymentMethod)) {
@@ -186,6 +236,28 @@ export async function createOrderAction(
         success: false,
         message: "Incomplete delivery information",
       };
+    }
+
+    const cleanRequestKey = cleanId(requestKey);
+    if (source === "cctv_installation") {
+      if (!cleanRequestKey || cleanRequestKey.length > 120) {
+        return { success: false, message: "Invalid CCTV checkout request key" };
+      }
+
+      const existingCctvRequest = await CctvInstallationRequest.findOne({
+        user: userId,
+        requestKey: cleanRequestKey,
+      })
+        .select("_id order")
+        .lean<{ _id: Types.ObjectId; order?: Types.ObjectId }>();
+
+      if (existingCctvRequest) {
+        return {
+          success: true,
+          message: "CCTV installation order already placed.",
+          orderId: existingCctvRequest.order ? String(existingCctvRequest.order) : undefined,
+        };
+      }
     }
 
     /* -------------------- BUILD SOURCE VALIDATION -------------------- */
@@ -231,7 +303,7 @@ export async function createOrderAction(
 
     /* -------------------- DUPLICATE ORDER CHECK -------------------- */
 
-    const pendingOrders = await Order.find({
+    const pendingOrders = source === "cctv_installation" ? [] : await Order.find({
       user: userId,
       paymentStatus: "pending",
       orderStatus: { $ne: "cancelled" },
@@ -247,7 +319,7 @@ export async function createOrderAction(
         .sort()
         .join("|");
 
-    const newOrderSignature = normalizeItems(items);
+    const newOrderSignature = normalizeItems(items || []);
 
     const isExactDuplicate = pendingOrders.some((order) => {
       const existingSignature = normalizeItems(
@@ -276,8 +348,9 @@ export async function createOrderAction(
 
     let totalPrice = 0;
     const orderItems: IOrderItem[] = [];
+    const orderCctvItems: ICctvOrderItem[] = [];
 
-    for (const item of items) {
+    if (source !== "cctv_installation") for (const item of items) {
       const { product: productId, variant, quantity } =
         item;
 
@@ -352,6 +425,83 @@ export async function createOrderAction(
       });
     }
 
+    if (source === "cctv_installation") {
+      const mergedCctvItems = new Map<
+        string,
+        { partId: string; quantity: number; notes?: string }
+      >();
+
+      for (const item of cctvItems || []) {
+        const partId = cleanId(item.partId);
+        const quantity = Number(item.quantity);
+        const notes = cleanString(item.notes);
+
+        if (!Types.ObjectId.isValid(partId)) {
+          return { success: false, message: "Invalid CCTV item selection" };
+        }
+
+        if (!Number.isInteger(quantity) || quantity < MIN_QTY_PER_ITEM) {
+          return { success: false, message: "Invalid CCTV item quantity" };
+        }
+
+        const existing = mergedCctvItems.get(partId);
+        if (existing) {
+          existing.quantity += quantity;
+          existing.notes = [existing.notes, notes].filter(Boolean).join(" | ") || undefined;
+        } else {
+          mergedCctvItems.set(partId, {
+            partId,
+            quantity,
+            notes: notes || undefined,
+          });
+        }
+      }
+
+      const normalizedCctvItems = Array.from(mergedCctvItems.values());
+      if (!normalizedCctvItems.length) {
+        return { success: false, message: "CCTV installation item list is empty" };
+      }
+
+      const partIds = normalizedCctvItems.map((item) => new Types.ObjectId(item.partId));
+      const parts = await CctvPart.find({ _id: { $in: partIds }, isActive: true })
+        .select("name type price imageUrl")
+        .lean<
+          {
+            _id: Types.ObjectId;
+            name: string;
+            type: string;
+            price: number;
+            imageUrl?: string;
+          }[]
+        >();
+
+      const partById = new Map(parts.map((part) => [String(part._id), part]));
+      if (partById.size !== normalizedCctvItems.length) {
+        return {
+          success: false,
+          message: "One or more CCTV items are unavailable. Please refresh and try again.",
+        };
+      }
+
+      for (const item of normalizedCctvItems) {
+        const part = partById.get(item.partId)!;
+        const unitPrice = Number(part.price || 0);
+        const lineTotal = unitPrice * item.quantity;
+        totalPrice += lineTotal;
+
+        orderCctvItems.push({
+          part: part._id,
+          type: String(part.type),
+          name: String(part.name),
+          imageUrl: part.imageUrl ? String(part.imageUrl) : undefined,
+          quantity: Number(item.quantity),
+          unitPrice,
+          lineTotal,
+          notes: item.notes ? String(item.notes) : undefined,
+        });
+      }
+    }
+
     /* -------------------- DELIVERY CHARGES -------------------- */
 
       let outsideKathmanduCharge = 0;
@@ -360,6 +510,7 @@ export async function createOrderAction(
       const ktmValleyCities = ["kathmandu", "bhaktapur", "lalitpur"];
 
       if (
+        source !== "cctv_installation" &&
         !ktmValleyCities.includes(
           deliveryInfo.city.toLowerCase().trim()
         )
@@ -385,7 +536,7 @@ export async function createOrderAction(
       paymentProof,
       "payment_proofs"
     );
-    
+
 
     /* -------------------- CREATE ORDER -------------------- */
 
@@ -397,6 +548,22 @@ export async function createOrderAction(
     const order = await Order.create({
       user: userId,
       orderItems,
+      orderType:
+        source === "build"
+          ? "build"
+          : source === "cctv_installation"
+            ? "cctv_installation"
+            : "product",
+      cctvItems: orderCctvItems,
+      cctvRequestKey: source === "cctv_installation" ? cleanRequestKey : undefined,
+      cctvInstallation:
+        source === "cctv_installation"
+          ? {
+              siteAddress: cleanString(cctvCustomerDetails?.siteAddress) || deliveryInfo.address,
+              notes: cleanString(cctvCustomerDetails?.notes) || deliveryInfo.instructions || "",
+              installationStatus: "pending_review",
+            }
+          : undefined,
       totalPrice,
       paymentMethod,
       paymentStatus:
@@ -420,6 +587,59 @@ export async function createOrderAction(
       codAdvance,
       outsideKathmanduCharge,
     });
+
+    if (source === "cctv_installation") {
+      const customerName = cleanString(cctvCustomerDetails?.name) || deliveryInfo.name;
+      const customerPhone = cleanString(cctvCustomerDetails?.phone) || deliveryInfo.phone;
+      const customerEmail = cleanString(cctvCustomerDetails?.email) || user.email || "";
+      const siteAddress = cleanString(cctvCustomerDetails?.siteAddress) || deliveryInfo.address;
+      const customerNotes = cleanString(cctvCustomerDetails?.notes) || deliveryInfo.instructions || "";
+
+      if (!customerName || !customerPhone || !customerEmail || !siteAddress) {
+        return { success: false, message: "Incomplete CCTV customer or site details" };
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+        return { success: false, message: "Invalid CCTV customer email" };
+      }
+
+      const requestSubtotal = orderCctvItems.reduce((sum, item) => sum + item.lineTotal, 0);
+      const cctvRequest = await CctvInstallationRequest.create({
+        user: userId,
+        order: order._id,
+        requestKey: cleanRequestKey,
+        items: orderCctvItems.map((item) => ({
+          part: item.part,
+          type: item.type,
+          name: item.name,
+          imageUrl: item.imageUrl,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineTotal,
+          notes: item.notes,
+        })),
+        customerDetails: {
+          name: customerName,
+          phone: customerPhone,
+          email: customerEmail,
+          siteAddress,
+          notes: customerNotes,
+        },
+        subtotal: requestSubtotal,
+        grandTotal: requestSubtotal,
+        status: "pending",
+        paymentStatus:
+          paymentMethod === "OnlineUpload"
+            ? "submitted"
+            : "pending",
+        paymentMethod,
+      });
+
+      order.cctvInstallationRequest = cctvRequest._id;
+      await order.save();
+      revalidatePath("/account/cctv-installations");
+      revalidatePath("/admin/cctv-install/orders");
+    }
 
     /* -------------------- LINK BUILD -------------------- */
 
@@ -447,7 +667,22 @@ export async function createOrderAction(
       let subject = "";
       let htmlBody = "";
 
-      if (source === "build" && buildRequest) {
+      if (source === "cctv_installation") {
+        subject = "Your CCTV Installation Request is Confirmed!";
+        htmlBody = `
+      <div style="font-family: Arial, sans-serif; color: #1a1a1a;">
+        <h2 style="color: #0f4c81;">Hi ${dbUser.name},</h2>
+        <p>Your CCTV installation checkout has been submitted successfully.</p>
+        <p><strong>Order ID:</strong> ${order._id}</p>
+        <p><strong>Total Price:</strong> Rs. ${totalPrice}</p>
+        <p>Site Address:</p>
+        <p>${deliveryInfo.address}, ${deliveryInfo.city}, ${deliveryInfo.postalCode}, ${deliveryInfo.country}</p>
+        <p style="margin-top: 20px;">Our team will review your installation request and contact you with next steps.</p>
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+        <p style="font-size: 12px; color: #888;">Need help? Contact us at <a href="mailto:proudnepalits@gmail.com">proudnepalits@gmail.com</a></p>
+      </div>
+    `;
+      } else if (source === "build" && buildRequest) {
         // Build order email
         subject = "Your Custom Build Order is Confirmed!";
         htmlBody = `
@@ -516,7 +751,10 @@ export async function createOrderAction(
 
     return {
       success: false,
-      message: "Failed to place order",
+      message:
+        input?.source === "cctv_installation"
+          ? "Failed to place CCTV installation order. Please try again."
+          : "Failed to place order",
     };
   }
 }

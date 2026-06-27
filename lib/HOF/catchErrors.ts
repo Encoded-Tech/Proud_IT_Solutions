@@ -16,7 +16,7 @@ const errorHandler = (
     includeDebugInfo = process.env.NODE_ENV !== "production"
   } = options;
 
-  return async (req: NextRequest, context?: ContextWithParams) => {
+  return async (req: NextRequest, context: ContextWithParams) => {
     const correlationId = req.headers.get('X-Correlation-ID') || uuidv4(); 
     const responseHeaders = httpHeaders(correlationId); 
     let retries = 0;

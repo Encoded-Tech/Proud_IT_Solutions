@@ -90,7 +90,7 @@ export const GET = withAuth(
       return NextResponse.json({ success: false, message: "Order not found" }, { status: 404 });
     }
 
-    const response: ApiResponse<IOrderResponse[]> = {
+    const response: ApiResponse<typeof orders> = {
       success: orders.length > 0,
       message: orders.length > 0 ? "Orders fetched successfully" : "No orders found",
       data: orders,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createOrderAction } from "@/lib/server/actions/public/order/orderActions";
 import { cartToCreateOrderSimplified } from "@/lib/server/mappers/commands/cartToCreateOrder";
 import { PaymentMethod } from "@/lib/server/fetchers/fetchOrders";
@@ -41,7 +41,28 @@ export interface CheckoutCartItem {
   variantId?: string | null;
   variantName?: string | null;
 }
-type CheckoutSource = "cart" | "buy_now" | "build";
+type CheckoutSource = "cart" | "buy_now" | "build" | "cctv_installation";
+
+const CCTV_DRAFT_KEY = "proud-cctv-install-draft";
+
+interface CctvCheckoutDraft {
+  requestKey?: string;
+  items?: {
+    partId?: string;
+    quantity?: number;
+    notes?: string;
+    name?: string;
+    unitPrice?: number;
+    imageUrl?: string;
+  }[];
+  customerDetails?: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    siteAddress?: string;
+    notes?: string;
+  };
+}
 
 interface CheckoutFormProps {
   user: AuthUser | null;
@@ -79,12 +100,74 @@ export default function CheckoutForm({
 
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod | undefined>(initialPaymentMethod);
+  const [checkoutItems, setCheckoutItems] = useState<CheckoutCartItem[]>(cartItems);
+  const [cctvDraft, setCctvDraft] = useState<CctvCheckoutDraft | null>(null);
+  const [requestKey, setRequestKey] = useState("");
 
   const [receipt, setReceipt] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (source !== "cctv_installation") {
+      setCheckoutItems(cartItems);
+      return;
+    }
+
+    try {
+      const rawDraft = localStorage.getItem(CCTV_DRAFT_KEY);
+      if (!rawDraft) {
+        toast.error("CCTV checkout draft not found. Please select CCTV items again.");
+        router.replace("/install-cctv");
+        return;
+      }
+
+      const parsed = JSON.parse(rawDraft) as CctvCheckoutDraft;
+      const draftItems = Array.isArray(parsed.items) ? parsed.items : [];
+      const mappedItems = draftItems
+        .map((item): CheckoutCartItem | null => {
+          const productId = String(item.partId || "").trim();
+          const quantity = Number(item.quantity);
+          const price = Number(item.unitPrice || 0);
+          if (!productId || !Number.isInteger(quantity) || quantity <= 0) return null;
+
+          return {
+            productId,
+            productName: String(item.name || "CCTV item"),
+            price,
+            quantity,
+            variantId: null,
+            image: item.imageUrl,
+          };
+        })
+        .filter((item): item is CheckoutCartItem => Boolean(item));
+
+      if (!mappedItems.length) {
+        toast.error("CCTV checkout draft is empty. Please select CCTV items again.");
+        router.replace("/install-cctv");
+        return;
+      }
+
+      setCctvDraft(parsed);
+      setRequestKey(String(parsed.requestKey || "").trim());
+      setCheckoutItems(mappedItems);
+      setDeliveryInfo((current) => ({
+        ...current,
+        name: parsed.customerDetails?.name || current.name,
+        phone: parsed.customerDetails?.phone || current.phone,
+        address: parsed.customerDetails?.siteAddress || current.address,
+        city: current.city || "Kathmandu",
+        postalCode: current.postalCode || "44600",
+        country: current.country || "Nepal",
+        instructions: parsed.customerDetails?.notes || current.instructions,
+      }));
+    } catch {
+      toast.error("Invalid CCTV checkout draft. Please select CCTV items again.");
+      router.replace("/install-cctv");
+    }
+  }, [cartItems, router, source]);
 
   /* ---------------- VALIDATION ---------------- */
 
@@ -106,8 +189,8 @@ export default function CheckoutForm({
   /* ---------------- PRICE CALCULATIONS ---------------- */
 
   const subtotal = useMemo(
-    () => cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0),
-    [cartItems]
+    () => checkoutItems.reduce((sum, i) => sum + i.price * i.quantity, 0),
+    [checkoutItems]
   );
 
   const isOutsideKathmandu = useMemo(() => {
@@ -118,8 +201,10 @@ export default function CheckoutForm({
   }, [deliveryInfo.city]);
 
   const deliveryCharge = useMemo(() => {
-    return isOutsideKathmandu ? OUTSIDE_KATHMANDU_CHARGE : 0;
-  }, [isOutsideKathmandu]);
+    return source === "cctv_installation"
+      ? 0
+      : isOutsideKathmandu ? OUTSIDE_KATHMANDU_CHARGE : 0;
+  }, [isOutsideKathmandu, source]);
 
   const codAdvance = useMemo(() => {
     return paymentMethod === "COD" ? COD_ADVANCE : 0;
@@ -134,7 +219,11 @@ export default function CheckoutForm({
   }, [totalPrice, codAdvance]);
 
   const progressSteps: ProgressStep[] = [
-    { number: 1, title: "Delivery Details", subtitle: "Enter your address" },
+    {
+      number: 1,
+      title: source === "cctv_installation" ? "Site Details" : "Delivery Details",
+      subtitle: source === "cctv_installation" ? "Confirm installation site" : "Enter your address",
+    },
     { number: 2, title: "Payment Method", subtitle: "Choose payment option" },
     { number: 3, title: "Review Order", subtitle: "Confirm and place order" },
   ];
@@ -143,17 +232,35 @@ export default function CheckoutForm({
 
   const handleSubmit = async () => {
     if (!canPlaceOrder || !paymentMethod) return;
+    if (loading) return;
+
+    if (source === "cctv_installation" && (!requestKey || !cctvDraft)) {
+      toast.error("CCTV checkout draft is missing. Please select CCTV items again.");
+      router.push("/install-cctv");
+      return;
+    }
 
     setLoading(true);
     setMessage("");
 
     try {
       const payload = cartToCreateOrderSimplified({
-        cartItems: cartItems.map((item) => ({
+        cartItems: source === "cctv_installation" ? [] : checkoutItems.map((item) => ({
           product: { _id: item.productId },
           variant: item.variantId ? { _id: item.variantId } : null,
           quantity: item.quantity,
         })),
+        cctvItems:
+          source === "cctv_installation"
+            ? (cctvDraft?.items || []).map((item) => ({
+                partId: String(item.partId || ""),
+                quantity: Number(item.quantity || 1),
+                notes: item.notes || "",
+              }))
+            : undefined,
+        cctvCustomerDetails:
+          source === "cctv_installation" ? cctvDraft?.customerDetails : undefined,
+        requestKey: source === "cctv_installation" ? requestKey : undefined,
         deliveryInfo,
         paymentMethod: paymentMethod as PaymentMethod,
         source,
@@ -182,7 +289,11 @@ export default function CheckoutForm({
           await getOrCreatePersistor().flush();
         }
 
-        router.push("/account/orders");
+        if (source === "cctv_installation") {
+          localStorage.removeItem(CCTV_DRAFT_KEY);
+        }
+
+        router.push(source === "cctv_installation" ? "/account/cctv-installations" : "/account/orders");
       }
     } catch {
       const errorMsg = "Something went wrong. Please try again.";
@@ -228,10 +339,10 @@ export default function CheckoutForm({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* LEFT - Accordion Sections */}
           <div className="lg:col-span-2 space-y-4">
-            {/* SECTION 1: Delivery Information */}
+            {/* SECTION 1: Delivery / Site Information */}
             <AccordionSection
               icon={<MapPin className="w-5 h-5" />}
-              title="Delivery Information"
+              title={source === "cctv_installation" ? "Site Information" : "Delivery Information"}
               isOpen={openSection === 1}
               isComplete={isDeliveryComplete}
               onClick={() => setOpenSection(1)}
@@ -292,7 +403,9 @@ export default function CheckoutForm({
                 />
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Delivery Instructions (Optional)
+                    {source === "cctv_installation"
+                      ? "Site Requirements / Notes (Optional)"
+                      : "Delivery Instructions (Optional)"}
                   </label>
                   <textarea
                     value={deliveryInfo.instructions || ""}
@@ -304,7 +417,11 @@ export default function CheckoutForm({
                     }
                     className="w-full rounded-lg border border-gray-300 p-3 focus:ring-2 focus:ring-primary focus:border-transparent"
                     rows={2}
-                    placeholder="e.g., Call before delivery, Leave at door"
+                    placeholder={
+                      source === "cctv_installation"
+                        ? "Number of floors, cable routing, preferred installation time..."
+                        : "e.g., Call before delivery, Leave at door"
+                    }
                   />
                 </div>
               </div>
@@ -610,7 +727,9 @@ export default function CheckoutForm({
             >
               <div className="space-y-4">
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Delivery Address</h4>
+                  <h4 className="font-medium mb-2">
+                    {source === "cctv_installation" ? "Installation Site" : "Delivery Address"}
+                  </h4>
                   <p className="text-sm text-gray-600">
                     {deliveryInfo.name} | {deliveryInfo.phone}
                   </p>
@@ -675,11 +794,13 @@ export default function CheckoutForm({
           {/* RIGHT - Order Summary - SIMPLIFIED & ELEGANT */}
           <div className="lg:col-span-1">
             <div className="bg-white border border-gray-200 p-6 rounded-lg shadow-sm sticky top-4">
-              <h3 className="text-lg font-semibold mb-4 text-gray-800">Order Summary</h3>
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                {source === "cctv_installation" ? "CCTV Installation Request" : "Order Summary"}
+              </h3>
 
               {/* Items List */}
               <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-                {cartItems.map((item, index) => (
+                {checkoutItems.map((item, index) => (
                   <div key={`${item.productId}-${index}`} className="flex gap-3 pb-3 border-b border-gray-100 last:border-0">
                     {item.image && (
                       <Image

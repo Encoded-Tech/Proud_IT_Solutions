@@ -106,11 +106,6 @@ export const PUT = withAuth(
         { status: 400 }
       );
     }
-    // Users can only update delivery info if order is not paid or delivered
-    if (order.paymentStatus === "paid" || order.orderStatus === "shipped" || order.orderStatus === "delivered") {
-      return NextResponse.json({ success: false, message: "Cannot update delivery info after payment or shipping" }, { status: 400 });
-    }
-
     const { deliveryInfo, paymentMethod } = await req.json();
 
    if (deliveryInfo) {
@@ -199,8 +194,8 @@ export const DELETE = withAuth(
 
     // 1️⃣ Restore reserved stock for each product
     for (const item of order.orderItems) {
-      const product = item.product as IProduct; // populated product
-      if (product) {
+      const product = item.product as unknown as IProduct | null;
+      if (product && typeof product.save === "function") {
         product.reservedStock = Math.max((product.reservedStock || 0) - item.quantity, 0);
         await product.save();
       }

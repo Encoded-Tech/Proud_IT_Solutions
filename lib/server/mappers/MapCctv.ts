@@ -41,6 +41,7 @@ export interface CctvInstallationItemMapped {
 
 export interface CctvInstallationRequestMapped {
   id: string;
+  orderId?: string;
   user: {
     id: string;
     name?: string;
@@ -58,6 +59,7 @@ export interface CctvInstallationRequestMapped {
   grandTotal: number;
   status: CctvInstallationStatus;
   paymentStatus: "pending" | "submitted" | "paid" | "failed";
+  paymentMethod?: "COD" | "OnlineUpload";
   adminRemarks?: string;
   createdAt: string;
   updatedAt: string;
@@ -103,6 +105,7 @@ export function mapCctvInstallationRequest(
 
   return {
     id: request._id.toString(),
+    orderId: request.order ? request.order.toString() : undefined,
     user,
     items: (request.items || []).map((item) => ({
       id: `${item.part.toString()}-${item.type}`,
@@ -121,6 +124,7 @@ export function mapCctvInstallationRequest(
     grandTotal: request.grandTotal ?? 0,
     status: request.status,
     paymentStatus: request.paymentStatus,
+    paymentMethod: request.paymentMethod,
     adminRemarks: request.adminRemarks,
     createdAt: request.createdAt?.toISOString() || new Date().toISOString(),
     updatedAt: request.updatedAt?.toISOString() || new Date().toISOString(),

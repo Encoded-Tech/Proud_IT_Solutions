@@ -8,15 +8,21 @@ interface SimplifiedCartItem {
 
 interface MapCheckoutArgsSimplified {
   cartItems: SimplifiedCartItem[];
+  cctvItems?: CreateOrderInput["cctvItems"];
+  cctvCustomerDetails?: CreateOrderInput["cctvCustomerDetails"];
+  requestKey?: string;
   deliveryInfo: CreateOrderInput["deliveryInfo"];
   paymentMethod: CreateOrderInput["paymentMethod"];
   source: CreateOrderInput["source"];
- buildId?: string; 
+ buildId?: string;
   paymentProof?: File | null;
 }
 
 export function cartToCreateOrderSimplified({
   cartItems,
+  cctvItems,
+  cctvCustomerDetails,
+  requestKey,
   deliveryInfo,
   paymentMethod,
   source,
@@ -29,6 +35,9 @@ export function cartToCreateOrderSimplified({
       variant: item.variant?._id,
       quantity: item.quantity,
     })),
+    cctvItems,
+    cctvCustomerDetails,
+    requestKey,
     deliveryInfo,
     paymentMethod,
     source,

@@ -14,7 +14,7 @@ export function withDB(
 
   const wrapped = async (
     req: NextRequestWithResourceName,
-    context?: ContextWithParams
+    context: ContextWithParams
   ): Promise<NextResponse> => {
     // 1️⃣ Connect to database
     await connectDB();

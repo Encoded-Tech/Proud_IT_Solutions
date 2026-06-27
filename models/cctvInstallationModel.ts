@@ -47,12 +47,15 @@ export interface ICctvCustomerDetails {
 export interface ICctvInstallationRequest extends Document {
   _id: Types.ObjectId;
   user: Types.ObjectId;
+  order?: Types.ObjectId;
+  requestKey?: string;
   items: ICctvInstallationItem[];
   customerDetails: ICctvCustomerDetails;
   subtotal: number;
   grandTotal: number;
   status: CctvInstallationStatus;
   paymentStatus: "pending" | "submitted" | "paid" | "failed";
+  paymentMethod?: "COD" | "OnlineUpload";
   adminRemarks?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -101,6 +104,8 @@ const cctvCustomerDetailsSchema = new Schema<ICctvCustomerDetails>(
 const cctvInstallationRequestSchema = new Schema<ICctvInstallationRequest>(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    order: { type: Schema.Types.ObjectId, ref: "Order" },
+    requestKey: { type: String, trim: true },
     items: { type: [cctvInstallationItemSchema], default: [] },
     customerDetails: { type: cctvCustomerDetailsSchema, required: true },
     subtotal: { type: Number, required: true, min: 0 },
@@ -124,6 +129,10 @@ const cctvInstallationRequestSchema = new Schema<ICctvInstallationRequest>(
       enum: ["pending", "submitted", "paid", "failed"],
       default: "pending",
     },
+    paymentMethod: {
+      type: String,
+      enum: ["COD", "OnlineUpload"],
+    },
     adminRemarks: { type: String },
   },
   { timestamps: true }
@@ -131,6 +140,10 @@ const cctvInstallationRequestSchema = new Schema<ICctvInstallationRequest>(
 
 cctvPartSchema.index({ type: 1, isActive: 1, name: 1 });
 cctvInstallationRequestSchema.index({ user: 1, createdAt: -1 });
+cctvInstallationRequestSchema.index(
+  { user: 1, requestKey: 1 },
+  { unique: true, sparse: true }
+);
 
 export const CctvPart = models.CctvPart || model<ICctvPart>("CctvPart", cctvPartSchema);
 

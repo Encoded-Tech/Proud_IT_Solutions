@@ -56,6 +56,7 @@ interface FilteredParams {
   minPrice?: number;
   maxPrice?: number;
   rating?: number | null;
+  sort?: "newest" | "oldest" | "price_asc" | "price_desc" | null;
 }
 
 const PRODUCT_CARD_SELECT =
@@ -373,6 +374,7 @@ export async function fetchFilteredProducts({
   minPrice,
   maxPrice,
   rating,
+  sort,
   search,
 }: FilteredParams) {
   await connectDB();
@@ -406,8 +408,17 @@ export async function fetchFilteredProducts({
     if (maxPrice !== undefined) query.price.$lte = maxPrice;
   }
 
+  const sortQuery: Record<string, 1 | -1> =
+    sort === "oldest"
+      ? { createdAt: 1 }
+      : sort === "price_asc"
+        ? { price: 1 }
+        : sort === "price_desc"
+          ? { price: -1 }
+          : { createdAt: -1 };
+
   const productsQuery = Product.find(query)
-    .sort({ createdAt: -1 })
+    .sort(searchRanking ? { createdAt: -1 } : sortQuery)
     .select(PRODUCT_CARD_SELECT)
     .populate("category", "categoryName slug categoryImage isActive")
     .populate({

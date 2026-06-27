@@ -24,8 +24,7 @@ function revalidateProductCaches(slug?: string) {
 // ✅ PUT: Apply discount to product
 export const PUT = withAuth(
   withDB(async (req: NextRequest, context) => {
-    const params = context?.params as { id: string } | undefined;
-    const productId = params?.id;
+    const { id: productId } = await context.params;
 
     if (!productId) {
       return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });
@@ -67,8 +66,7 @@ export const PUT = withAuth(
 // ✅ DELETE: Remove discount from product
 export const DELETE = withAuth(
   withDB(async (req: NextRequest, context) => {
-    const params = await context?.params as { id: string } | undefined;
-    const productId = params?.id;
+    const { id: productId } = await context.params;
 
     if (!productId) {
       return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });

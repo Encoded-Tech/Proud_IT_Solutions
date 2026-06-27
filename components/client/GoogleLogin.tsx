@@ -65,7 +65,9 @@ useEffect(() => {
   //     setIsLoading(false);
   //   }
   // };
-const redirect = searchParams.get("redirect") || "/";
+const requestedRedirect =
+  searchParams.get("redirect") || searchParams.get("callbackUrl") || "/";
+const redirect = requestedRedirect.startsWith("/") ? requestedRedirect : "/";
 
 const handleGoogleLogin = async () => {
   setIsLoading(true);

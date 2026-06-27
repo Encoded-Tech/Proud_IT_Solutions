@@ -19,6 +19,12 @@ function labelStatus(status: string) {
   return status.replace(/_/g, " ");
 }
 
+function paymentMethodLabel(value?: string) {
+  if (value === "COD") return "COD";
+  if (value === "OnlineUpload") return "Online Payment";
+  return "N/A";
+}
+
 export default function CctvRequestsTable({ requests: initialRequests }: Props) {
   const [requests, setRequests] = useState(initialRequests);
   const [search, setSearch] = useState("");
@@ -101,6 +107,9 @@ export default function CctvRequestsTable({ requests: initialRequests }: Props) 
                 </span>
                 <span className="rounded-full border bg-slate-50 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
                   Payment {request.paymentStatus}
+                </span>
+                <span className="rounded-full border bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                  {paymentMethodLabel(request.paymentMethod)}
                 </span>
               </div>
             </div>

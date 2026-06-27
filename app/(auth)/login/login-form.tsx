@@ -12,7 +12,9 @@ import GoogleSignIn from "@/components/client/GoogleLogin";
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/";
+  const requestedRedirect =
+    searchParams.get("redirect") || searchParams.get("callbackUrl") || "/";
+  const redirect = requestedRedirect.startsWith("/") ? requestedRedirect : "/";
 
 
 
@@ -73,7 +75,7 @@ export default function LoginForm() {
       const result: LoginState = await loginAction(new FormData(e.currentTarget));
       if (result.success) {
         toast.success(result.message || "Login successful");
-        const finalRedirect = result.redirectTo || redirect;
+        const finalRedirect = redirect !== "/" ? redirect : result.redirectTo || "/";
         window.location.assign(finalRedirect);
       }
       else {
