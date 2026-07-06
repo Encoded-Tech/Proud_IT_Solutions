@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { AnyMediaItem } from "@/types/media";
 import HeroBanners from "./hero-banners";
 import Hero from "./hero";
+import { HomeBottomTile } from "@/types/home-media";
 
 type HeroBannerDTO = {
   _id: string;
@@ -13,15 +14,19 @@ type HeroBannerDTO = {
 
 type ExploreCardItem = {
   title: string;
-  image: string;
-  href: string;
+  subtitle?: string;
+  imageUrl: string;
+  linkUrl: string;
+  ctaText?: string;
+  altText: string;
+  sortOrder: number;
 };
 
-const exploreCards: ExploreCardItem[] = [
-  { title: "Shop by Category", image: "/category/ct1.jpg", href: "/shop" },
-  { title: "Featured Brands", image: "/category/ct3.jpg", href: "/shop?brand=Lenovo" },
-  { title: "Trending Products", image: "/products/p2.jpg", href: "/shop?sort=popular" },
-  { title: "Best Deals", image: "/products/p4.jpg", href: "/promotions" },
+export const fallbackBottomTiles: ExploreCardItem[] = [
+  { title: "Shop by Category", imageUrl: "/category/ct1.jpg", linkUrl: "/shop", ctaText: "View", altText: "Shop by Category", sortOrder: 1 },
+  { title: "Featured Brands", imageUrl: "/category/ct3.jpg", linkUrl: "/shop?brand=Lenovo", ctaText: "View", altText: "Featured Brands", sortOrder: 2 },
+  { title: "Trending Products", imageUrl: "/products/p2.jpg", linkUrl: "/shop?sort=popular", ctaText: "View", altText: "Trending Products", sortOrder: 3 },
+  { title: "Best Deals", imageUrl: "/products/p4.jpg", linkUrl: "/promotions", ctaText: "View", altText: "Best Deals", sortOrder: 4 },
 ];
 
 function pickMedia(media: AnyMediaItem[], placements: string[]) {
@@ -83,23 +88,33 @@ function PromoMediaCard({
 function ExploreCard({ item }: { item: ExploreCardItem }) {
   return (
     <Link
-      href={item.href}
+      href={item.linkUrl || "#"}
       aria-label={item.title}
       className="group relative block overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
     >
       <div className="relative h-[110px]">
         <Image
-          src={item.image}
-          alt={item.title}
+          src={item.imageUrl}
+          alt={item.altText || item.title}
           fill
-          sizes="(max-width: 768px) 50vw, 20vw"
+          sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 25vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-slate-900/10 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 p-4">
           <div className="flex items-center justify-between gap-2 text-white">
-            <span className="text-sm font-bold">{item.title}</span>
-            <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+            <div className="min-w-0">
+              {item.subtitle && (
+                <span className="block truncate text-[9px] font-semibold uppercase tracking-[0.18em] text-white/80">
+                  {item.subtitle}
+                </span>
+              )}
+              <span className="block truncate text-sm font-bold">{item.title}</span>
+            </div>
+            <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold">
+              {item.ctaText && item.ctaText !== "View" ? <span>{item.ctaText}</span> : null}
+              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+            </span>
           </div>
         </div>
       </div>
@@ -110,12 +125,32 @@ function ExploreCard({ item }: { item: ExploreCardItem }) {
 export default function HomeMarketplacePromos({
   media = [],
   heroBanners = [],
+  bottomTiles = [],
 }: {
   media?: AnyMediaItem[];
   heroBanners?: HeroBannerDTO[];
+  bottomTiles?: HomeBottomTile[];
 }) {
   const topBanner = media.find((item) => item.placement === "home_top_banner");
   const splitAds = pickMedia(media, ["home_split_left", "home_split_right"]);
+  const activeTiles = [...bottomTiles]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .slice(0, 4);
+  const exploreCards: ExploreCardItem[] = fallbackBottomTiles.map(
+    (fallback, index) => {
+      const tile = activeTiles[index];
+      if (!tile) return fallback;
+      return {
+        title: tile.title,
+        subtitle: tile.subtitle,
+        imageUrl: tile.imageUrl || fallback.imageUrl,
+        linkUrl: tile.linkUrl || "#",
+        ctaText: tile.ctaText || "View",
+        altText: tile.altText || tile.title,
+        sortOrder: tile.sortOrder,
+      };
+    }
+  );
 
   return (
     <section

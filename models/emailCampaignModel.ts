@@ -47,7 +47,7 @@ const emailCampaignSchema = new Schema<IEmailCampaign>(
       type: String,
       required: true,
       trim: true,
-      maxlength: 150,
+      maxlength: [500, "Subject must be 500 characters or less."],
     },
     slug: {
       type: String,

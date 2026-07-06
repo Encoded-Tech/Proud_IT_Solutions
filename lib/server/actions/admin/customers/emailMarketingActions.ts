@@ -30,9 +30,18 @@ const secureUrlField = z
   .or(z.literal(""));
 
 const emailCampaignSchema = z.object({
-  subject: z.string().trim().min(3, "Subject must be at least 3 characters.").max(150),
+  subject: z
+    .string()
+    .trim()
+    .min(1, "Subject is required.")
+    .max(500, "Subject must be 500 characters or less."),
   previewText: z.string().trim().max(180).optional().or(z.literal("")),
-  body: z.string().trim().min(10, "Email body must be at least 10 characters.").max(20000),
+  body: z
+    .string()
+    .trim()
+    .min(1, "Message is required.")
+    .min(10, "Email body must be at least 10 characters.")
+    .max(20000),
   targetType: z.enum(["none", "page", "category", "brand", "product"]).optional().default("none"),
   targetValue: z.string().trim().max(200).optional().or(z.literal("")),
   audience: z.enum([
@@ -76,6 +85,7 @@ interface ActionResult<T = undefined> {
   success: boolean;
   message: string;
   data?: T;
+  fieldErrors?: Record<string, string>;
 }
 
 interface CampaignFailure {
@@ -161,7 +171,30 @@ function buildTextVersion(body: string, ctaLabel?: string, ctaUrl?: string) {
 }
 
 function getSafeErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof z.ZodError) {
+    return error.issues[0]?.message || fallback;
+  }
   return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function getValidationResult<T>(error: z.ZodError): ActionResult<T> {
+  const flattened = error.flatten().fieldErrors as Record<
+    string,
+    string[] | undefined
+  >;
+  const fieldErrors = Object.fromEntries(
+    Object.entries(flattened)
+      .map(([field, messages]) => [field, messages?.[0]])
+      .filter((entry): entry is [string, string] => Boolean(entry[1]))
+  );
+  const message =
+    fieldErrors.subject ||
+    fieldErrors.body ||
+    fieldErrors.targetValue ||
+    error.issues[0]?.message ||
+    "Failed to send campaign. Please check the form and try again.";
+
+  return { success: false, message, fieldErrors };
 }
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -371,7 +404,7 @@ function resolveCampaignTarget(input: {
   );
 
   if (!matchedOption) {
-    throw new Error("Selected campaign destination is invalid.");
+    throw new Error("Please select a valid campaign destination.");
   }
 
   return {
@@ -1402,10 +1435,21 @@ export async function createBulkEmailCampaignJobAction(
       }
     }
 
+    if (error instanceof z.ZodError) {
+      return getValidationResult<{ campaignId: string; totalRecipients: number }>(error);
+    }
+
+    if (
+      error instanceof Error &&
+      error.message === "Please select a valid campaign destination."
+    ) {
+      return { success: false, message: error.message };
+    }
+
     console.error("createBulkEmailCampaignJobAction failed:", error);
     return {
       success: false,
-      message: getSafeErrorMessage(error, "Failed to queue email campaign."),
+      message: "Failed to send campaign. Please check the form and try again.",
     };
   }
 }

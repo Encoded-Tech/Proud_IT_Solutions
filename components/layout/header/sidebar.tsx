@@ -17,6 +17,7 @@ import {
   Wrench,
   MailPlus,
   Camera,
+  Images,
 } from "lucide-react";
 import Image from "@/components/ui/optimized-image";
 
@@ -372,6 +373,19 @@ export default function AdminSidebar({ collapsed }: AdminProps) {
           </p>
         )}
         <ul className="px-4 space-y-1 mb-2 text-sm font-medium">
+          <li>
+            <Link
+              href="/admin/home-media"
+              className={`p-2 ${navLinkClass(isActivePath("/admin/home-media"), collapsed)}`}
+            >
+              <Images className={`w-5 h-5 ${isActivePath("/admin/home-media") ? "text-red-600" : "text-gray-600"}`} />
+              {!collapsed && (
+                <span className={isActivePath("/admin/home-media") ? "text-red-700 font-semibold" : "text-gray-900"}>
+                  Home Media
+                </span>
+              )}
+            </Link>
+          </li>
           <li>
             <button
               onClick={() => toggleMenu("posts")}

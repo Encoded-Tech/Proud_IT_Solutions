@@ -72,6 +72,10 @@ const audienceLabels: Record<string, string> = {
   "guest-subscribers": "Guest subscribers",
 };
 
+const SUBJECT_MAX_LENGTH = 500;
+const SUBJECT_REQUIRED_ERROR = "Subject is required.";
+const SUBJECT_LENGTH_ERROR = "Subject must be 500 characters or less.";
+
 function formatDate(value: string | Date) {
   return new Date(value).toLocaleString("en-US", {
     month: "short",
@@ -126,6 +130,7 @@ export default function EmailMarketingPanel({
   const [isSending, startSendTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const [form, setForm] = useState(createEmptyCampaignForm);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MarketingOverview["campaigns"][number] | null>(
     null
@@ -213,10 +218,12 @@ export default function EmailMarketingPanel({
       return createEmptyCampaignForm();
     });
     setImageInputKey((current) => current + 1);
+    setFieldErrors({});
   };
 
   const submitCampaign = () => {
     setConfirmOpen(false);
+    setFieldErrors({});
     startSendTransition(async () => {
       try {
         const formData = new FormData();
@@ -235,7 +242,8 @@ export default function EmailMarketingPanel({
         const queued = await createBulkEmailCampaignJobAction(formData);
 
         if (!queued.success || !queued.data) {
-          toast.error(queued.message || "Campaign could not be queued.");
+          setFieldErrors(queued.fieldErrors || {});
+          toast.error(queued.message || "Failed to send campaign.");
           return;
         }
 
@@ -285,8 +293,12 @@ export default function EmailMarketingPanel({
           resetCampaignForm();
         }
         await refreshOverview();
-      } catch (error) {
-        toast.error(form.imageFile ? CAMPAIGN_IMAGE_UPLOAD_ERROR : getClientErrorMessage(error));
+      } catch {
+        toast.error(
+          form.imageFile
+            ? CAMPAIGN_IMAGE_UPLOAD_ERROR
+            : "Failed to send campaign. Please check the form and try again."
+        );
       }
     });
   };
@@ -317,9 +329,23 @@ export default function EmailMarketingPanel({
   const handleSubmit = () => {
     const normalizedSubject = form.subject.trim();
     const normalizedBody = form.body.trim();
+    setFieldErrors({});
 
-    if (normalizedSubject.length < 3) {
-      toast.error("Subject must be at least 3 characters.");
+    if (!normalizedSubject) {
+      setFieldErrors({ subject: SUBJECT_REQUIRED_ERROR });
+      toast.error(SUBJECT_REQUIRED_ERROR);
+      return;
+    }
+
+    if (normalizedSubject.length > SUBJECT_MAX_LENGTH) {
+      setFieldErrors({ subject: SUBJECT_LENGTH_ERROR });
+      toast.error(SUBJECT_LENGTH_ERROR);
+      return;
+    }
+
+    if (!normalizedBody) {
+      setFieldErrors({ body: "Message is required." });
+      toast.error("Message is required.");
       return;
     }
 
@@ -356,6 +382,9 @@ export default function EmailMarketingPanel({
             : [];
 
   const selectedTarget = targetOptions.find((option) => option.value === form.targetValue);
+  const subjectLength = form.subject.length;
+  const subjectIsTooLong = subjectLength > SUBJECT_MAX_LENGTH;
+  const subjectError = subjectIsTooLong ? SUBJECT_LENGTH_ERROR : fieldErrors.subject;
   const paginatedCampaigns = overview.campaigns.slice(
     (recentCampaignPage - 1) * RECENT_CAMPAIGNS_PER_PAGE,
     recentCampaignPage * RECENT_CAMPAIGNS_PER_PAGE
@@ -435,10 +464,21 @@ export default function EmailMarketingPanel({
               </label>
               <Input
                 value={form.subject}
-                onChange={(e) => setForm((prev) => ({ ...prev, subject: e.target.value }))}
+                onChange={(e) => {
+                  setForm((prev) => ({ ...prev, subject: e.target.value }));
+                  setFieldErrors((current) => ({ ...current, subject: "" }));
+                }}
                 placeholder="April promotions, store updates, product launch..."
-                className="border-slate-200 bg-white"
+                maxLength={SUBJECT_MAX_LENGTH}
+                aria-invalid={Boolean(subjectError)}
+                className={subjectError ? "border-red-400 bg-white" : "border-slate-200 bg-white"}
               />
+              <div className="mt-1.5 flex items-start justify-between gap-3 text-xs">
+                <p className="text-red-600">{subjectError || ""}</p>
+                <p className={subjectIsTooLong ? "font-semibold text-red-600" : "text-slate-500"}>
+                  Characters: {subjectLength} / {SUBJECT_MAX_LENGTH}
+                </p>
+              </div>
             </div>
 
             <div className="sm:col-span-2">
@@ -574,6 +614,9 @@ export default function EmailMarketingPanel({
                 rows={9}
                 className="border-slate-200 bg-white"
               />
+              {fieldErrors.body && (
+                <p className="mt-1.5 text-xs text-red-600">{fieldErrors.body}</p>
+              )}
             </div>
 
             <div className="sm:col-span-2">
@@ -622,7 +665,7 @@ export default function EmailMarketingPanel({
             </p>
             <Button
               onClick={handleSubmit}
-              disabled={isSending}
+              disabled={isSending || subjectIsTooLong}
               className="w-full rounded-xl bg-red-600 hover:bg-red-700 sm:w-auto"
             >
               {isSending ? "Sending..." : "Send Campaign"}

@@ -6,6 +6,7 @@ import HomeProducts from "@/components/server/ListHomeProducts";
 import HomeLandingAds from "@/components/server/HomeLandingAds";
 
 import { getPublicMedia } from "@/lib/server/fetchers/fetchMedia";
+import { getHomeBottomTiles } from "@/lib/server/fetchers/fetchHomeBottomTiles";
 import { ImageMediaItem } from "@/types/media";
 
 import HomePromoLinks from "./homePromoLinks";
@@ -30,7 +31,10 @@ type HeroBannerDTO = {
 
 
 const HomeMain = async () => {
-  const mediaRes = await getPublicMedia();
+  const [mediaRes, homeBottomTiles] = await Promise.all([
+    getPublicMedia(),
+    getHomeBottomTiles(),
+  ]);
   const mediaItems = mediaRes.success && mediaRes.data ? mediaRes.data : [];
 
   const heroBanners: HeroBannerDTO[] =
@@ -81,7 +85,11 @@ const HomeMain = async () => {
 </section>
 {/*Seo section*/}
 
-      <HomeMarketplacePromos media={mediaItems} heroBanners={hasHeroBanners ? heroBanners : []} />
+      <HomeMarketplacePromos
+        media={mediaItems}
+        heroBanners={hasHeroBanners ? heroBanners : []}
+        bottomTiles={homeBottomTiles}
+      />
 
 
       {/* Rest of homepage */}
