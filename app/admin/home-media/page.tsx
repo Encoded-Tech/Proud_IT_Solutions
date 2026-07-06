@@ -12,7 +12,7 @@ export default async function HomeMediaPage() {
         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-red-500">Home Media</p>
         <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-900">Home Bottom Tiles</h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-          Manage the four horizontal cards displayed below the main home hero. Uploads use the existing Cloudinary media pipeline.
+          Manage the four horizontal cards displayed below the main home hero. 
         </p>
       </div>
       <HomeBottomTilesManager tiles={response.data || []} />
